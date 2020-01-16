@@ -1,0 +1,32 @@
+namespace: "infinidat"
+name: "infinibox"
+version: "1.2.0"
+readme: "README.md"
+authors:
+  - "Infinidat <partners.infi@infinidat.com>"
+  - "David Ohlemacher"
+  - "Gregory Shulov"
+description: "A set of Ansible modules that allow simple, but powerful, idempotent interactions with Infinidat InfiniBoxes."
+license:
+  - "Apache-2.0"
+tags:
+  - cloud
+  - ibox
+  - infinibox
+  - infinidat
+  - infinisdk
+  - nas
+  - san
+  - storage 
+  - storage_array
+  - storagearray
+repository: "https://www.github.com/ohlemacher/ansible-infinidat-collection"
+issues: "https://www.github.com/ohlemacher/ansible-infinidat-collection/issues"
+build_ignore:  # Supported by ansible 2.10 or newer. Earlier versions generate a warning.
+  - '*.swo'
+  - '*.swp'
+  - '*.tar.gz'
+  - '*.un~'
+  - './collections'
+  - 'ibox_vars/iboxCICD.yml'
+  - 'venv'
