@@ -39,6 +39,8 @@ _strip_build_dir:
 	@# Temporarily mv dirs for the build so that it is not included in collection.
 	mv collections ../collections_tmp || true  # Missing is not an error
 	mv venv ../venv_tmp
+	@# Check that tmp or hidden files will not be in collection.
+	@./bin/check_collection_files.sh
 
 _unstrip_build_dir:
 	@# Restore dirs

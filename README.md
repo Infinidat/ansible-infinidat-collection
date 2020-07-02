@@ -31,10 +31,11 @@ Ansible 2.9 or newer is required to install as a collection.  That said, the col
 
 ## Usage
 Two example playbooks are included in the collection:
+
 - test_create_resources.yml: A playbook that creates many resources. It also creates resources again to test idempotency.
 - test_remove_resources.yml: A playbook that in the end removes the resources created in the test_create_resources playbook. It too will test idempotency by removing resources again.
 
-These two playbooks serve as a valuable reference to the use of the modules. These exercise all modules demonstrating normal usage, idempotency and error conditions. Individual module documentation is available via `ansible-doc`.
+These two playbooks serve as a reference to the use of the modules. These exercise all modules demonstrating normal usage, idempotency and error conditions. Individual module documentation is available via `ansible-doc`.
 
 ### Example Usage
 Install the collection and cd into the collection's infi/ directory.  Create an ibox yaml file in ibox_vars/.  Use the example yaml file as a reference.
