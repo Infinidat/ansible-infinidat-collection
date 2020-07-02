@@ -1,6 +1,6 @@
 namespace: "infinidat"
 name: "infinibox"
-version: "1.2.0"
+version: "1.2.1"
 readme: "README.md"
 authors:
   - "Infinidat <partners.infi@infinidat.com>"
@@ -20,8 +20,8 @@ tags:
   - storage 
   - storage_array
   - storagearray
-repository: "https://www.github.com/ohlemacher/ansible-infinidat-collection"
-issues: "https://www.github.com/ohlemacher/ansible-infinidat-collection/issues"
+repository: "https://www.github.com/infinidat/ansible-infinidat-collection"
+issues: "https://www.github.com/infinidat/ansible-infinidat-collection/issues"
 build_ignore:  # Supported by ansible 2.10 or newer. Earlier versions generate a warning.
   - '*.swo'
   - '*.swp'
