@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright: (c) 2020, Infinidat <info@infinidat.com>
-# Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 class ModuleDocFragment(object):
 

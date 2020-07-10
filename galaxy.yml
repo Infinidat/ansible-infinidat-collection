@@ -1,6 +1,6 @@
 namespace: "infinidat"
 name: "infinibox"
-version: "1.2.2"
+version: "1.2.3"
 readme: "README.md"
 authors:
   - "Infinidat <partners.infi@infinidat.com>"
@@ -8,7 +8,7 @@ authors:
   - "Gregory Shulov"
 description: "A set of Ansible modules that allow simple, but powerful, idempotent interactions with Infinidat InfiniBoxes."
 license:
-  - "Apache-2.0"
+  - "GPL-3.0-or-later"
 tags:
   - cloud
   - ibox
