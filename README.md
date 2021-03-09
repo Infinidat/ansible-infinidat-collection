@@ -42,6 +42,7 @@ Install the collection and cd into the collection's infi/ directory.  Create an 
 
 The `--ask-vault-pass` options below are only required if the ibox_vars/iboxNNNN.yaml file is encrypted using ansible-vault.
 ```
+sudo apt install python3.8 python3.8-venv python3.8-distutils libffi-dev
 python3.8 -m venv venv
 source venv/bin/activate
 python -m pip install -U pip
