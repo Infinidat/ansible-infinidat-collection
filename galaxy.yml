@@ -1,6 +1,6 @@
 namespace: "infinidat"
 name: "infinibox"
-version: "1.2.3"
+version: "1-2-3"
 readme: "README.md"
 authors:
   - "Infinidat <partners.infi@infinidat.com>"
@@ -25,8 +25,9 @@ issues: "https://www.github.com/infinidat/ansible-infinidat-collection/issues"
 build_ignore:  # Supported by ansible 2.10 or newer. Earlier versions generate a warning.
   - '*.swo'
   - '*.swp'
+  - '*.un~'
   - '*.tar.gz'
   - '*.un~'
   - './collections'
   - 'ibox_vars/iboxCICD.yml'
-  - 'venv'
+  - './venv'
