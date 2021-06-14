@@ -39,6 +39,12 @@ options:
     description:
       - Pool that will host file system.
     required: true
+  thin_provision:
+    description:
+      - Whether the fs should be thin provisioned.
+    type: bool
+    required: false
+    default: false
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -51,6 +57,7 @@ EXAMPLES = r'''
     name: foo
     size: 1TB
     pool: bar
+    thin_provision: true
     state: present
     user: admin
     password: secret
@@ -80,7 +87,11 @@ def create_filesystem(module, system):
     """Create Filesystem"""
     changed = True
     if not module.check_mode:
-        filesystem = system.filesystems.create(name=module.params['name'], pool=get_pool(module, system))
+        if module.params['thin_provision']:
+            prov_type = 'THIN'
+        else:
+            prov_type = 'THICK'
+        filesystem = system.filesystems.create(name=module.params['name'], provtype=prov_type, pool=get_pool(module, system))
         if module.params['size']:
             size = Capacity(module.params['size']).roundup(64 * KiB)
             filesystem.update_size(size)
@@ -96,6 +107,16 @@ def update_filesystem(module, filesystem):
         if filesystem.get_size() != size:
             if not module.check_mode:
                 filesystem.update_size(size)
+            changed = True
+    if module.params['thin_provision'] is not None:
+        type = str(filesystem.get_provisioning())
+        if type == 'THICK' and module.params['thin_provision']:
+            if not module.check_mode:
+                filesystem.update_provisioning('THIN')
+            changed = True
+        if type == 'THIN' and not module.params['thin_provision']:
+            if not module.check_mode:
+                filesystem.update_provisioning('THICK')
             changed = True
     return changed
 
@@ -179,7 +200,8 @@ def main():
             name=dict(required=True),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             pool=dict(required=True),
-            size=dict()
+            size=dict(),
+            thin_provision=dict(type='bool', default=False)
         )
     )
 

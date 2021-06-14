@@ -44,6 +44,17 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
+  - name: POSITIVE test -> Create THIN file system named {{ auto_prefix }}fs_thin under pool {{ auto_prefix }}pool
+    infini_fs:
+      name: "{{ auto_prefix }}fs_thin"
+      size: 1GB
+      pool: "{{ auto_prefix }}pool"
+      thin_provision: true
+      state: present
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
   - name: POSITIVE test -> Stat file system named {{ auto_prefix }}fs under pool {{ auto_prefix }}pool
     infini_fs:
       name: "{{ auto_prefix }}fs"
