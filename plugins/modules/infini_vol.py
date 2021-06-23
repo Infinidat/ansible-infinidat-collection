@@ -63,6 +63,12 @@ options:
     required: false
     default: master
     choices: [ "master", "snapshot" ]
+  write_protected:
+    description:
+      - Specifies if the volume should be write protected.
+      required: false
+      default: false
+      version_added: '2.10'
   parent_volume_name:
     description:
       - Specify a volume name. This is the volume parent for creating a snapshot. Required if volume_type is snapshot.
@@ -139,6 +145,11 @@ def create_volume(module, system):
         if module.params['size']:
             size = Capacity(module.params['size']).roundup(64 * KiB)
             volume.update_size(size)
+        if module.params['write_protected'] is not None:
+            is_write_prot = volume.is_write_protected()
+            desired_is_write_prot = module.params['write_protected']
+            if is_write_prot != desired_is_write_prot:
+                volume.update_field('write_protected', desired_is_write_prot)
     changed = True
     return changed
 
@@ -163,6 +174,12 @@ def update_volume(module, volume):
             if not module.check_mode:
                 volume.update_provisioning('THICK')
             changed = True
+    if module.params['write_protected'] is not None:
+        is_write_prot = volume.is_write_protected()
+        desired_is_write_prot = module.params['write_protected']
+        if is_write_prot != desired_is_write_prot:
+            volume.update_field('write_protected', desired_is_write_prot)
+
     return changed
 
 
@@ -196,6 +213,13 @@ def create_snapshot(module, system):
             module.fail_json(msg=msg)
         check_snapshot_lock_options(module)
         snapshot = parent_volume.create_snapshot(name=snapshot_name)
+
+        if module.params['write_protected'] is not None:
+            is_write_prot = snapshot.is_write_protected()
+            desired_is_write_prot = module.params['write_protected']
+            if is_write_prot != desired_is_write_prot:
+                snapshot.update_field('write_protected', desired_is_write_prot)
+
     manage_snapshot_locks(module, snapshot)
     changed = True
     return changed
@@ -219,6 +243,13 @@ def update_snapshot(module, snapshot):
 
     check_snapshot_lock_options(module)
     lock_changed = manage_snapshot_locks(module, snapshot)
+
+    if not module.check_mode:
+        if module.params['write_protected'] is not None:
+            is_write_prot = snapshot.is_write_protected()
+            desired_is_write_prot = module.params['write_protected']
+            if is_write_prot != desired_is_write_prot:
+                snapshot.update_field('write_protected', desired_is_write_prot)
 
     return refresh_changed or lock_changed
 
@@ -308,11 +339,13 @@ def handle_stat(module):
     mapped = str(fields.get('mapped', None))
     name = fields.get('name', None)
     parent_id = fields.get('parent_id', None)
+    serial = str(volume.get_serial())
     size = str(volume.get_size())
     updated_at = str(fields.get('updated_at', None))
     used = str(fields.get('used_size', None))
     volume_id = fields.get('id', None)
     volume_type = fields.get('type', None)
+    write_protected = fields.get('write_protected', None)
     if volume_type == 'SNAPSHOT':
         msg = 'Snapshot stat found'
     else:
@@ -327,11 +360,13 @@ def handle_stat(module):
         mapped=mapped,
         msg=msg,
         parent_id=parent_id,
+        serial=serial,
         size=size,
         updated_at=updated_at,
         used=used,
         volume_id=volume_id,
         volume_type=volume_type,
+        write_protected=write_protected,
     )
     module.exit_json(**result)
 
@@ -443,6 +478,7 @@ def main():
             snapshot_lock_only=dict(type='bool', default=False),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             thin_provision=dict(type='bool', default=True),
+            write_protected=dict(type='bool', default=False),
             volume_type=dict(default='master', choices=['master', 'snapshot']),
         )
     )

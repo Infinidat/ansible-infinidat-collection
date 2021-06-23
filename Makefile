@@ -82,8 +82,7 @@ galaxy-collection-install:
 
 galaxy-collection-install-locally:
 	@# Download and install from local tar file.
-	@# Note that this will wipe $(_install_path_local).
-	ansible-galaxy collection install -f $(_namespace)-$(_name)-$(_version).tar.gz --collections-path $(_install_path_local)
+	ansible-galaxy collection install --force $(_namespace)-$(_name)-$(_version).tar.gz --collections-path $(_install_path_local)
 
 ### Playbooks Testing ###
 test-create-resources:
