@@ -22,7 +22,8 @@ function die {
     local msg="$1"
     local leader="${2:-Fatal:}"
     (>&2 printf "$leader $msg\n")  # Subshell avoids interactions with other redirections
-    if [ "$enable_syslogging" == "true" ]; then
+    if [ "$enable_syslogging" == "true" ]
+    then
         logger -p user.error -t "$(basename $0)" "$leader $msg"
     fi
     kill -SIGPIPE "$$"  # Die with exit code 141
@@ -35,7 +36,8 @@ function info {
     local msg="$1"
     local leader="${2:-Info:}"
     (printf "$leader $msg\n")  # Subshell avoids interactions with other redirections
-    if [ "$enable_syslogging" == "true" ]; then
+    if [ "$enable_syslogging" == "true" ]
+    then
         logger -p user.notice -t "$(basename $0)" "$leader $msg"
     fi
 }
@@ -77,7 +79,8 @@ function sanity {
     local -r ansible_dir="lib/ansible"
     local -r check_this="$ansible_path/$ansible_dir"
 
-    if ! [[ -a "$check_this" ]]; then
+    if ! [[ -a "$check_this" ]]
+    then
         die "Cannot find Ansible source at \"$check_this\". Check path to Ansible source clone."
     fi
 }
@@ -85,7 +88,8 @@ function sanity {
 # Main
 declare -r info_leader="  "
 declare -r ansible_working_copy_path="${1:-}"
-if [ -z "${ansible_working_copy_path}" ]; then
+if [ -z "${ansible_working_copy_path}" ]
+then
     die "Provide the path to an Ansible source clone. Example: $0 \"<path to clone>\""
 fi
 

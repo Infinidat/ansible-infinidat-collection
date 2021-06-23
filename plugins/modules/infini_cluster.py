@@ -5,8 +5,12 @@
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
-from infi.dtypes.iqn import make_iscsi_name
 
+try:
+    from infi.dtypes.iqn import make_iscsi_name
+    HAS_INFI_MOD = True
+except ImportError:
+    HAS_INFI_MOD = False
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
@@ -49,9 +53,13 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_system, get_cluster, unixMillisecondsToDate, merge_two_dicts
+
+try:
+    from ansible.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_system, get_cluster, unixMillisecondsToDate, merge_two_dicts
+except ImportError:
+    HAS_INFINISDK = False
 
 
 @api_wrapper
@@ -252,6 +260,9 @@ def main():
     )
 
     module = AnsibleModule(argument_spec, supports_check_mode=True)
+
+    if not HAS_INFI_MOD:
+        module.fail_json(msg=missing_required_lib('infi.dtypes.iqn'))
 
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib('infinisdk'))
