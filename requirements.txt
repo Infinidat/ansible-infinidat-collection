@@ -39,7 +39,7 @@ packaging==19.1
 pact==1.12.0
 pathspec==0.6.0
 pluggy==0.12.0
-py==1.9.0
+py==1.10.0
 pycodestyle==2.5.0
 pycparser==2.19
 pylint==2.5.3
