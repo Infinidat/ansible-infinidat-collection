@@ -70,11 +70,14 @@ def get_system(module):
     password = module.params.get('password', None)
 
     if user and password:
-        system = InfiniBox(box, auth=(user, password))
+        system = InfiniBox(box, auth=(user, password), use_ssl=True)
     elif environ.get('INFINIBOX_USER') and environ.get('INFINIBOX_PASSWORD'):
-        system = InfiniBox(box, auth=(environ.get('INFINIBOX_USER'), environ.get('INFINIBOX_PASSWORD')))
+        system = InfiniBox(box, \
+                           auth=(environ.get('INFINIBOX_USER'), \
+                                 environ.get('INFINIBOX_PASSWORD')), \
+                           use_ssl=True)
     elif path.isfile(path.expanduser('~') + '/.infinidat/infinisdk.ini'):
-        system = InfiniBox(box)
+        system = InfiniBox(box, use_ssl=True)
     else:
         module.fail_json(msg="You must set INFINIBOX_USER and INFINIBOX_PASSWORD environment variables or set username/password module arguments")
 

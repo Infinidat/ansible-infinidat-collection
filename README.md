@@ -23,7 +23,7 @@ Most modules also implement a "stat" state.  This is used to gather information,
 
 ## Installation
 Install the Infinidat Ansible collection on hosts or within containers using:
-`ansible-galaxy collection install infinidat.infi -p ~/.ansible/collections`
+`ansible-galaxy collection install infinidat.infibox -p ~/.ansible/collections`
 
 Complete instructions for installing collections is available at https://docs.ansible.com/ansible/latest/user_guide/collections_using.html.
 
@@ -64,3 +64,6 @@ To remove the collection, delete the collection from the path specified in the -
 The initial set of Infindat Ansible modules were written by Gregory Shulov in 2016.
 
 Infinidat's Professional Services (USA) team extended and improved the modules in 2019. Several modules were added. Idempotency was improved.
+
+## Pull requests and feature requests
+Contributions will be considered via standard Git processes. If you choose to contribute, such contribution must be permanently licensed in line with the overall project license, and copyright and all other IP rights for your contribution must be permanently assigned to Infinidat and/or its successors.

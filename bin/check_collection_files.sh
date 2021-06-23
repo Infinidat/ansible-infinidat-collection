@@ -14,7 +14,7 @@ declare -r enable_syslogging="false"
 function die {
     local msg="$1"
     local leader="${2:-Fatal:}"
-    (>&2 printf "$leader $msg\n")  # Subshell avoids interactions with other redirections
+    (>&2 echo -e "$leader $msg\n")  # Subshell avoids interactions with other redirections
     if [ "$enable_syslogging" == "true" ]; then
         logger -p user.error -t "$(basename $0)" "$leader $msg"
     fi
@@ -27,7 +27,7 @@ function die {
 function info {
     local msg="$1"
     local leader="${2:-Info:}"
-    (printf "$leader $msg\n")  # Subshell avoids interactions with other redirections
+    (echo -e "$leader $msg\n")  # Subshell avoids interactions with other redirections
     if [ "$enable_syslogging" == "true" ]; then
         logger -p user.notice -t "$(basename $0)" "$leader $msg"
     fi
@@ -46,7 +46,7 @@ function check_glob {
 # MAIN
 declare found=""
 declare foundone=""
-declare -ar fglobs=("*.gz" ".*.un~" ".*.swp" ".*.swo" "*.pyc" "venv")
+declare -ar fglobs=("*.gz" ".*.un~" ".*.swp" ".*.swo" "*.pyc" "venv" ".ropeproject")
 
 for fg in "${fglobs[@]}"; do
 	foundone=$(check_glob "$fg")
