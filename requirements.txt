@@ -1,7 +1,7 @@
 Jinja2==2.10.3
 Logbook==1.5.3
 MarkupSafe==1.1.1
-PyYAML==5.1.2
+PyYAML==5.4
 URLObject==2.4.3
 ansible-base==2.10.4
 api-object-schema==2.0.0
