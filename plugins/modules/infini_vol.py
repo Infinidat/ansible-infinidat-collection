@@ -65,9 +65,9 @@ options:
     choices: [ "master", "snapshot" ]
   write_protected:
     description:
-      - Specifies if the volume should be write protected. Default to True for snapshots, False for regular volumes.
+      - Specifies if the volume should be write protected. Default will be True for snapshots, False for regular volumes.
       required: false
-      default: "Depends on volume type"
+      default: "Default"
       choices: ["Default", "True", "False"]
       version_added: '2.10'
   parent_volume_name:
@@ -422,26 +422,15 @@ def handle_absent(module):
 def execute_state(module):
     # Handle different write_protected defaults depending on volume_type.
     if module.params['volume_type'] == "snapshot":
-        if module.params['write_protected'] == 'Default' \
-                or module.params['write_protected'] == 'True'
+        if module.params['write_protected'] == 'Default':
             module.params['write_protected'] = True
-        elif module.params['write_protected'] == 'False':
-            module.params['write_protected'] = False
-        else:
-            msg = "A programming error has occurred handling volume write protection value"
-            module.fail_json(msg=msg)
     elif module.params['volume_type'] == "master":
-        if module.params['write_protected'] == 'Default' \
-                or module.params['write_protected'] == 'False'
+        if module.params['write_protected'] == 'Default':
             module.params['write_protected'] = False
-        elif module.params['write_protected'] == 'True':
-            module.params['write_protected'] = True
-        else:
-            msg = "A programming error has occurred handling volume write protection value"
-            module.fail_json(msg=msg)
     else:
         msg = "A programming error has occurred handling volume type value"
         module.fail_json(msg=msg)
+    assert module.params['write_protected'] in [True, False]
 
     state = module.params['state']
     try:
@@ -503,7 +492,7 @@ def main():
             snapshot_lock_only=dict(type='bool', default=False),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             thin_provision=dict(type='bool', default=True),
-            write_protected=dict(default='default', choices=['Default', 'True', 'False']),
+            write_protected=dict(default='Default', choices=['Default', 'True', 'False']),
             volume_type=dict(default='master', choices=['master', 'snapshot']),
         )
     )
