@@ -14,10 +14,11 @@ playbook_testing:
   stage: test
   script:
     # Disable index-url = https://pypi.infinidat.com/simple.
-    - mv ~/.pip/pip.conf ~/.pip/pip.conf.notused 
+    - mv ~/.pip/pip.conf ~/.pip/pip.conf.notused || true
     - python3 -m venv venv
     - . ./venv/bin/activate
     - export PIP_REQUIRE_VIRTUALENV=true
+    - python -m pip install --upgrade pip
     - pip install -r requirements.txt
     - echo "Tested ansible version -> $(ansible --version)"
 
