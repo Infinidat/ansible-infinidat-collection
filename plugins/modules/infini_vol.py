@@ -129,7 +129,7 @@ import arrow
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible.module_utils.infinibox import \
     HAS_INFINISDK, api_wrapper, infinibox_argument_spec, ObjectNotFound, \
-    get_pool, get_system, get_volume
+    get_pool, get_system, get_volume, get_vol_sn
 
 
 @api_wrapper
@@ -258,7 +258,10 @@ def update_snapshot(module, snapshot):
 def get_sys_pool_vol_parname(module):
     system = get_system(module)
     pool = get_pool(module, system)
-    volume = get_volume(module, system)
+    if module.params['name']:
+        volume = get_volume(module, system)
+    else:
+        volume = get_vol_sn(module, system)
     parname = module.params['parent_volume_name']
     return (system, pool, volume, parname)
 
@@ -354,6 +357,7 @@ def handle_stat(module):
 
     result = dict(
         changed=False,
+        name=name,
         created_at=created_at,
         has_children=has_children,
         lock_expires_at=lock_expires_at,
@@ -484,10 +488,11 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            name=dict(required=True),
+            name=dict(required=False),
             parent_volume_name=dict(required=False),
             pool=dict(required=False),
             size=dict(),
+            serial=dict(),
             snapshot_lock_expires_at=dict(),
             snapshot_lock_only=dict(type='bool', default=False),
             state=dict(default='present', choices=['stat', 'present', 'absent']),

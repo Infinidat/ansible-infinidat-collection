@@ -152,10 +152,19 @@
       system: "{{ system }}"
 
   - name: POSITIVE test -> Stat volume {{ auto_prefix }}vol under pool {{ auto_prefix }}pool
+    register: output
     infini_vol:
       name: "{{ auto_prefix }}vol"
       pool: "{{ auto_prefix }}pool"
       state: stat
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+  
+  - name: POSITIVE test -> Stat vol serial number
+    infini_vol:
+      state: stat
+      serial: "{{ output.serial }}"
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"

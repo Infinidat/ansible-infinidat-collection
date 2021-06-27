@@ -171,6 +171,19 @@ def get_volume(module, system):
 
 
 @api_wrapper
+def get_vol_sn(module, system):
+    """Return Volume or None"""
+    try:
+        try:
+            volume = system.volumes.get(serial=module.params['serial'])
+        except KeyError:
+            return None
+        return volume
+    except Exception:
+        return None
+
+        
+@api_wrapper
 def get_host(module, system):
     """Find a host by the name specified in the module"""
     host = None
