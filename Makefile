@@ -15,6 +15,8 @@ _env = ~/.ssh/ansible-galaxy.sh
 include $(_env)
 export $(shell sed 's/=.*//' $(_env))
 
+include Makefile-help
+
 ### Vars ###
 _version            = $(shell spruce json galaxy.yml | jq '.version'   | sed 's?"??g')
 _namespace          = $(shell spruce json galaxy.yml | jq '.namespace' | sed 's?"??g')
@@ -84,18 +86,31 @@ galaxy-collection-install-locally:
 	@# Download and install from local tar file.
 	ansible-galaxy collection install --force $(_namespace)-$(_name)-$(_version).tar.gz --collections-path $(_install_path_local)
 
-### Playbooks Testing ###
-test-create-resources:
-	@# Run test_create_resources.yml as described in DEV_README.md
+##@ Playbooks Testing
+_test_playbook:
+	@# Run a playbook specified by an envvar.
+	@# See DEV_README.md
 	cd playbooks && \
-		../venv/bin/ansible-playbook --extra-vars "@../ibox_vars/iboxCICD.yaml" \
-		--ask-vault-pass test_create_resources.yml 
+		../venv/bin/ansible-playbook \
+			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
+			--ask-vault-pass \
+			"$$playbook_name"
 
-test-remove-resources:
-	@# Run test_remove_resources.yml as described in DEV_README.md
-	cd playbooks && \
-		../venv/bin/ansible-playbook --extra-vars "@../ibox_vars/iboxCICD.yaml" \
-		--ask-vault-pass test_remove_resources.yml 
+test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
+	playbook_name=test_create_resources.yml make _test_playbook
+
+test-remove-resources:  ## Run full removal  test suite as run by Gitlab CICD.
+	playbook_name=test_remove_resources.yml make _test_playbook
+
+test-create-snapshots:  ## Test creating immutable snapshots.
+	@eval $(_begin)
+	playbook_name=test_create_snapshots.yml make _test_playbook
+	@eval $(_finish)
+
+test-remove-snapshots:  ## Test removing immutable snapshots (teardown).
+	@eval $(_begin)
+	playbook_name=test_remove_snapshots.yml make _test_playbook
+	@eval $(_finish)
 
 ### ansible-test ###
 test-sanity:
