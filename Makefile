@@ -25,6 +25,8 @@ _install_path       = ~/.ansible/collections
 _install_path_local = $$HOME/.ansible/collections
 #_install_path_local = /opt/atest
 _requirements_file  = requirements_2.10.txt
+_user               = psus-gitlab-cicd
+_ibox_url           = ibox1521
 SHELL               = /bin/bash
 
 ### General ###
@@ -97,10 +99,14 @@ _test_playbook:
 			"$$playbook_name"
 
 test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
+	@eval $(_begin)
 	playbook_name=test_create_resources.yml make _test_playbook
+	@eval $(_finish)
 
 test-remove-resources:  ## Run full removal  test suite as run by Gitlab CICD.
+	@eval $(_begin)
 	playbook_name=test_remove_resources.yml make _test_playbook
+	@eval $(_finish)
 
 test-create-snapshots:  ## Test creating immutable snapshots.
 	@eval $(_begin)
@@ -148,3 +154,12 @@ test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install
 	@# Run local build, install and sanity test.
 	@# Note that this will wipe $(_install_path_local).
 	@echo "test-sanity-locally-all completed"
+
+### IBox ###
+infinishell:
+	@infinishell --user $(_user) $(_ibox_url)
+
+infinishell-events:
+	@echo "Command: event.watch username=$(_user) exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_SESSION_EXPIRED tail_length=35"
+	@infinishell --user $(_user) $(_ibox_url)
+
