@@ -8,7 +8,7 @@
 #     - Value: <ansible vault password for the vars file for the ibox specified in --extra-vars> 
 #         - i.e. The password that allows one to view the file using "ansible-vault view <file>"
 
-image: psusdev/gitlab-cicd:v0.8
+image: psusdev/gitlab-cicd:v0.13
 
 playbook_testing:
   stage: test
