@@ -33,7 +33,13 @@ function info {
 }
 
 function summarize {
-    local -a arr=("./playbooks/test_create_resources.yml" "./playbooks/test_remove_resources.yml")
+    if [[ "$test_flavor" == "general" ]]; then
+        local -a arr=("./playbooks/test_create_resources.yml" "./playbooks/test_remove_resources.yml")
+    elif [[ "$test_flavor" == "map-cluster" ]]; then
+        local -a arr=("./playbooks/test_create_map_cluster.yml" "./playbooks/test_remove_map_cluster.yml")
+    else
+        die "Invalid test_flavor provided: $test_flavor"
+    fi
 
     for f in "${arr[@]}"; do
         info "Test Summary for $f:" "==="
@@ -55,4 +61,5 @@ function summarize {
 }
 
 # Main
+test_flavor="${1:-not_set}"  # general or map-cluster
 summarize

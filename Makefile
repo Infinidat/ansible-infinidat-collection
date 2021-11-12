@@ -15,6 +15,9 @@ _env = ~/.ssh/ansible-galaxy.sh
 include $(_env)
 export $(shell sed 's/=.*//' $(_env))
 
+# Use color in Makefiles.
+# _use_color = true
+
 include Makefile-help
 
 ### Vars ###
@@ -30,15 +33,15 @@ _ibox_url           = ibox1521
 SHELL               = /bin/bash
 
 ### General ###
-check-vars:
+_check-vars:
 ifeq ($(strip $(API_KEY)),)
 	@echo "API_KEY variable is unset" && false
 endif
 
-env-show: check-vars
+env-show: _check-vars
 	@echo "API_KEY=[ set but redacted ]"
 
-versions: check-vars
+versions: _check-vars
 	@ansible --version
 
 _test-venv:
@@ -51,7 +54,7 @@ ifndef VIRTUAL_ENV
 endif
 	@echo "Virtual environment set"
 
-### Galaxy ###
+##@ Galaxy
 _strip_build_dir:
 	@# Temporarily mv dirs for the build so that it is not included in collection.
 	mv collections ../collections_tmp || true  # Missing is not an error
@@ -64,29 +67,33 @@ unstrip_build_dir:
 	mv ../collections_tmp ./collections || true  # Missing is not an error
 	mv ../venv_tmp ./venv
 
-galaxy-collection-build: _strip_build_dir
-	@# Build the collection.
+galaxy-collection-build: _strip_build_dir  ## Build the collection.
+	@eval $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
 	@make unstrip_build_dir
+	@eval $(_finish)
 
-galaxy-collection-build-force: _strip_build_dir
-	@# Force build the collection. Overwrite an existing collection file.
+galaxy-collection-build-force: _strip_build_dir  ## Force build the collection. Overwrite an existing collection file.
+	@eval $(_begin)
 	ansible-galaxy collection build --force
 	@make unstrip_build_dir
+	@eval $(_finish)
 
-galaxy-collection-publish: check-vars
-	@# Publish the collection to https://galaxy.ansible.com/ using the API key provided.
+galaxy-collection-publish: _check-vars  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
+	@eval $(_begin)
 	ansible-galaxy collection publish --api-key $(API_KEY) ./$(_namespace)-$(_name)-$(_version).tar.gz -vvv
+	@eval $(_finish)
 
-galaxy-collection-install:
-	@# Download and install from galaxy.ansible.com.
-	@# Note that this will wipe $(_install_path).
+galaxy-collection-install:  ## Download and install from galaxy.ansible.com. This will wipe $(_install_path).
+	@eval $(_begin)
 	ansible-galaxy collection install $(_namespace).$(_name) --collections-path $(_install_path) --force
+	@eval $(_finish)
 
-galaxy-collection-install-locally:
-	@# Download and install from local tar file.
+galaxy-collection-install-locally:  ## Download and install from local tar file.
+	@eval $(_begin)
 	ansible-galaxy collection install --force $(_namespace)-$(_name)-$(_version).tar.gz --collections-path $(_install_path_local)
+	@eval $(_finish)
 
 ##@ Playbooks Testing
 _test_playbook:
@@ -116,6 +123,16 @@ test-create-snapshots:  ## Test creating immutable snapshots.
 test-remove-snapshots:  ## Test removing immutable snapshots (teardown).
 	@eval $(_begin)
 	playbook_name=test_remove_snapshots.yml make _test_playbook
+	@eval $(_finish)
+
+test-create-map-cluster:  ## Run full creation test suite as run by Gitlab CICD.
+	@eval $(_begin)
+	playbook_name=test_create_map_cluster.yml make _test_playbook
+	@eval $(_finish)
+
+test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
+	@eval $(_begin)
+	playbook_name=test_remove_map_cluster.yml make _test_playbook
 	@eval $(_finish)
 
 ### ansible-test ###
@@ -160,6 +177,6 @@ infinishell:
 	@infinishell --user $(_user) $(_ibox_url)
 
 infinishell-events:
-	@echo "Command: event.watch username=$(_user) exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_SESSION_EXPIRED tail_length=35"
-	@infinishell --user $(_user) $(_ibox_url)
+	@TERM=xterm echo "Command: event.watch username=$(_user) exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_SESSION_EXPIRED,USER_LOGIN_FAILURE tail_length=35"
+	@TERM=xterm infinishell --user $(_user) $(_ibox_url)
 

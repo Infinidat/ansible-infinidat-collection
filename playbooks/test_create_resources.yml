@@ -338,7 +338,7 @@
       password: "{{ password }}"
       system: "{{ system }}"
     register: result
-    failed_when: "not result.msg | regex_search('Host.*not found')"
+    failed_when: "not result.msg | regex_search('Neither host.*nor cluster.*found')"
     when: not ansible_check_mode
 
   - name: POSITIVE test -> Map volume {{ auto_prefix }}vol to host {{ auto_prefix }}host
@@ -361,8 +361,8 @@
 
   - name: POSITIVE test -> Remove mapping of volume {{ auto_prefix }}vol from host {{ auto_prefix }}host
     infini_map:
-      host: "{{auto_prefix }}host"
-      volume: "{{auto_prefix }}vol"
+      host: "{{ auto_prefix }}host"
+      volume: "{{ auto_prefix }}vol"
       state: absent
       user: "{{ user }}"
       password: "{{ password }}"

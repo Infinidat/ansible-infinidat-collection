@@ -50,9 +50,11 @@ docs/docsite/_static/websupport.js
 # deb building stuff...
 /debian/
 deb-build
-# Vim swap files
+# Vim
+Session.vim
 *.swp
 *.swo
+
 credentials.yml
 # test output
 *.retry

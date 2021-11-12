@@ -28,11 +28,3 @@
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
-
-  - name: POSITIVE test -> Remove snapshot {{ auto_prefix }}vol_snap
-    infini_vol:
-      name: "{{ auto_prefix }}vol_snap"
-      state: absent
-      user: "{{ user }}"
-      password: "{{ password }}"
-      system: "{{ system }}"

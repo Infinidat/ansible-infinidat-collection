@@ -30,10 +30,19 @@ Complete instructions for installing collections is available at https://docs.an
 Ansible 2.9 or newer is required to install as a collection.  That said, the collection is a tarball.  Modules may be extracted and installed manually if use of an older version of Ansible is required.  Adjust values in playbooks/ansible.cfg as required. 
 
 ## Usage
-Two example playbooks are included in the collection:
+A Makefile is provided. To see the recipes available within it use `make help`.
 
-- test_create_resources.yml: A playbook that creates many resources. It also creates resources again to test idempotency.
-- test_remove_resources.yml: A playbook that in the end removes the resources created in the test_create_resources playbook. It too will test idempotency by removing resources again.
+Example playbooks are included in the collection:
+
+- Main test playbooks:
+    - test_create_resources.yml: A playbook that creates many resources. It also creates resources again to test idempotency.
+    - test_remove_resources.yml: A playbook that in the end removes the resources created in the test_create_resources playbook. It too will test idempotency by removing resources again.
+
+- Playbooks for testing cluster mapping:
+    - test_create_map_cluster.yml: Creates a cluster with hosts and tests mapping a volume to the cluster and hosts.
+    - test_remove_map_cluster.yml: Removes resouces created by its cohort.
+
+- Playbooks for testing snapshotting:
 
 These two playbooks serve as a reference to the use of the modules. These exercise all modules demonstrating normal usage, idempotency and error conditions. Individual module documentation is available via `ansible-doc`.
 

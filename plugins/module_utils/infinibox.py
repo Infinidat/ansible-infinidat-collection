@@ -182,7 +182,7 @@ def get_vol_sn(module, system):
     except Exception:
         return None
 
-        
+
 @api_wrapper
 def get_host(module, system):
     """Find a host by the name specified in the module"""
@@ -209,7 +209,10 @@ def get_cluster(module, system):
 
     for a_cluster in system.host_clusters.to_list():
         a_cluster_name = a_cluster.get_name()
-        cluster_param = module.params['name']
+        try:
+            cluster_param = module.params['name']
+        except KeyError:
+            cluster_param = module.params['cluster']
 
         if a_cluster_name == cluster_param:
             cluster = a_cluster

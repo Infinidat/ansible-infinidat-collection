@@ -28,6 +28,13 @@ Example:
 Extra-var files containing secrets should be encrypted using ansible-vault:
 - `ansible-vault [encrypt,view,edit] <extra-var file>`
 
+## Galaxy API
+The Makefile assumes there is a file defining an API_KEY. The key may be found at https://galaxy.ansible.com/me/preferences.
+```
+╰─➤  cat ~/.ssh/ansible-galaxy.sh
+API_KEY=NNNNNNNNNNNNNN
+```
+
 ## Creating a collection
 Ansible collections require Ansible 2.9+. Complete instructions for creating and using collections is available from Ansible at https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html.
 
@@ -137,6 +144,11 @@ python -m ansible.modules.storage.infinidat.infini_host "$test_jsons/test_host.j
 python -m ansible.modules.storage.infinidat.infini_host "$test_jsons/test_host.json" 2>&1 | grep -v Insecure
 python -m ansible.modules.storage.infinidat.infini_host "$test_jsons/test_host.json" 2>&1 | grep -v Insecure | jq --sort-keys '.'
 ```
+
+### Errors and Workarounds
+- `Command "python setup.py egg_info" failed with error code 1 in /tmp/..../`
+    - `(venv) $ python3 -m pip install -U pip`
+    - `(venv) $ python3 -m pip install -U setuptools`
 
 ### Set colors for those who are color challenged (optional)
 Use of jq and pygmentize is not required, but we've found it useful.  Use pygmentize to colorize JSON data using the autumn theme.  Pymentize may be installed via pip.

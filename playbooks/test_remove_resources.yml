@@ -20,8 +20,8 @@
 
   - name: POSITIVE test -> Remove mapping of volume {{ auto_prefix }}vol from host {{ auto_prefix }}host
     infini_map:
-      host: "{{auto_prefix }}host"
-      volume: "{{auto_prefix }}vol"
+      host: "{{ auto_prefix }}host"
+      volume: "{{ auto_prefix }}vol"
       state: absent
       user: "{{ user }}"
       password: "{{ password }}"
@@ -29,8 +29,8 @@
 
   - name: IDEMPOTENT test -> Remove mapping of volume {{ auto_prefix }}vol from host {{ auto_prefix }}host again
     infini_map:
-      host: "{{auto_prefix }}host"
-      volume: "{{auto_prefix }}vol"
+      host: "{{ auto_prefix }}host"
+      volume: "{{ auto_prefix }}vol"
       state: absent
       user: "{{ user }}"
       password: "{{ password }}"
@@ -38,7 +38,7 @@
 
   - name: POSITIVE test -> Remove host {{ auto_prefix }}host
     infini_host:
-      name: "{{auto_prefix }}host"
+      name: "{{ auto_prefix }}host"
       state: absent
       user: "{{ user }}"
       password: "{{ password }}"
@@ -46,7 +46,7 @@
 
   - name: POSITIVE test -> Remove host {{ auto_prefix }}host2
     infini_host:
-      name: "{{auto_prefix }}host2"
+      name: "{{ auto_prefix }}host2"
       state: absent
       user: "{{ user }}"
       password: "{{ password }}"
@@ -54,7 +54,7 @@
 
   - name: IDEMPOTENT test -> Remove host {{ auto_prefix }}host again
     infini_host:
-      name: "{{auto_prefix }}host"
+      name: "{{ auto_prefix }}host"
       state: absent
       user: "{{ user }}"
       password: "{{ password }}"
