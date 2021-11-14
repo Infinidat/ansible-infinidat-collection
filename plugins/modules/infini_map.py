@@ -473,7 +473,7 @@ def handle_stat(module):
     if host:
         found_lun = find_host_lun(host, volume)
         field_dict = get_mapping_fields(volume, host)
-        if found_lun:
+        if found_lun is not None:
             msg = 'Volume {0} is mapped to host {1}'.format(volume_name, host_name),
             result = dict(
                 changed=False,
@@ -486,7 +486,7 @@ def handle_stat(module):
     elif cluster:
         found_lun = find_cluster_lun(cluster, volume)
         field_dict = get_mapping_fields(volume, cluster)
-        if found_lun:
+        if found_lun is not None:
             msg = 'Volume {0} is mapped to cluster {1}'.format(volume_name, cluster_name)
             result = dict(
                 changed=False,

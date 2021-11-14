@@ -65,7 +65,7 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
-  - name: POSITIVE test -> Create host {{ auto_prefix }}host1
+  - name: POSITIVE test -> Create host {{ auto_prefix }}host1 for cluster mapping
     infini_host:
       name: "{{ auto_prefix }}host1"
       state: present
@@ -73,7 +73,7 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
-  - name: POSITIVE test -> Create host {{ auto_prefix }}host2
+  - name: POSITIVE test -> Create host {{ auto_prefix }}host2 for cluster mapping
     infini_host:
       name: "{{ auto_prefix }}host2"
       state: present
@@ -89,7 +89,7 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
-  - name: POSITIVE test -> Create cluster {{ auto_prefix }}cluster with hosts for cluster mapping
+  - name: POSITIVE test -> Create cluster {{ auto_prefix }}cluster with hosts 1 and 2 for cluster mapping
     infini_cluster:
       name: "{{ auto_prefix }}cluster"
       cluster_hosts:
@@ -101,48 +101,6 @@
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
-
-  - name: NEGATIVE test -> Map volume {{ auto_prefix }}vol specifying both a cluster and a host
-    infini_map:
-      host: "{{ auto_prefix }}host1"
-      cluster: "{{ auto_prefix }}cluster"
-      volume: "{{ auto_prefix }}vol"
-      state: present
-      user: "{{ user }}"
-      password: "{{ password }}"
-      system: "{{ system }}"
-    register: result
-    failed_when:
-      - '"both to be provided" not in result.msg'
-      - not result.failed
-
-  - name: NEGATIVE test -> Unmap volume {{ auto_prefix }}vol specifying both a cluster and a host
-    infini_map:
-      host: "{{ auto_prefix }}host1"
-      cluster: "{{ auto_prefix }}cluster"
-      volume: "{{ auto_prefix }}vol"
-      state: absent
-      user: "{{ user }}"
-      password: "{{ password }}"
-      system: "{{ system }}"
-    register: result
-    failed_when:
-      - '"both to be provided" not in result.msg'
-      - not result.failed
-
-  - name: NEGATIVE test -> Stat volume {{ auto_prefix }}vol specifying both a cluster and a host
-    infini_map:
-      host: "{{ auto_prefix }}host1"
-      cluster: "{{ auto_prefix }}cluster"
-      volume: "{{ auto_prefix }}vol"
-      state: stat
-      user: "{{ user }}"
-      password: "{{ password }}"
-      system: "{{ system }}"
-    register: result
-    failed_when:
-      - '"both to be provided" not in result.msg'
-      - not result.failed
 
   - name: POSITIVE test -> Map volume {{ auto_prefix }}vol to cluster {{ auto_prefix }}cluster
     infini_map:
