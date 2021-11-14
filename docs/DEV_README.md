@@ -29,7 +29,7 @@ Extra-var files containing secrets should be encrypted using ansible-vault:
 - `ansible-vault [encrypt,view,edit] <extra-var file>`
 
 ## Galaxy API
-The Makefile assumes there is a file defining an API_KEY. The key may be found at https://galaxy.ansible.com/me/preferences.
+The Makefile assumes there is a file defining an API_KEY. The key may be found at https://galaxy.ansible.com/me/preferences. This file should be sourced so as to define $API_KEY.
 ```
 ╰─➤  cat ~/.ssh/ansible-galaxy.sh
 API_KEY=NNNNNNNNNNNNNN

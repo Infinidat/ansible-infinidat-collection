@@ -185,3 +185,105 @@
     failed_when:
       - '"already exists using" not in result.msg'
       - result.changed
+
+### Test mapping of volume to a host using specified lun.
+  - name: NEGATIVE test -> Map volume {{ auto_prefix }}vol to host {{ auto_prefix }}host3 again using lun 99 when already mapped
+    infini_map:
+      host: "{{ auto_prefix }}host3"
+      volume: "{{ auto_prefix }}vol"
+      lun: 99
+      state: present
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+    register: new_lun_fail
+    failed_when:
+      - '"Cannot change the lun" not in new_lun_fail.msg'
+      - result.changed
+
+  - name: POSITIVE test -> Unmap volume {{ auto_prefix }}vol from host {{ auto_prefix }}host3
+    infini_map:
+      host: "{{ auto_prefix }}host3"
+      volume: "{{ auto_prefix }}vol"
+      state: absent
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: POSITIVE test -> Map volume {{ auto_prefix }}vol to host {{ auto_prefix }}host3 using lun 99 when not already mapped
+    infini_map:
+      host: "{{ auto_prefix }}host3"
+      volume: "{{ auto_prefix }}vol"
+      lun: 99
+      state: present
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: POSITIVE test -> Stat map of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host3 to check lun 99 used
+    infini_map:
+      host: "{{ auto_prefix }}host3"
+      volume: "{{ auto_prefix }}vol"
+      state: stat
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+    register: new_lun_success
+    failed_when:
+      - '"using lun 99" not in new_lun_success.msg'
+      - new_lun_success.volume_lun != 99
+
+  - debug:
+      msg: "Changed lun mapping message: {{ new_lun_success.msg }}"
+### End test mapping of volume to a host using specified lun.
+
+### Test mapping of volume to a cluster using specified lun.
+  - name: NEGATIVE test -> Map volume {{ auto_prefix }}vol to cluster {{ auto_prefix }}cluster again using lun 98 when already mapped
+    infini_map:
+      cluster: "{{ auto_prefix }}cluster"
+      volume: "{{ auto_prefix }}vol"
+      lun: 98
+      state: present
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+    register: new_lun_fail
+    failed_when:
+      - '"Cannot change the lun" not in new_lun_fail.msg'
+      - result.changed
+
+  - name: POSITIVE test -> Unmap volume {{ auto_prefix }}vol from cluster {{ auto_prefix }}cluster
+    infini_map:
+      cluster: "{{ auto_prefix }}cluster"
+      volume: "{{ auto_prefix }}vol"
+      state: absent
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: POSITIVE test -> Map volume {{ auto_prefix }}vol to cluster {{ auto_prefix }}cluster using lun 98 when not already mapped
+    infini_map:
+      cluster: "{{ auto_prefix }}cluster"
+      volume: "{{ auto_prefix }}vol"
+      lun: 98
+      state: present
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: POSITIVE test -> Stat map of volume {{ auto_prefix }}vol to cluster {{ auto_prefix }}cluster to check lun 98 used
+    infini_map:
+      cluster: "{{ auto_prefix }}cluster"
+      volume: "{{ auto_prefix }}vol"
+      state: stat
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+    register: new_lun_success
+    failed_when:
+      - '"using lun 98" not in new_lun_success.msg'
+      - new_lun_success.volume_lun != 98
+
+  - debug:
+      msg: "Changed lun mapping message: {{ new_lun_success.msg }}"
+### End test mapping of volume to a cluster using specified lun.

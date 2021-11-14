@@ -4,7 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
-from infinisdk.core.exceptions import APICommandFailed, ObjectNotFound
+
 __metaclass__ = type
 
 
@@ -86,6 +86,9 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
+
+from infinisdk.core.exceptions import APICommandFailed, ObjectNotFound
+
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible.module_utils.infinibox import \
     HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
@@ -111,7 +114,9 @@ def vol_is_mapped_to_cluster(volume, cluster):
     cluster_luns = cluster.get_luns()
     #print('volume id: {0}'.format(volume_id))
     #print('host luns: {0}'.format(str(host_luns)))
+
     for lun in cluster_luns:
+        #raise AssertionError("lun.volume: {0}, volume: {1}".format(lun.volume, volume))
         if lun.volume == volume:
             #print('found mapped volume: {0}'.format(volume))
             return True
@@ -258,21 +263,6 @@ def create_mapping_to_host(module, system):
 
 
 @api_wrapper
-def update_mapping(module, system):
-    host = get_host(module, system)
-    cluster = get_cluster(module, system)
-
-    if host:
-        changed = update_mapping_to_host(module, system)
-    elif cluster:
-        changed = update_mapping_to_cluster(module, system)
-    else:
-        msg = "A programming error has occurred in update_mapping()"
-        module.fail_json(msg=msg)
-    return changed
-
-
-@api_wrapper
 def update_mapping_to_host(module, system):
     host = get_host(module, system)
     volume = get_volume(module, system)
@@ -281,7 +271,7 @@ def update_mapping_to_host(module, system):
     assert vol_is_mapped_to_host(volume, host)
 
     if desired_lun:
-        found_lun = find_lun(host, volume)
+        found_lun = find_host_lun(host, volume)
         if found_lun != desired_lun:
             msg = "Cannot change the lun from '{}' to '{}' for existing mapping of volume '{}' to host '{}'".format(
                 found_lun,
@@ -303,7 +293,7 @@ def update_mapping_to_cluster(module, system):
     assert vol_is_mapped_to_cluster(volume, cluster)
 
     if desired_lun:
-        found_lun = find_lun(cluster, volume)
+        found_lun = find_cluster_lun(cluster, volume)
         if found_lun != desired_lun:
             msg = "Cannot change the lun from '{}' to '{}' for existing mapping of volume '{}' to cluster '{}'".format(
                 found_lun,
@@ -474,7 +464,7 @@ def handle_stat(module):
         found_lun = find_host_lun(host, volume)
         field_dict = get_mapping_fields(volume, host)
         if found_lun is not None:
-            msg = 'Volume {0} is mapped to host {1}'.format(volume_name, host_name),
+            msg = 'Volume {0} is mapped to host {1} using lun {2}'.format(volume_name, host_name, found_lun),
             result = dict(
                 changed=False,
                 volume_lun=found_lun,
@@ -487,7 +477,7 @@ def handle_stat(module):
         found_lun = find_cluster_lun(cluster, volume)
         field_dict = get_mapping_fields(volume, cluster)
         if found_lun is not None:
-            msg = 'Volume {0} is mapped to cluster {1}'.format(volume_name, cluster_name)
+            msg = 'Volume {0} is mapped to cluster {1} using lun {2}'.format(volume_name, cluster_name, found_lun)
             result = dict(
                 changed=False,
                 volume_lun=found_lun,
@@ -529,7 +519,7 @@ def handle_present(module):
             # )
             msg = "Volume '{0}' map to host '{1}' created".format(volume_name, host_name)
         else:
-            changed = update_mapping(module, system)
+            changed = update_mapping_to_host(module, system)
             existing_lun = find_host_lun(host, volume)
             msg = "Volume '{0}' map to host '{1}' already exists using lun '{2}'".format(volume_name, host_name, existing_lun)
     elif cluster:
@@ -545,7 +535,7 @@ def handle_present(module):
             # )
             msg = "Volume '{0}' map to cluster '{1}' created".format(volume_name, cluster_name)
         else:
-            changed = update_mapping(module, system)
+            changed = update_mapping_to_cluster(module, system)
             existing_lun = find_cluster_lun(cluster, volume)
             msg = "Volume '{0}' map to cluster '{1}' already exists using lun '{2}'".format(volume_name, cluster_name, existing_lun)
 
