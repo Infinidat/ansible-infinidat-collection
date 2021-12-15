@@ -71,13 +71,13 @@ galaxy-collection-build: _strip_build_dir  ## Build the collection.
 	@eval $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
-	@make unstrip_build_dir
+	@$(_make) unstrip_build_dir
 	@eval $(_finish)
 
 galaxy-collection-build-force: _strip_build_dir  ## Force build the collection. Overwrite an existing collection file.
 	@eval $(_begin)
 	ansible-galaxy collection build --force
-	@make unstrip_build_dir
+	@$(_make) unstrip_build_dir
 	@eval $(_finish)
 
 galaxy-collection-publish: _check-vars  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
@@ -107,32 +107,32 @@ _test_playbook:
 
 test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
 	@eval $(_begin)
-	playbook_name=test_create_resources.yml make _test_playbook
+	playbook_name=test_create_resources.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 test-remove-resources:  ## Run full removal  test suite as run by Gitlab CICD.
 	@eval $(_begin)
-	playbook_name=test_remove_resources.yml make _test_playbook
+	playbook_name=test_remove_resources.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 test-create-snapshots:  ## Test creating immutable snapshots.
 	@eval $(_begin)
-	playbook_name=test_create_snapshots.yml make _test_playbook
+	playbook_name=test_create_snapshots.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 test-remove-snapshots:  ## Test removing immutable snapshots (teardown).
 	@eval $(_begin)
-	playbook_name=test_remove_snapshots.yml make _test_playbook
+	playbook_name=test_remove_snapshots.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 test-create-map-cluster:  ## Run full creation test suite as run by Gitlab CICD.
 	@eval $(_begin)
-	playbook_name=test_create_map_cluster.yml make _test_playbook
+	playbook_name=test_create_map_cluster.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 	@eval $(_begin)
-	playbook_name=test_remove_map_cluster.yml make _test_playbook
+	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 ### ansible-test ###
@@ -160,7 +160,7 @@ test-sanity-locally: _setup-sanity-locally
 	@# This specifies a "$test_file".
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
 		source venv/bin/activate && \
-		export test_file="plugins/modules/infini_cluster.py" && \
+		export test_file="plugins/modules/infini_map.py" && \
 		echo -e "\n$$(date) - Sanity testing $$test_file\n" && \
 		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/modules:$$ANSIBLE_LIBRARY" && \
 		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/module_utils:$$ANSIBLE_LIBRARY" && \

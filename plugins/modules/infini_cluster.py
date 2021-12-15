@@ -55,7 +55,7 @@ EXAMPLES = r'''
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 try:
-    from ansible.module_utils.infinibox import \
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
         HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
         get_system, get_cluster, unixMillisecondsToDate, merge_two_dicts
 except ImportError:

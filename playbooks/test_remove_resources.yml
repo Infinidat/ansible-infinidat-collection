@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
   - name: POSITIVE test -> Remove cluster {{ auto_prefix }}cluster
     infini_cluster:
@@ -84,7 +84,7 @@
     infini_export:
       name: "/{{ auto_prefix }}export"
       filesystem: "{{ auto_prefix }}fs"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
@@ -93,7 +93,7 @@
     infini_export:
       name: "/{{ auto_prefix }}export"
       filesystem: "{{ auto_prefix }}fs"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
@@ -103,7 +103,7 @@
       name: "{{ auto_prefix }}fs"
       size: 1GB
       pool: "{{ auto_prefix }}pool"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
@@ -113,7 +113,7 @@
       name: "{{ auto_prefix }}fs"
       size: 1GB
       pool: "{{ auto_prefix }}pool"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
@@ -174,7 +174,7 @@
   - name: POSITIVE test -> Remove user {{ auto_prefix }}read_only_user
     infini_user:
       user_name: "{{ auto_prefix }}read_only_user"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
@@ -182,7 +182,7 @@
   - name: POSITIVE test -> Remove user {{ auto_prefix }}admin_user
     infini_user:
       user_name: "{{ auto_prefix }}admin_user"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
@@ -190,7 +190,7 @@
   - name: POSITIVE test -> Remove user {{ auto_prefix }}pool_admin_user
     infini_user:
       user_name: "{{ auto_prefix }}pool_admin_user"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
@@ -198,9 +198,7 @@
   - name: IDEMPOTENT test -> Remove user {{ auto_prefix }}pool_admin_user again
     infini_user:
       user_name: "{{ auto_prefix }}pool_admin_user"
-      state: absent 
+      state: absent
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
-
-

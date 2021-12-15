@@ -65,12 +65,11 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils.infinibox import \
+from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
     HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
     get_system, get_host, merge_two_dicts
 from infi.dtypes.wwn import WWN
 from infi.dtypes.iqn import make_iscsi_name
-#from infinisdk.core.exceptions import APICommandFailed
 
 @api_wrapper
 def update_ports(module, system):

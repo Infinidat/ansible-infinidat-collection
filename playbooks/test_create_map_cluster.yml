@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  gather_facts: yes  # Required for ansible_date_time
+  gather_facts: true  # Required for ansible_date_time
   tasks:
 
   - name: NEGATIVE test -> Map volume {{ auto_prefix }}vol specifying both a cluster and a host
@@ -134,7 +134,8 @@
       system: "{{ system }}"
     register: cluster_stat
 
-  - debug:
+  - name: POSITIVE test -> Show map stat
+    debug:
       msg: "Map stat: {{ cluster_stat }}"
 
   - name: POSITIVE test -> Map volume {{ auto_prefix }}vol to host {{ auto_prefix }}host3
@@ -169,7 +170,8 @@
       system: "{{ system }}"
     register: host_stat
 
-  - debug:
+  - name: POSITIVE test -> Show map stat
+    debug:
       msg: "Map stat: {{ host_stat }}"
 
   # Since the host is in the cluster and the volume is already mapped to the cluster, mapping the volume to the host becomes a NOOP.
@@ -233,7 +235,8 @@
       - '"using lun 99" not in new_lun_success.msg'
       - new_lun_success.volume_lun != 99
 
-  - debug:
+  - name: POSITIVE test -> Show lun mapping message
+    debug:
       msg: "Changed lun mapping message: {{ new_lun_success.msg }}"
 ### End test mapping of volume to a host using specified lun.
 
@@ -284,6 +287,7 @@
       - '"using lun 98" not in new_lun_success.msg'
       - new_lun_success.volume_lun != 98
 
-  - debug:
+  - name: POSITIVE test -> Show lun mapping message
+    debug:
       msg: "Changed lun mapping message: {{ new_lun_success.msg }}"
 ### End test mapping of volume to a cluster using specified lun.

@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  gather_facts: yes  # Required for ansible_date_time
+  gather_facts: true  # Required for ansible_date_time
   tasks:
 
   - name: NEGATIVE test -> Create file system named {{ auto_prefix }}fs under a pool that does not exist
@@ -60,7 +60,7 @@
       client_list:
         - client: "*"
           access: "RO"
-          no_root_squash: True
+          no_root_squash: true
       state: present
       user: "{{ user }}"
       password: "{{ password }}"
@@ -82,7 +82,7 @@
       client_list:
         - client: "*"
           access: "RO"
-          no_root_squash: True
+          no_root_squash: true
       state: present
       user: "{{ user }}"
       password: "{{ password }}"
@@ -160,7 +160,7 @@
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
-  
+
   - name: POSITIVE test -> Stat vol serial number
     infini_vol:
       state: stat

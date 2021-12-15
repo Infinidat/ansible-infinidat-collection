@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
   - name: POSITIVE test -> Stat mapping of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host1
     infini_map:
@@ -16,7 +16,8 @@
       - '"host1" not in host_stat.msg'
       - host_stat.failed
 
-  - debug:
+  - name: POSITIVE test -> Show map stat
+    debug:
       msg: "Map stat: {{ host_stat }}"
 
   - name: POSITIVE test -> Stat mapping of volume {{ auto_prefix }}vol to cluster {{ auto_prefix }}cluster
@@ -32,7 +33,8 @@
       - '"vol is mapped to cluster" not in cluster_stat.msg'
       - cluster_stat.failed
 
-  - debug:
+  - name: POSITIVE test -> Show map stat
+    debug:
       msg: "Map stat: {{ cluster_stat }}"
 
   # WARNING: Assume we have a vol mapped to a cluster with hosts host1 and host2.
@@ -60,7 +62,8 @@
       - '"mapped to neither" in host_stat.msg'
       - not host_stat.failed
 
-  - debug:
+  - name: POSITIVE test -> Show map stat
+    debug:
       msg: "Map stat: {{ host_stat }}"
 
   - name: NEGATIVE test -> Stat removed mapping of volume {{ auto_prefix }}vol from cluster {{ auto_prefix }}cluster
@@ -76,7 +79,8 @@
       - '"mapped to neither host nor cluster" in cluster_stat.msg'
       - not cluster_stat.failed
 
-  - debug:
+  - name: POSITIVE test -> Show map stat
+    debug:
       msg: "Map stat: {{ cluster_stat }}"
 
   - name: POSITIVE test -> Remove mapping of volume {{ auto_prefix }}vol from host {{ auto_prefix }}host3
@@ -101,8 +105,10 @@
       - '"was not mapped" not in result.msg'
       - result.changed
 
-  - debug:
+  - name: POSITIVE test -> Show map stat
+    debug:
       msg: "result: {{ result.msg }}"
+
   - name: POSITIVE test -> Remove mapping of volume {{ auto_prefix }}vol from cluster {{ auto_prefix }}cluster
     infini_map:
       cluster: "{{ auto_prefix }}cluster"
