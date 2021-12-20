@@ -26,7 +26,10 @@ playbook_testing:
     - coll_version=$(spruce json galaxy.yml   | jq '.version'   | sed 's?"??g')
     - coll_namespace=$(spruce json galaxy.yml | jq '.namespace' | sed 's?"??g')
     - coll_name=$(spruce json galaxy.yml      | jq '.name'      | sed 's?"??g')
-    - echo "Collection version -> ${coll_version}"  # gitlab's cilint does not like a colon here
+    - echo "Collection version   -> ${coll_version}"
+    - echo "Collection namespace -> ${coll_namespace}"
+    - echo "Collection name      -> ${coll_name}"  # gitlab's cilint does not like a colon here
+    - echo "Collecion tarball    -> ${coll_namespace}-${coll_name}-${coll_version}.tar.gz"
     - ansible-galaxy collection build
     - ansible-galaxy collection install "${coll_namespace}-${coll_name}-${coll_version}.tar.gz" -p ./test_collection -vvv
 

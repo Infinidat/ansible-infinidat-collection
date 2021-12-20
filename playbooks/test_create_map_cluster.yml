@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  gather_facts: true  # Required for ansible_date_time
+  gather_facts: False
   tasks:
 
   - name: NEGATIVE test -> Map volume {{ auto_prefix }}vol specifying both a cluster and a host

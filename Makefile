@@ -26,13 +26,14 @@ _namespace          = $(shell spruce json galaxy.yml | jq '.namespace' | sed 's?
 _name               = $(shell spruce json galaxy.yml | jq '.name'      | sed 's?"??g')
 _install_path       = ~/.ansible/collections
 _install_path_local = $$HOME/.ansible/collections
+_venv               = venv
 #_install_path_local = /opt/atest
 _requirements_file  = requirements_2.10.txt
 _user               = psus-gitlab-cicd
 _ibox_url           = ibox1521
 SHELL               = /bin/bash
 
-### General ###
+##@ General
 _check-vars:
 ifeq ($(strip $(API_KEY)),)
 	@echo "API_KEY variable is unset" && false
@@ -41,43 +42,31 @@ endif
 env-show: _check-vars
 	@echo "API_KEY=[ set but redacted ]"
 
-versions: _check-vars
-	@ansible --version
+version: _check-vars  ## Show versions.
+	ansible --version
+	@echo
+	ansible-Galaxy collection list
 
 _test-venv:
 	@# Test that a venv is activated
 ifndef VIRTUAL_ENV
 	@echo "Error: Virtual environment not set"
 	@echo -e "\nRun:\n  make pyvenv"
-	@echo -e "  source venv/bin/activate\n"
+	@echo -e "  source $(_venv)/bin/activate\n"
 	exit 1
 endif
 	@echo "Virtual environment set"
 
 ##@ Galaxy
-_strip_build_dir:
-	@# Temporarily mv dirs for the build so that it is not included in collection.
-	mv collections ../collections_tmp || true  # Missing is not an error
-	mv venv ../venv_tmp
-	@# Check that tmp or hidden files will not be in collection.
-	#@./bin/check_collection_files.sh
-
-unstrip_build_dir:
-	@# Restore dirs
-	mv ../collections_tmp ./collections || true  # Missing is not an error
-	mv ../venv_tmp ./venv
-
-galaxy-collection-build: _strip_build_dir  ## Build the collection.
+galaxy-collection-build:  ## Build the collection.
 	@eval $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
-	@$(_make) unstrip_build_dir
 	@eval $(_finish)
 
-galaxy-collection-build-force: _strip_build_dir  ## Force build the collection. Overwrite an existing collection file.
+galaxy-collection-build-force: ## Force build the collection. Overwrite an existing collection file.
 	@eval $(_begin)
 	ansible-galaxy collection build --force
-	@$(_make) unstrip_build_dir
 	@eval $(_finish)
 
 galaxy-collection-publish: _check-vars  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
@@ -100,7 +89,7 @@ _test_playbook:
 	@# Run a playbook specified by an envvar.
 	@# See DEV_README.md
 	cd playbooks && \
-		../venv/bin/ansible-playbook \
+		ansible-playbook \
 			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
 			--ask-vault-pass \
 			"$$playbook_name"
@@ -147,8 +136,8 @@ test-sanity:
 _setup-sanity-locally:
 	@# Setup a test env.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		python3 -m venv venv && \
-		source venv/bin/activate && \
+		python3 -m venv $(_venv) && \
+		source $(_venv)/bin/activate && \
 		python -m pip install --upgrade pip && \
 		python -m pip install --upgrade --requirement $(_requirements_file)
 
@@ -159,7 +148,7 @@ test-sanity-locally: _setup-sanity-locally
 	@# Not sure why, but ansible-test fails to discover py scripts to test.
 	@# This specifies a "$test_file".
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		source venv/bin/activate && \
+		source $(_venv)/bin/activate && \
 		export test_file="plugins/modules/infini_map.py" && \
 		echo -e "\n$$(date) - Sanity testing $$test_file\n" && \
 		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/modules:$$ANSIBLE_LIBRARY" && \

@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  gather_facts: false
+  gather_facts: False
   tasks:
   - name: POSITIVE test -> Stat mapping of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host1
     infini_map:

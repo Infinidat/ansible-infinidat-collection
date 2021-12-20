@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  gather_facts: false
+  gather_facts: False
   tasks:
   - name: POSITIVE test -> Remove cluster {{ auto_prefix }}cluster
     infini_cluster:
