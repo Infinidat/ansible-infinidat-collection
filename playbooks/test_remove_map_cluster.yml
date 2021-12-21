@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   gather_facts: False
+  collections:
+    - infinidat.infinibox
   tasks:
   - name: POSITIVE test -> Stat mapping of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host1
     infini_map:

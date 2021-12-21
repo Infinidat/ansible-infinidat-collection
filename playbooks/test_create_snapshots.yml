@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   gather_facts: True  # Required for ansible_date_time
+  collections:
+    - infinidat.infinibox
   tasks:
 
   - name: POSITIVE test -> Create pool {{ auto_prefix }}pool
@@ -37,6 +39,10 @@
     debug:
       var=ansible_date_time.iso8601_micro
 
+  # Note: For collection filters, Ansible does not honor the
+  # collections list at the top of this file.
+  # One must use a FQCN for filters such as
+  # infinidat.infinibox.delta_time.
   - name: POSITIVE test -> Create and lock for 2 minutes snapshot {{ auto_prefix }}vol_snap_locked from volume {{ auto_prefix }}vol
     infini_vol:
       name: "{{ auto_prefix }}vol_snap_locked"

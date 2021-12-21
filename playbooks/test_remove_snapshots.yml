@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   gather_facts: False
+  collections:
+    - infinidat.infinibox
   tasks:
 
   - name: POSITIVE test -> Remove thin volume {{ auto_prefix }}vol under pool {{ auto_prefix }}pool

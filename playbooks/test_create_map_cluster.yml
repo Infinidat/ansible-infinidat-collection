@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   gather_facts: False
+  collections:
+    - infinidat.infinibox
   tasks:
 
   - name: NEGATIVE test -> Map volume {{ auto_prefix }}vol specifying both a cluster and a host

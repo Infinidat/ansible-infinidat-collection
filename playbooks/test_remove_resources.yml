@@ -1,6 +1,8 @@
 ---
 - hosts: localhost
   gather_facts: False
+  collections:
+    - infinidat.infinibox
   tasks:
   - name: POSITIVE test -> Remove cluster {{ auto_prefix }}cluster
     infini_cluster:
