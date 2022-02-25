@@ -8,7 +8,7 @@
 #     - Value: <ansible vault password for the vars file for the ibox specified in --extra-vars> 
 #         - i.e. The password that allows one to view the file using "ansible-vault view <file>"
 
-image: psusdev/gitlab-cicd:v0.13
+image: psusdev/gitlab-cicd:v0.14
 
 playbook_testing:
   stage: test
@@ -17,6 +17,7 @@ playbook_testing:
     - mv ~/.pip/pip.conf ~/.pip/pip.conf.notused || true
     - python3 -m venv venv
     - . ./venv/bin/activate
+    - python --version
     - export PIP_REQUIRE_VIRTUALENV=true
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
@@ -31,7 +32,8 @@ playbook_testing:
     - echo "Collection name      -> ${coll_name}"  # gitlab's cilint does not like a colon here
     - echo "Collecion tarball    -> ${coll_namespace}-${coll_name}-${coll_version}.tar.gz"
     - ansible-galaxy collection build
-    - ansible-galaxy collection install "${coll_namespace}-${coll_name}-${coll_version}.tar.gz" -p ./test_collection -vvv
+    - ansible-galaxy collection install "${coll_namespace}-${coll_name}-${coll_version}.tar.gz" -vvv
+    # -p ./test_collection
 
     # Run testing playbooks
     - git_project="ansible-infinidat-collection"
