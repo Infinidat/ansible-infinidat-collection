@@ -21,6 +21,9 @@ playbook_testing:
     - export PIP_REQUIRE_VIRTUALENV=true
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
+    - echo "Requirements dump:"
+    - pip freeze
+    - echo
     - echo "Tested ansible version -> $(ansible --version)"
 
     # Build and install ansible collection. Find collection version from yml, strip quotes.
