@@ -1,3 +1,4 @@
+# vim: set foldmethod=indent foldnestmax=1 foldcolumn=1:
 # A Makefile for creating, running and testing Infindat's Ansible collection.
 
 ### Dependencies ###
@@ -45,7 +46,7 @@ env-show: _check-vars
 version: _check-vars  ## Show versions.
 	ansible --version
 	@echo
-	ansible-Galaxy collection list
+	ansible-galaxy collection list
 
 _test-venv:
 	@# Test that a venv is activated
@@ -56,6 +57,13 @@ ifndef VIRTUAL_ENV
 	exit 1
 endif
 	@echo "Virtual environment set"
+
+pylint:
+	@eval $(_begin)
+	cd plugins/modules && \
+		pylint infini_network_space.py
+	cd -
+	@eval $(_finish)
 
 ##@ Galaxy
 galaxy-collection-build:  ## Build the collection.
@@ -88,11 +96,20 @@ galaxy-collection-install-locally:  ## Download and install from local tar file.
 _test_playbook:
 	@# Run a playbook specified by an envvar.
 	@# See DEV_README.md
+	@# vault_pass env var must be exported.
 	cd playbooks && \
+		export ANSIBLE_LIBRARY=/home/dohlemacher/cloud/ansible-infinidat-collection/playbooks/plugins/modules; \
+		export ANSIBLE_MODULE_UTILS=/home/dohlemacher/cloud/ansible-infinidat-collection/plugins/module_utils; \
+		if [ ! -e "../vault_password.txt" ]; then \
+			echo "Please add your vault password to vault_password.txt"; \
+			exit 1; \
+		fi; \
 		ansible-playbook \
+		    -vvv \
 			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
-			--ask-vault-pass \
-			"$$playbook_name"
+			--vault-password-file ../vault_password.txt \
+			"$$playbook_name"; \
+	cd -
 
 test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
 	@eval $(_begin)
@@ -114,6 +131,16 @@ test-remove-snapshots:  ## Test removing immutable snapshots (teardown).
 	playbook_name=test_remove_snapshots.yml $(_make) _test_playbook
 	@eval $(_finish)
 
+test-create-net-spaces: dev-install-modules-to-local-collection  ## Test creating network spaces.
+	@eval $(_begin)
+	playbook_name=test_create_network_spaces.yml $(_make) _test_playbook
+	@eval $(_finish)
+
+test-remove-net-spaces:  ## Test removing net spaces (teardown).
+	@eval $(_begin)
+	playbook_name=test_remove_network_spaces.yml $(_make) _test_playbook
+	@eval $(_finish)
+
 test-create-map-cluster:  ## Run full creation test suite as run by Gitlab CICD.
 	@eval $(_begin)
 	playbook_name=test_create_map_cluster.yml $(_make) _test_playbook
@@ -122,6 +149,24 @@ test-create-map-cluster:  ## Run full creation test suite as run by Gitlab CICD.
 test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 	@eval $(_begin)
 	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
+	@eval $(_finish)
+
+### test module ###
+_module = infini_network_space.py
+
+find-default-module-path:
+	ansible-config list | spruce json | jq '.DEFAULT_MODULE_PATH.default' | sed 's?"??g'
+
+_collection_local_path = ~/.ansible/collections/ansible_collections/infinidat/infinibox/plugins
+dev-install-modules-to-local-collection:
+	@eval $(_begin)
+	@echo "local collection path: $(_collection_local_path)"
+	@echo "Installing modules locally"
+	@cp plugins/modules/*.py $(_collection_local_path)/modules
+	@echo "Installing utilities locally"
+	@cp plugins/module_utils/*.py $(_collection_local_path)/module_utils
+	@echo "Installing filters locally"
+	@cp plugins/filter/*.py $(_collection_local_path)/filter
 	@eval $(_finish)
 
 ### ansible-test ###

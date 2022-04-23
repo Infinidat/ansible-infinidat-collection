@@ -92,8 +92,8 @@ def infinibox_argument_spec():
     """Return standard base dictionary used for the argument_spec argument in AnsibleModule"""
     return dict(
         system=dict(required=True),
-        user=dict(),
-        password=dict(no_log=True),
+        user=dict(required=True),
+        password=dict(required=True, no_log=True),
     )
 
 
@@ -168,6 +168,16 @@ def get_volume(module, system):
         return volume
     except Exception:
         return None
+
+
+@api_wrapper
+def get_net_space(module, system):
+    """Return network space or None"""
+    try:
+        net_space = system.network_spaces.get(name=module.params['name'])
+    except KeyError:
+        return None
+    return net_space
 
 
 @api_wrapper

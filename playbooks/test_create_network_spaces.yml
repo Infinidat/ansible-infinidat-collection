@@ -1,0 +1,35 @@
+---
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - infinidat.infinibox
+  vars:
+    name: iSCSI
+    service: iSCSI
+  tasks:
+
+  - name: POSITIVE test -> Stat {{ service }} network space named {{ name }}
+    infini_network_space:
+      name: "{{ name }}"
+      state: stat
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  # - name: POSITIVE test -> Create {{ service }} network space named {{ name }}
+  #   infini_network_space:
+  #     name: "{{ name }}"
+  #     service: "{{ service }}"
+  #     mtu: 1500
+  #     network: "172.31.32.0/19"
+  #     ip_list:
+  #       - 172.31.32.145
+  #       - 172.31.32.146
+  #       - 172.31.32.147
+  #       - 172.31.32.148
+  #       - 172.31.32.149
+  #       - 172.31.32.150
+  #     state: present
+  #     user: "{{ user }}"
+  #     password: "{{ password }}"
+  #     system: "{{ system }}"
