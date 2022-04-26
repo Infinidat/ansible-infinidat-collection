@@ -8,6 +8,74 @@
     service: iSCSI
   tasks:
 
+  - name: POSITIVE test -> Create {{ service }} network space named {{ name }}
+    infini_network_space:
+      name: "{{ name }}"
+      state: present
+      interfaces:
+      - 1680
+      - 1679
+      - 1678
+      service: iSCSI
+      network_config:
+        netmask: 19
+        network: 172.31.32.0
+      # ips: 
+      # - enabled: true
+      #   interface_id: 1678
+      #   ip_address: 172.31.32.145
+      #   reserved: false
+      #   tpgt: 1
+      #   type: ISCSI
+      #   vlan_id: 1
+      # - enabled: true
+      #   interface_id: 1680
+      #   ip_address: 172.31.32.146
+      #   reserved: false
+      #   tpgt: 1
+      #   type: ISCSI
+      #   vlan_id: 1
+      # - enabled: true
+      #   interface_id: 1680
+      #   ip_address: 172.31.32.147
+      #   reserved: false
+      #   tpgt: 1
+      #   type: ISCSI
+      #   vlan_id: 1
+      # - enabled: true
+      #   interface_id: 1678
+      #   ip_address: 172.31.32.148
+      #   reserved: false
+      #   tpgt: 1
+      #   type: ISCSI
+      #   vlan_id: 1
+      # - enabled: true
+      #   interface_id: 1678
+      #   ip_address: 172.31.32.149
+      #   reserved: false
+      #   tpgt: 1
+      #   type: ISCSI
+      #   vlan_id: 1
+      # - enabled: true
+      #   interface_id: 1680
+      #   ip_address: 172.31.32.150
+      #   reserved: false
+      #   tpgt: 1
+      #   type: ISCSI
+      #   vlan_id: 1
+
+
+      # ips:
+      #   - 172.31.32.145
+      #   - 172.31.32.146
+      #   - 172.31.32.147
+      #   - 172.31.32.148
+      #   - 172.31.32.149
+      #   - 172.31.32.150
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
   - name: POSITIVE test -> Stat {{ service }} network space named {{ name }}
     infini_network_space:
       name: "{{ name }}"
@@ -15,6 +83,8 @@
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
+
+
 
   # - name: POSITIVE test -> Create {{ service }} network space named {{ name }}
   #   infini_network_space:

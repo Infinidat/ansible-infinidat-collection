@@ -1,0 +1,19 @@
+{
+    "ANSIBLE_MODULE_ARGS": {
+        "name": "iSCSI",
+        "state": "present",
+        "network": "172.31.32.0",
+        "netmask": 19,
+        "interfaces": [
+            1680,
+            1679,
+            1678
+        ],
+        "service": "ISCSI_SERVICE",
+
+        "system": "ibox1521.lab.wt.us.infinidat.com",
+        "user": "psus-gitlab-cicd",
+        "password": "lemonTrainSchoolCrank" 
+    }
+}
+

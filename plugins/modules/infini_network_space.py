@@ -79,36 +79,62 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_system, unixMillisecondsToDate, merge_two_dicts, \
-    get_net_space
+
+try:
+    # Import from collection (recommended)
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_system, unixMillisecondsToDate, merge_two_dicts, \
+        get_net_space
+except ModuleNotFoundError:
+    # Import from ansible clone (hacking only)
+    from ansible.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_system, unixMillisecondsToDate, merge_two_dicts, \
+        get_net_space
+
+from infinisdk.core.exceptions import ObjectNotFound
 
 @api_wrapper
-def create_host(module, system):
-
+def create_network_space(module, system):
     changed = True
-
     if not module.check_mode:
-        host = system.hosts.create(name=module.params['name'])
+        #breakpoint()
+        network_space = system.network_spaces.create(
+            name=module.params['name'],
+            interfaces=module.params['interfaces'],
+            service=module.params['service'],
+            mtu=module.params['mtu'],
+            network_config={
+                "netmask": module.params['netmask'],
+                "network": module.params['network'],
+                "default_gateway": module.params['default_gateway'],
+            }
+        )
     return changed
 
 @api_wrapper
-def update_host(module, host):
+def update_network_space(module, network_space):
     changed = False
+    new_ips = module.params["ips"]
+    current_ips = get_network_space_fields(module, network_space)["ips"]
+    module.fail_json(msg=f"current_ips: {current_ips}")
+    if new_ips != current_ips:
+        network_space.update_field("ips", new_ips)
+        changed = True
     return changed
 
 @api_wrapper
-def delete_host(module, host):
+def delete_network_space(module, network_space):
     changed = True
     if not module.check_mode:
-        # May raise APICommandFailed if mapped, etc.
-        host.delete()
+        # May raise APICommandFailed
+        network_space.delete()
     return changed
 
 
-def get_net_space_fields(module, net_space):
-    fields = net_space.get_fields(from_cache=True, raw_value=True)
+def get_network_space_fields(module, network_space):
+    fields = network_space.get_fields(from_cache=True, raw_value=True)
 
     field_dict = dict(
         name=fields["name"],
@@ -129,33 +155,33 @@ def get_net_space_fields(module, net_space):
 
 
 def handle_stat(module):
-    net_space_name = module.params["name"]
+    network_space_name = module.params["name"]
     system = get_system(module)
     net_space = get_net_space(module, system)
 
     if not net_space:
-        module.fail_json(msg='Network space {0} not found'.format(net_space_name))
+        module.fail_json(msg='Network space {0} not found'.format(network_space_name))
 
-    field_dict = get_net_space_fields(module, net_space)
+    field_dict = get_network_space_fields(module, net_space)
     result = dict(
         changed=False,
-        msg='Network space {0} stat found'.format(net_space_name)
+        msg='Network space {0} stat found'.format(network_space_name)
     )
     result = merge_two_dicts(result, field_dict)
     module.exit_json(**result)
 
 
 def handle_present(module):
-    system, host = get_sys_host(module)
-    host_name = module.params["name"]
-    if not host:
-        changed = create_host(module, system)
-        msg='Host {0} created'.format(host_name)
-        module.exit_json(changed=changed, msg=msg)
+    network_space_name = module.params["name"]
+    system = get_system(module)
+    net_space = get_net_space(module, system)
+    if net_space:
+        changed = update_network_space(module, net_space)
+        msg='Host {0} updated'.format(network_space_name)
     else:
-        changed = update_host(module, host)
-        msg='Host {0} updated'.format(host_name)
-        module.exit_json(changed=changed, msg=msg)
+        changed = create_network_space(module, system)
+        msg='Network space {0} created'.format(network_space_name)
+    module.exit_json(changed=changed, msg=msg)
 
 
 def handle_absent(module):
@@ -187,16 +213,19 @@ def execute_state(module):
 
 
 def main():
+    #breakpoint()
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
             name=dict(required=True),
             state=dict(default='present', required=False, choices=['stat', 'present', 'absent']),
-            service=dict(default='replication', required=False, choices=['replication', 'NAS', 'iSCSI']),
+            service=dict(default='replication', required=False, choices=['replication', 'NAS_SERVICE', 'ISCSI_SERVICE']),
             mtu=dict(default=1500, required=False, type=int),
             network=dict(default=None, required=False),
-            netmask=dict(default=None, required=False),
-            interfaces=dict(default=list(), required=False, type=list, aliases=['ips'])
+            netmask=dict(default=None, required=False, type=int),
+            default_gateway=dict(default=None, required=False),
+            interfaces=dict(default=list(), required=False, type=list), # aliases=['ips'])
+            network_config=dict(default=dict(), required=False, type=dict),
         )
         # required_one_of = [["var_1", "var_2"]]
         # mutually_exclusive = [["var_3", "var_4"]]

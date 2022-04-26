@@ -62,6 +62,30 @@ def api_wrapper(func):
     return __wrapper
 
 
+def infinibox_argument_spec():
+    """Return standard base dictionary used for the argument_spec argument in AnsibleModule"""
+    return dict(
+        system=dict(required=True),
+        user=dict(required=True),
+        password=dict(required=True, no_log=True),
+    )
+
+
+def infinibox_required_together():
+    """Return the default list used for the required_together argument to AnsibleModule"""
+    return [['user', 'password']]
+
+
+def merge_two_dicts(dict1, dict2):
+    """
+    Merge two dicts into one and return.
+    result = {**dict1, **dict2} only works in py3.5+.
+    """
+    result = dict1.copy()
+    result.update(dict2)
+    return result
+
+
 @api_wrapper
 def get_system(module):
     """Return System Object or Fail"""
@@ -86,30 +110,6 @@ def get_system(module):
     except Exception:
         module.fail_json(msg="Infinibox authentication failed. Check your credentials")
     return system
-
-
-def infinibox_argument_spec():
-    """Return standard base dictionary used for the argument_spec argument in AnsibleModule"""
-    return dict(
-        system=dict(required=True),
-        user=dict(required=True),
-        password=dict(required=True, no_log=True),
-    )
-
-
-def infinibox_required_together():
-    """Return the default list used for the required_together argument to AnsibleModule"""
-    return [['user', 'password']]
-
-
-def merge_two_dicts(dict1, dict2):
-    """
-    Merge two dicts into one and return.
-    result = {**dict1, **dict2} only works in py3.5+.
-    """
-    result = dict1.copy()
-    result.update(dict2)
-    return result
 
 
 @api_wrapper
@@ -175,7 +175,7 @@ def get_net_space(module, system):
     """Return network space or None"""
     try:
         net_space = system.network_spaces.get(name=module.params['name'])
-    except KeyError:
+    except (KeyError, ObjectNotFound):
         return None
     return net_space
 

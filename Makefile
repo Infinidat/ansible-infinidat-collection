@@ -31,8 +31,11 @@ _venv               = venv
 #_install_path_local = /opt/atest
 _requirements_file  = requirements_2.10.txt
 _user               = psus-gitlab-cicd
+_password_file      = vault_password
+_password           = redacted
 _ibox_url           = ibox1521
 SHELL               = /bin/bash
+_ansible_clone      = ~/cloud/ansible
 
 ##@ General
 _check-vars:
@@ -64,6 +67,9 @@ pylint:
 		pylint infini_network_space.py
 	cd -
 	@eval $(_finish)
+
+pyfind:  ## Search project python files using: f='search term' make pyfind
+	find . -name "*.py" | xargs grep -n "$$f" | egrep -v 'venv|eggs|parts|\.git|external-projects|build'
 
 ##@ Galaxy
 galaxy-collection-build:  ## Build the collection.
@@ -151,6 +157,35 @@ test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
 	@eval $(_finish)
 
+### hacking ###
+_module_under_test = infini_network_space
+
+dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
+	@#echo "Creating hacking module links"
+	@for m in "infini_network_space.py" "infini_vol.py"; do \
+		ln --force --symbolic $$(pwd)/plugins/modules/$$m $(_ansible_clone)/lib/ansible/modules/infi/$$m; \
+	done
+	@#echo "Creating hacking module_utils links $(_module_utilities)"
+	@for m in "infinibox.py" "iboxbase.py"; do \
+		ln --force --symbolic $$(pwd)/plugins/module_utils//$$m $(_ansible_clone)/lib/ansible/module_utils/$$m; \
+	done
+
+dev-hack-module-jq: dev-hack-create-links  ## If module is running to the point of returning json, use this to run it and prettyprint using jq.
+	@cwd=$$(pwd) && \
+	cd $(_ansible_clone) && \
+		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
+		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
+		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test).json 2>&1 | \
+			grep -v 'Unverified HTTPS request' | grep 'changed' | jq '.'
+
+dev-hack-module: dev-hack-create-links  ## Run module. PDB is available using breakpoint().
+	@cwd=$$(pwd) && \
+	cd $(_ansible_clone) && \
+		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
+		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
+		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test).json 2>&1 | \
+			grep -v 'Unverified HTTPS request'
+
 ### test module ###
 _module = infini_network_space.py
 
@@ -208,9 +243,14 @@ test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install
 
 ### IBox ###
 infinishell:
-	@infinishell --user $(_user) $(_ibox_url)
+	@TERM=xterm infinishell --user $(_user) --password $(_password) $(_ibox_url)
 
 infinishell-events:
 	@TERM=xterm echo "Command: event.watch username=$(_user) exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_SESSION_EXPIRED,USER_LOGIN_FAILURE tail_length=35"
 	@TERM=xterm infinishell --user $(_user) $(_ibox_url)
 
+infinishell-namespace-iscsi-create:
+	@TERM=xterm infinishell --cmd="config.net_space.create name=iSCSI service=iSCSI interface=PG1 network=172.31.32.0/19 -d"
+
+infinishell-namespace-iscsi-delete:
+	@TERM=xterm infinishell --cmd="config.net_space.delete net_space=iSCSI" --user $(_user) --password $(_password) $(_ibox_url)
