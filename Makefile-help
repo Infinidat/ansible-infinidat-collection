@@ -34,7 +34,7 @@ _watch = watch -n 1 --no-title
 
 # Other vars
 _LEADER =   "================ ["
-_FOLLOWER = "] ================"
+_FOLLOWER = "\] ================"
 
 ifeq ($(_use_color),true)
 	# tput  color ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux?answertab=votes#tab-top

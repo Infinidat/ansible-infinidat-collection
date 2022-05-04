@@ -79,6 +79,7 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from infinisdk.core.exceptions import APICommandFailed
 
 try:
     # Import from collection (recommended)
@@ -93,16 +94,33 @@ except ModuleNotFoundError:
         get_system, unixMillisecondsToDate, merge_two_dicts, \
         get_net_space
 
+# try:
+#     # Import from collection (recommended)
+#     from ansible_collections.infinidat.infinibox.plugins.module_utils.iboxbase import \
+#         Config
+# except ModuleNotFoundError:
+#     # Import from ansible clone (hacking only)
+#     from ansible.module_utils.iboxbase import \
+#       Config
+
 from infinisdk.core.exceptions import ObjectNotFound
 
 @api_wrapper
 def create_network_space(module, system):
     changed = True
+    print("Im alive")
     if not module.check_mode:
-        #breakpoint()
+        interfaces = []
+        print("Creating interfaces")
+        for node in system.components.nodes:
+            print(f"Node: {node}")
+            interfaces.append(
+                system.network_interfaces.create(node=node)
+            )
+        print(f"Creating network space with interfaces {interfaces}")
         network_space = system.network_spaces.create(
             name=module.params['name'],
-            interfaces=module.params['interfaces'],
+            interfaces=interfaces,
             service=module.params['service'],
             mtu=module.params['mtu'],
             network_config={
@@ -129,6 +147,7 @@ def delete_network_space(module, network_space):
     changed = True
     if not module.check_mode:
         # May raise APICommandFailed
+        # TODO - Remove IPs from space
         network_space.delete()
     return changed
 
@@ -185,14 +204,45 @@ def handle_present(module):
 
 
 def handle_absent(module):
-    system, host = get_sys_host(module)
-    host_name = module.params["name"]
-    if not host:
-        msg="Host {0} already absent".format(host_name)
+    network_space_name = module.params["name"]
+    system = get_system(module)
+    network_space = get_net_space(module, system)
+    if not network_space:
+        msg = "Network space {0} already absent".format(network_space_name)
         module.exit_json(changed=False, msg=msg)
     else:
-        changed = delete_host(module, host)
-        msg="Host {0} removed".format(host_name)
+        # Find IPs from space
+        ips = [ip for ip in network_space.get_ips()]
+        print(f"ips: {ips}")
+
+        # Disable and delete IPs from space
+        for ip in ips:
+            addr = ip["ip_address"]
+
+            print(f"Disabling IP {addr}")
+            try:
+                network_space.disable_ip_address(addr)
+            except APICommandFailed as err:
+                if err.error_code == "IP_ADDRESS_ALREADY_DISABLED":
+                    print(f"Already disabled IP {addr}")
+                else:
+                    print(f"Failed to disable IP {addr}")
+                    network.fail_json(msg="Disabling of network space {} IP {} failed".format(
+                        network_space_name,
+                        addr
+                    ))
+
+            print(f"Removing IP {addr}")
+            try:
+                network_space.remove_ip_address(addr)
+            except:
+                network.fail_json(msg="Removal of network space {} IP {} failed".format(
+                    network_space_name,
+                    addr)
+                )
+
+        changed = delete_network_space(module, network_space)
+        msg = "Network space {0} removed".format(network_space_name)
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -226,6 +276,7 @@ def main():
             default_gateway=dict(default=None, required=False),
             interfaces=dict(default=list(), required=False, type=list), # aliases=['ips'])
             network_config=dict(default=dict(), required=False, type=dict),
+            ips=dict(default=list(), required=False, type=list),
         )
         # required_one_of = [["var_1", "var_2"]]
         # mutually_exclusive = [["var_3", "var_4"]]
