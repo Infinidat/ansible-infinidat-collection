@@ -5,7 +5,7 @@
     - infinidat.infinibox
   vars:
     name: iSCSI
-    service: iSCSI
+    service: ISCSI_SERVICE
   tasks:
 
   - name: POSITIVE test -> Create {{ service }} network space named {{ name }}
@@ -16,7 +16,7 @@
       - 1680
       - 1679
       - 1678
-      service: iSCSI
+      service: "{{ service }}"
       network_config:
         netmask: 19
         network: 172.31.32.0

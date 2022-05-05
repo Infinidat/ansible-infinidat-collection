@@ -34,8 +34,10 @@ _user               = psus-gitlab-cicd
 _password_file      = vault_password
 _password           = redacted
 _ibox_url           = ibox1521
+_infinishell_creds  = --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               = /bin/bash
 _ansible_clone      = ~/cloud/ansible
+_network_space_ips  = 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
 
 ##@ General
 _check-vars:
@@ -170,21 +172,39 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 		ln --force --symbolic $$(pwd)/plugins/module_utils//$$m $(_ansible_clone)/lib/ansible/module_utils/$$m; \
 	done
 
-dev-hack-module-jq: dev-hack-create-links  ## If module is running to the point of returning json, use this to run it and prettyprint using jq.
+_dev-hack-module-jq: dev-hack-create-links  # If module is running to the point of returning json, use this to run it and prettyprint using jq.
 	@cwd=$$(pwd) && \
 	cd $(_ansible_clone) && \
 		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
 		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
-		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test).json 2>&1 | \
-			grep -v 'Unverified HTTPS request' | grep 'changed' | jq '.'
+		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test)_$${name}_$${state}.json 2>&1 | \
+			grep -v 'Unverified HTTPS request' | egrep 'changed|failed' | jq '.'
 
-dev-hack-module: dev-hack-create-links  ## Run module. PDB is available using breakpoint().
+_dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
 	@cwd=$$(pwd) && \
 	cd $(_ansible_clone) && \
 		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
 		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
-		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test).json 2>&1 | \
+		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test)_$${name}_$${state}.json 2>&1 | \
 			grep -v 'Unverified HTTPS request'
+
+dev-hack-module-stat:  ## Hack stat.
+	name=iscsi state=stat    $(_make) _dev-hack-module
+
+dev-hack-module-stat-jq:  ## Hack stat with jq.
+	name=iscsi state=stat    $(_make) _dev-hack-module-jq
+
+dev-hack-module-present:  ## Hack present.
+	name=iscsi state=present $(_make) _dev-hack-module
+
+dev-hack-module-present-jq:  ## Hack present with jq.
+	name=iscsi state=present $(_make) _dev-hack-module-jq
+
+dev-hack-module-absent:  ## Hack absent.
+	name=iscsi state=absent $(_make) _dev-hack-module
+
+dev-hack-module-absent-jq:  ## Hack absent with jq.
+	name=iscsi state=absent $(_make) _dev-hack-module-jq
 
 ### test module ###
 _module = infini_network_space.py
@@ -242,15 +262,38 @@ test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install
 	@echo "test-sanity-locally-all completed"
 
 ### IBox ###
+
 infinishell:
-	@TERM=xterm infinishell --user $(_user) --password $(_password) $(_ibox_url)
+	@TERM=xterm infinishell $(_infinishell_creds) --json
 
 infinishell-events:
 	@TERM=xterm echo "Command: event.watch username=$(_user) exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_SESSION_EXPIRED,USER_LOGIN_FAILURE tail_length=35"
-	@TERM=xterm infinishell --user $(_user) $(_ibox_url)
+	@TERM=xterm infinishell $(_infinishell_creds)
 
-infinishell-namespace-iscsi-create:
-	@TERM=xterm infinishell --cmd="config.net_space.create name=iSCSI service=iSCSI interface=PG1 network=172.31.32.0/19 -d"
+infinishell-network-space-iscsi-create:
+	@eval $(_begin)
+	@TERM=xterm infinishell --cmd="config.net_space.create name=iSCSI service=iSCSI interface=PG1 network=172.31.32.0/19 -y" $(_infinishell_creds) 2>&1 \
+		| egrep 'created|already exists' && \
+	for ip in $(_network_space_ips); do \
+		echo "Creating IP $$ip" && \
+		TERM=xterm infinishell --cmd="config.net_space.ip.create net_space=iSCSI ip_address=$$ip -y" $(_infinishell_creds) 2>&1 \
+			| egrep 'created|NET_SPACE_ADDRESS_CONFLICT' && \
+		echo "Enabling IP $$ip"; \
+	done
+	@eval $(_finish)
 
-infinishell-namespace-iscsi-delete:
-	@TERM=xterm infinishell --cmd="config.net_space.delete net_space=iSCSI" --user $(_user) --password $(_password) $(_ibox_url)
+infinishell-network-space-iscsi-delete:
+	@eval $(_begin)
+	@for ip in $(_network_space_ips); do \
+		echo "Disabling IP $$ip" && \
+		TERM=xterm infinishell --cmd="config.net_space.ip.disable net_space=iSCSI ip_address=$$ip -y" $(_infinishell_creds) 2>&1 \
+			| egrep 'disabled|IP_ADDRESS_ALREADY_DISABLED|no such IP address|No such network space' && \
+		echo "Deleting IP $$ip" && \
+		TERM=xterm infinishell --cmd="config.net_space.ip.delete  net_space=iSCSI ip_address=$$ip -y" $(_infinishell_creds) 2>&1 \
+			| egrep '$$ip deleted|no such IP address|No such network space';  \
+	done
+	@echo
+	@echo "Deleting network space iSCSI" && \
+	TERM=xterm infinishell --cmd="config.net_space.delete net_space=iSCSI -y" $(_infinishell_creds) 2>&1 \
+		| egrep 'deleted|No such network space';
+	@eval $(_finish)
