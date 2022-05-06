@@ -1,16 +1,63 @@
 ---
 - hosts: localhost
-  gather_facts: False
+  gather_facts: True  # Required for ansible_date_time
   collections:
     - infinidat.infinibox
   vars:
-    name: iSCSI
+    network_space: InfiniSafe-Fenced-Network # iSCSI
     service: ISCSI_SERVICE
+    pool: infinisafe
+    volume: app_vol
+    snap: app_snap
+    lock_time: "\"minutes=3\""
   tasks:
 
-  - name: POSITIVE test -> Create {{ service }} network space named {{ name }}
+  - name: Create pool {{ ipool }}
+    infini_pool:
+      name: "{{ pool }}"
+      size: 1TB
+      vsize: 1TB
+      state: present
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Create volume {{ volume }} under pool {{ pool }}
+    infini_vol:
+      name: "{{ volume }}"
+      size: 1GB
+      pool: "{{ pool }}"
+      state: present
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Find the current date-time
+    debug:
+      var=ansible_date_time.iso8601_micro
+
+  - name: Create and lock (1 minute) snapshot {{ snap }} from volume {{ volume }}
+    infini_vol:
+      name: "{{ snap }}"
+      state: present
+      volume_type: snapshot
+      parent_volume_name: "{{ volume }}"
+      snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=1) }}"
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+    vars:
+      fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
+
+
+
+
+  - name: Create {{ service }} network space named {{ network_space }}
     infini_network_space:
-      name: "{{ name }}"
+      name: "{{ network_space }}"
       state: present
       service: "{{ service }}"
       interfaces:
@@ -38,10 +85,11 @@
   - debug:
       var: create_out
 
-  - name: POSITIVE test -> Stat {{ service }} network space named {{ name }}
+  - name: Stat {{ service }} network space named {{ network_space }}
     infini_network_space:
-      name: "{{ name }}"
+      name: "{{ network_space }}"
       state: stat
+
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
