@@ -32,7 +32,7 @@ _venv               = venv
 _requirements_file  = requirements_2.10.txt
 _user               = psus-gitlab-cicd
 _password_file      = vault_password
-_password           = redacted
+_password           = $$(cat vault_password.txt)
 _ibox_url           = ibox1521
 _infinishell_creds  = --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               = /bin/bash
@@ -113,6 +113,7 @@ _test_playbook:
 			exit 1; \
 		fi; \
 		ansible-playbook \
+			-v \
 			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
 			--vault-password-file ../vault_password.txt \
 			"$$playbook_name"; \
@@ -158,16 +159,21 @@ test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
 	@eval $(_finish)
 
-##@ Demo
+##@ Infinisafe Demo
 
-infinisafe-create-demo:  ## Run full creation of infinisafe demo.
+infinisafe-demo-setup:  ## Setup infinisafe demo.
 	@eval $(_begin)
-	playbook_name=infinisafe_create_demo.yml $(_make) _test_playbook
+	playbook_name=infinisafe_demo_setup.yml $(_make) _test_playbook
 	@eval $(_finish)
 
-infinisafe-remove-demo:  ## Run full removal of infinisafe demo.
+infinisafe-demo-runtest:  ## Run tests on infinisafe demo snapshot on forensics host.
 	@eval $(_begin)
-	playbook_name=infinisafe_remove_demo.yml $(_make) _test_playbook
+	playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
+	@eval $(_finish)
+
+infinisafe-demo-teardown:  ## Teardown infinisafe demo.
+	@eval $(_begin)
+	playbook_name=infinisafe_demo_teardown.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 ##@ Hacking

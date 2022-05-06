@@ -22,7 +22,7 @@ description:
       Infinibox.
 author: David Ohlemacher (@ohlemacher)
 options:
-  name:
+  host:
     description:
       - Host Name
     required: true
@@ -355,7 +355,7 @@ def main():
     null_list = list()
     argument_spec.update(
         dict(
-            host=dict(required=True),
+            host=dict(required=True, type='string'),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             wwns=dict(type='list', default=list()),
             iqns=dict(type='list', default=list()),

@@ -1,0 +1,62 @@
+---
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - infinidat.infinibox
+  vars:
+    network_space: InfiniSafe-Fenced-Network # iSCSI
+    service: ISCSI_SERVICE
+    pool: infinisafe
+    volume: app_vol
+    snap: app_snap
+    host: forensic-validation-host
+    host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+  tasks:
+    
+  - name: Create forensic host {{ host }}
+    infini_host:
+      name: "{{ host }}"
+      state: present
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Map snapshot {{ snap }} to host {{ host }}
+    infini_map:
+      host: "{{ host }}"
+      volume: "{{ snap }}"
+      state: present
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Add port to host {{ host }}
+    infini_port:
+      host: "{{ host }}"
+      iqns: "{{ host_iqn }}"
+      state: present
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+
+
+
+  #- mount
+
+  # - name: Remove mapping of volume {{ volume }} from host {{ host }}
+  #   infini_map:
+  #     host: "{{ host }}"
+  #     volume: "{{ volume }}"
+  #     state: absent
+
+  #     user: "{{ user }}"
+  #     password: "{{ password }}"
+  #     system: "{{ system }}"
+
+
+
+

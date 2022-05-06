@@ -1,0 +1,82 @@
+---
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - infinidat.infinibox
+  vars:
+    network_space: InfiniSafe-Fenced-Network # iSCSI
+    service: ISCSI_SERVICE
+    pool: infinisafe
+    volume: app_vol
+    snap: app_snap
+    host: forensic-validation-host
+    host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+  tasks:
+
+  - name: Remove port from host {{ host }}
+    infini_port:
+      host: "{{ host }}"
+      iqns: "{{ host_iqn }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Unmap snapshot {{ snap }} from host {{ host }}
+    infini_map:
+      host: "{{ host }}"
+      volume: "{{ snap }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Remove network space named {{ network_space }}
+    infini_network_space:
+      name: "{{ network_space }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Remove snapshot {{ snap }}
+    infini_vol:
+      name: "{{ snap }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Remove volume {{ volume }} under pool {{ pool }}
+    infini_vol:
+      name: "{{ volume }}"
+      pool: "{{ pool }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Remove pool {{ pool }}
+    infini_pool:
+      name: "{{ pool }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+  - name: Remove forensic host {{ host }}
+    infini_host:
+      name: "{{ host }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+
