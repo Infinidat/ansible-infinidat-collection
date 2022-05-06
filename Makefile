@@ -113,7 +113,6 @@ _test_playbook:
 			exit 1; \
 		fi; \
 		ansible-playbook \
-		    -vvv \
 			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
 			--vault-password-file ../vault_password.txt \
 			"$$playbook_name"; \
@@ -159,7 +158,19 @@ test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
 	@eval $(_finish)
 
-### hacking ###
+##@ Demo
+
+infinisafe-create-demo:  ## Run full creation of infinisafe demo.
+	@eval $(_begin)
+	playbook_name=infinisafe_create_demo.yml $(_make) _test_playbook
+	@eval $(_finish)
+
+infinisafe-remove-demo:  ## Run full removal of infinisafe demo.
+	@eval $(_begin)
+	playbook_name=infinisafe_remove_demo.yml $(_make) _test_playbook
+	@eval $(_finish)
+
+##@ Hacking
 _module_under_test = infini_network_space
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
@@ -206,14 +217,14 @@ dev-hack-module-absent:  ## Hack absent.
 dev-hack-module-absent-jq:  ## Hack absent with jq.
 	name=iscsi state=absent $(_make) _dev-hack-module-jq
 
-### test module ###
+##@ Test Module
 _module = infini_network_space.py
 
-find-default-module-path:
+find-default-module-path:  ## Find module path.
 	ansible-config list | spruce json | jq '.DEFAULT_MODULE_PATH.default' | sed 's?"??g'
 
 _collection_local_path = ~/.ansible/collections/ansible_collections/infinidat/infinibox/plugins
-dev-install-modules-to-local-collection:
+dev-install-modules-to-local-collection:  ## Copy modules to local collection
 	@eval $(_begin)
 	@echo "local collection path: $(_collection_local_path)"
 	@echo "Installing modules locally"
@@ -224,9 +235,9 @@ dev-install-modules-to-local-collection:
 	@cp plugins/filter/*.py $(_collection_local_path)/filter
 	@eval $(_finish)
 
-### ansible-test ###
-test-sanity:
-	@# Run ansible sanity tests in accordance with
+##@ ansible-test
+test-sanity:  ## Run ansible sanity tests
+	@# in accordance with
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
 	@# This runs on an collection installed from galaxy. This makes it
 	@# somewhat useless for dev and debugging. Use target test-sanity-locally.
@@ -241,8 +252,8 @@ _setup-sanity-locally:
 		python -m pip install --upgrade pip && \
 		python -m pip install --upgrade --requirement $(_requirements_file)
 
-test-sanity-locally: _setup-sanity-locally
-	@# Run ansible sanity tests in accordance with
+test-sanity-locally: _setup-sanity-locally  ## Run ansible sanity tests locally.
+	@# in accordance with
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
 	@# This runs on an collection installed locally making it useful for dev and debugging.
 	@# Not sure why, but ansible-test fails to discover py scripts to test.
@@ -256,21 +267,20 @@ test-sanity-locally: _setup-sanity-locally
 		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/filters:$$ANSIBLE_LIBRARY" && \
 		ansible-test sanity --docker default -v "$$test_file"
 
-test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install-locally test-sanity-locally
+test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install-locally test-sanity-locally  ## Run all sanity tests locally.
 	@# Run local build, install and sanity test.
 	@# Note that this will wipe $(_install_path_local).
 	@echo "test-sanity-locally-all completed"
 
-### IBox ###
-
-infinishell:
+##@ IBox
+infinishell:  ## Run infinishell.
 	@TERM=xterm infinishell $(_infinishell_creds) --json
 
-infinishell-events:
+infinishell-events:  # Run infinishell with hint to watch events.
 	@TERM=xterm echo "Command: event.watch username=$(_user) exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_SESSION_EXPIRED,USER_LOGIN_FAILURE tail_length=35"
 	@TERM=xterm infinishell $(_infinishell_creds)
 
-infinishell-network-space-iscsi-create:
+infinishell-network-space-iscsi-create:  ## Create a network space using infinishell.
 	@eval $(_begin)
 	@TERM=xterm infinishell --cmd="config.net_space.create name=iSCSI service=iSCSI interface=PG1 network=172.31.32.0/19 -y" $(_infinishell_creds) 2>&1 \
 		| egrep 'created|already exists' && \
@@ -282,7 +292,7 @@ infinishell-network-space-iscsi-create:
 	done
 	@eval $(_finish)
 
-infinishell-network-space-iscsi-delete:
+infinishell-network-space-iscsi-delete:  ## Delete a network space using infinishell.
 	@eval $(_begin)
 	@for ip in $(_network_space_ips); do \
 		echo "Disabling IP $$ip" && \

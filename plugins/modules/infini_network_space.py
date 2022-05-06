@@ -43,10 +43,10 @@ options:
     choices: ["replication", "NAS", "iSCSI"]
   mtu:
     description:
-      - Set an MTU.
+      - Set an MTU. If not specified, defaults to 1500 bytes.
     required: false
     type: int
-    default: 1500
+    default: None
   network:
     description:
       - Starting IP address.
@@ -65,6 +65,12 @@ options:
     required: false
     default: []
     type: list(int)
+  rate_limit:
+    description:
+      - Specify the throughput limit per node. The limit is specified in Mbps, megabits per second (not megabytes). Note the limit affects NFS, iSCSI and async-replication traffic. It does not affect sync-replication or active-active traffic.
+    required: false
+    type: int
+
 extends_documentation_fragment:
     - infinibox
 """
@@ -123,6 +129,8 @@ def create_empty_network_space(module, system):
     # Create network space
     network_space_name = module.params["name"]
     service = module.params["service"]
+    rate_limit = module.params["rate_limit"]
+    mtu = module.params["mtu"]
     network_config = {
         "netmask": module.params["netmask"],
         "network": module.params["network"],
@@ -141,6 +149,10 @@ def create_empty_network_space(module, system):
         "network_config": network_config,
         "interfaces": interfaces,
     }
+    if rate_limit:
+        net_create_data["rate_limit"] = rate_limit
+    if mtu:
+        net_create_data["mtu"] = mtu
 
     net_create = system.api.post(
         path=net_create_url,
@@ -196,19 +208,54 @@ def create_network_space(module, system):
 
     return changed
 
-
-@api_wrapper
-def update_network_space(module, network_space):
-    network_space_name = module.params["name"]
-    print(f"Updating network space {network_space_name}")
+def update_network_space(module, system):
+    """
+    Update network space.
+    TODO - This is incomplete and will not update the space.
+    It will instead return changed=False and a message.
+    To implement this we will need to find the existing space.
+    For each field that we support updating, we need to compare existing
+    to new values and if different update.  We will need to iterate
+    over the settings or we will receive:
+        Status: 400
+        Code: NOT_SUPPORTED_MULTIPLE_UPDATE
+    """
     changed = False
-    new_ips = module.params["ips"]
-    current_ips = get_network_space_fields(module, network_space)["ips"]
-    module.fail_json(msg=f"current_ips: {current_ips}")
-    if new_ips != current_ips:
-        network_space.update_field("ips", new_ips)
-        changed = True
-    return changed
+    msg = "Update is not supported yet"
+    module.exit_json(changed=changed, msg=msg)
+
+    # TODO Everything below is incomplete
+    # Update network space
+    network_space_name = module.params["name"]
+    service = module.params["service"]
+    network_config = {
+        "netmask": module.params["netmask"],
+        "network": module.params["network"],
+        "default_gateway": module.params["default_gateway"],
+    }
+    interfaces = module.params["interfaces"]
+
+    print(f"Updating network space {network_space_name}")
+
+    # Find space's ID
+    space_id = find_network_space_id(module, system)
+
+    net_url = "network/spaces/{}".format(space_id)
+    net_data = {
+        "name": network_space_name,
+        "service": service,
+        "network_config": network_config,
+        "interfaces": interfaces,
+    }
+
+    # Find existing space
+    net_existing = system.api.get(path=path)
+
+    net_update = system.api.put(
+        path=net_url,
+        data=net_data
+    )
+    print(f"net_update: {net_update}")
 
 
 def get_network_space_fields(module, network_space):
@@ -350,13 +397,14 @@ def main():
                 required=False,
                 choices=["replication", "NAS_SERVICE", "ISCSI_SERVICE"],
             ),
-            mtu=dict(default=1500, required=False, type=int),
+            mtu=dict(default=None, required=False, type=int),
             network=dict(default=None, required=False),
             netmask=dict(default=None, required=False, type=int),
             default_gateway=dict(default=None, required=False),
             interfaces=dict(default=list(), required=False, type=list),
             network_config=dict(default=dict(), required=False, type=dict),
             ips=dict(default=list(), required=False, type=list),
+            rate_limit=dict(default=None, required=False, type=int),
         )
         # required_one_of = [["var_1", "var_2"]]
         # mutually_exclusive = [["var_3", "var_4"]]

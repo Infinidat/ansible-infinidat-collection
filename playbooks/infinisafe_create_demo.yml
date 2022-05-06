@@ -12,11 +12,11 @@
     infini_network_space:
       name: "{{ name }}"
       state: present
+      service: "{{ service }}"
       interfaces:
       - 1680
       - 1679
       - 1678
-      service: "{{ service }}"
       netmask: 19
       network: 172.31.32.0
       default_gateway: 172.31.63.254
