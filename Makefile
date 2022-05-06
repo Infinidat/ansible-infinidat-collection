@@ -105,7 +105,7 @@ _test_playbook:
 	@# Run a playbook specified by an envvar.
 	@# See DEV_README.md
 	@# vault_pass env var must be exported.
-	cd playbooks && \
+	@cd playbooks && \
 		export ANSIBLE_LIBRARY=/home/dohlemacher/cloud/ansible-infinidat-collection/playbooks/plugins/modules; \
 		export ANSIBLE_MODULE_UTILS=/home/dohlemacher/cloud/ansible-infinidat-collection/plugins/module_utils; \
 		if [ ! -e "../vault_password.txt" ]; then \
@@ -114,6 +114,7 @@ _test_playbook:
 		fi; \
 		ansible-playbook \
 			-v \
+			--inventory "inventory" \
 			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
 			--vault-password-file ../vault_password.txt \
 			"$$playbook_name"; \
@@ -168,7 +169,7 @@ infinisafe-demo-setup:  ## Setup infinisafe demo.
 
 infinisafe-demo-runtest:  ## Run tests on infinisafe demo snapshot on forensics host.
 	@eval $(_begin)
-	playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
+	@playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 infinisafe-demo-teardown:  ## Teardown infinisafe demo.
@@ -177,7 +178,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@eval $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_network_space
+_module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@#echo "Creating hacking module links"
@@ -189,39 +190,36 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 		ln --force --symbolic $$(pwd)/plugins/module_utils//$$m $(_ansible_clone)/lib/ansible/module_utils/$$m; \
 	done
 
-_dev-hack-module-jq: dev-hack-create-links  # If module is running to the point of returning json, use this to run it and prettyprint using jq.
-	@cwd=$$(pwd) && \
-	cd $(_ansible_clone) && \
-		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
-		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
-		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test)_$${name}_$${state}.json 2>&1 | \
-			grep -v 'Unverified HTTPS request' | egrep 'changed|failed' | jq '.'
-
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
 	@cwd=$$(pwd) && \
 	cd $(_ansible_clone) && \
 		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
 		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
-		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test)_$${name}_$${state}.json 2>&1 | \
+		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test)_$${name}$${state}.json 2>&1 | \
 			grep -v 'Unverified HTTPS request'
 
+_dev-hack-module-jq:  # If module is running to the point of returning json, use this to run it and prettyprint using jq.
+	@$(_make) _dev-hack-module | egrep 'changed|failed' | jq '.'
+
 dev-hack-module-stat:  ## Hack stat.
-	name=iscsi state=stat    $(_make) _dev-hack-module
+	name="" state=stat    $(_make) _dev-hack-module
 
 dev-hack-module-stat-jq:  ## Hack stat with jq.
-	name=iscsi state=stat    $(_make) _dev-hack-module-jq
+	name="" state=stat    $(_make) _dev-hack-module-jq
 
 dev-hack-module-present:  ## Hack present.
-	name=iscsi state=present $(_make) _dev-hack-module
+	name="" state=present $(_make) _dev-hack-module
 
 dev-hack-module-present-jq:  ## Hack present with jq.
-	name=iscsi state=present $(_make) _dev-hack-module-jq
+	name="" state=present $(_make) _dev-hack-module-jq
 
 dev-hack-module-absent:  ## Hack absent.
-	name=iscsi state=absent $(_make) _dev-hack-module
+	name="" state=absent $(_make) _dev-hack-module
 
 dev-hack-module-absent-jq:  ## Hack absent with jq.
-	name=iscsi state=absent $(_make) _dev-hack-module-jq
+	name="" state=absent $(_make) _dev-hack-module-jq
+
+
 
 ##@ Test Module
 _module = infini_network_space.py

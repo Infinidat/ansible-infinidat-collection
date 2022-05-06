@@ -11,6 +11,8 @@
     snap: app_snap
     host: forensic-validation-host
     host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+    ibox_portal: 172.31.32.145
+    ibox_iqn: iqn.2009-11.com.infinidat:storage:infinibox-sn-1521
   tasks:
     
   - name: Create forensic host {{ host }}
@@ -42,10 +44,59 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
+- hosts: forensics
+  gather_facts: False
+  collections:
+    - infinidat.infinibox
+  vars:
+    network_space: InfiniSafe-Fenced-Network # iSCSI
+    service: ISCSI_SERVICE
+    pool: infinisafe
+    volume: app_vol
+    snap: app_snap
+    host: forensic-validation-host
+    host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+  tasks:
+
+  - name: Try shell
+    shell: |
+      whoami
+
+  # - name: Discover snapshot {{ snap }} on host {{ host }}
+  #   shell: |
+  #     iscsiadm --mode discoverydb --type sendtargets --portal {{ ibox_portal }} --discover
+  #     iscsiadm --mode node --targetname={{ ibox_iqn }} --op update --name=node.session.auth.username --value=$user
 
 
+  # Run forensic tests on snapshot {{ snap }}
 
-  #- mount
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - infinidat.infinibox
+  vars:
+    network_space: InfiniSafe-Fenced-Network # iSCSI
+    service: ISCSI_SERVICE
+    pool: infinisafe
+    volume: app_vol
+    snap: app_snap
+    host: forensic-validation-host
+    host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+    ibox_portal: 172.31.32.145
+    ibox_iqn: iqn.2009-11.com.infinidat:storage:infinibox-sn-1521
+  tasks:
+
+  - name: If snapshot passes testing, restore volume from snapshot
+    infini_vol:
+      name: "{{ snap }}"
+      state: present
+      parent_volume_name: "{{ volume }}"
+      volume_type: snapshot
+      restore_volume_from_snapshot: True
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
 
   # - name: Remove mapping of volume {{ volume }} from host {{ host }}
   #   infini_map:
