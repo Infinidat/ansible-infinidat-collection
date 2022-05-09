@@ -105,7 +105,7 @@ _test_playbook:
 	@# Run a playbook specified by an envvar.
 	@# See DEV_README.md
 	@# vault_pass env var must be exported.
-	@cd playbooks && \
+	cd playbooks && \
 		export ANSIBLE_LIBRARY=/home/dohlemacher/cloud/ansible-infinidat-collection/playbooks/plugins/modules; \
 		export ANSIBLE_MODULE_UTILS=/home/dohlemacher/cloud/ansible-infinidat-collection/plugins/module_utils; \
 		if [ ! -e "../vault_password.txt" ]; then \
@@ -113,7 +113,6 @@ _test_playbook:
 			exit 1; \
 		fi; \
 		ansible-playbook \
-			-v \
 			$$ask_become_pass \
 			--inventory "inventory" \
 			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
@@ -165,17 +164,17 @@ test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 
 infinisafe-demo-setup:  ## Setup infinisafe demo.
 	@eval $(_begin)
-	@playbook_name=infinisafe_demo_setup.yml $(_make) _test_playbook
+	playbook_name=infinisafe_demo_setup.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 infinisafe-demo-runtest:  ## Run tests on infinisafe demo snapshot on forensics host.
 	@eval $(_begin)
-	@ask_become_pass="-K" playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@eval $(_begin)
-	@ask_become_pass="-K" playbook_name=infinisafe_demo_teardown.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=infinisafe_demo_teardown.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 ##@ Hacking
