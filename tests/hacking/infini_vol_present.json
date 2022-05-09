@@ -1,0 +1,13 @@
+{
+    "ANSIBLE_MODULE_ARGS": {
+        "name": "app_snap",
+        "parent_volume_name": "app_vol",
+        "state": "present",
+        "volume_type": "snapshot",
+        "restore_volume_from_snapshot": true,
+
+        "system": "ibox1521.lab.wt.us.infinidat.com",
+        "user": "psus-gitlab-cicd",
+        "password": "lemonTrainSchoolCrank" 
+    }
+}

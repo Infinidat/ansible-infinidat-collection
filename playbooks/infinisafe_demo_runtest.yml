@@ -1,4 +1,5 @@
 ---
+### Localhost
 - hosts: localhost
   gather_facts: False
   collections:
@@ -12,6 +13,7 @@
     host: forensic-validation-host
     host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
     ibox_portal: 172.31.32.145
+    ibox: ibox1521
     ibox_iqn: iqn.2009-11.com.infinidat:storage:infinibox-sn-1521
   tasks:
     
@@ -44,6 +46,7 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
+### Forensics Host
 - hosts: forensics
   gather_facts: False
   collections:
@@ -56,20 +59,32 @@
     snap: app_snap
     host: forensic-validation-host
     host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+    ibox_portal: 172.31.32.145
+    ibox: ibox1521
+    ibox_iqn: iqn.2009-11.com.infinidat:storage:infinibox-sn-1521
   tasks:
 
-  - name: Try shell
+  - name: Connect forensics host {{ host }} to Infinibox {{ ibox }}
     shell: |
-      whoami
+      infinihost iscsi connect {{ ibox }} --netspace={{ network_space }} --hostname={{ host }}
+    become: yes
 
-  # - name: Discover snapshot {{ snap }} on host {{ host }}
-  #   shell: |
-  #     iscsiadm --mode discoverydb --type sendtargets --portal {{ ibox_portal }} --discover
-  #     iscsiadm --mode node --targetname={{ ibox_iqn }} --op update --name=node.session.auth.username --value=$user
-
+  - name: Connect forensics host {{ host }} to Infinibox {{ ibox }}
+    shell: |
+      iscsiadm --mode discoverydb --type sendtargets --portal {{ ibox_portal }} --discover
+      iscsiadm --mode node --targetname={{ ibox_iqn }} --op update --name=node.session.auth.username --value={{ user }}
+      iscsiadm --mode discovery --type sendtargets --portal {{ ibox_portal }} --op show
+      iscsiadm --mode node --targetname {{ ibox_iqn }} --portal {{ ibox_portal }} --login
+      rescan-scsi-bus.sh
+    become: yes
 
   # Run forensic tests on snapshot {{ snap }}
+  - name: Forensically test snapshot {{ snap }} is clean using host {{ host }}
+    shell: |
+      true
+    register: is_snapshot_clean
 
+### Localhost
 - hosts: localhost
   gather_facts: False
   collections:
@@ -83,10 +98,19 @@
     host: forensic-validation-host
     host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
     ibox_portal: 172.31.32.145
+    ibox: ibox1521
     ibox_iqn: iqn.2009-11.com.infinidat:storage:infinibox-sn-1521
   tasks:
 
-  - name: If snapshot passes testing, restore volume from snapshot
+  - debug:
+      msg: Snapshot {{ snap }} PASSED testing
+    when: is_snapshot_clean.rc == 0
+
+  - debug:
+      msg: Snapshot {{ snap }} FAILED testing. Do not use this snapshot.
+    when: is_snapshot_clean.rc != 0
+
+  - name: Restoring volume {{ volume }} from known clean snapshot {{ snap }}
     infini_vol:
       name: "{{ snap }}"
       state: present
@@ -97,17 +121,4 @@
       user: "{{ user }}"
       password: "{{ password }}"
       system: "{{ system }}"
-
-  # - name: Remove mapping of volume {{ volume }} from host {{ host }}
-  #   infini_map:
-  #     host: "{{ host }}"
-  #     volume: "{{ volume }}"
-  #     state: absent
-
-  #     user: "{{ user }}"
-  #     password: "{{ password }}"
-  #     system: "{{ system }}"
-
-
-
-
+    when: is_snapshot_clean.rc == 0

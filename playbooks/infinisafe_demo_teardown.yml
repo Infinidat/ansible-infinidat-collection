@@ -1,4 +1,5 @@
 ---
+### Localhost
 - hosts: localhost
   gather_facts: False
   collections:
@@ -13,16 +14,6 @@
     host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
   tasks:
 
-  - name: Remove port from host {{ host }}
-    infini_port:
-      host: "{{ host }}"
-      iqns: "{{ host_iqn }}"
-      state: absent
-
-      user: "{{ user }}"
-      password: "{{ password }}"
-      system: "{{ system }}"
-
   - name: Unmap snapshot {{ snap }} from host {{ host }}
     infini_map:
       host: "{{ host }}"
@@ -33,6 +24,60 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
+  - name: Remove port from host {{ host }}
+    infini_port:
+      host: "{{ host }}"
+      iqns: "{{ host_iqn }}"
+      state: absent
+
+      user: "{{ user }}"
+      password: "{{ password }}"
+      system: "{{ system }}"
+
+### Forensics Host
+- hosts: forensics
+  gather_facts: False
+  collections:
+    - infinidat.infinibox
+  vars:
+    network_space: InfiniSafe-Fenced-Network # iSCSI
+    service: ISCSI_SERVICE
+    pool: infinisafe
+    volume: app_vol
+    snap: app_snap
+    host: forensic-validation-host
+    host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+    ibox_portal: 172.31.32.145
+    ibox: ibox1521
+    ibox_iqn: iqn.2009-11.com.infinidat:storage:infinibox-sn-1521
+    ibox_portals: 172.31.32.148 172.31.32.146 172.31.32.149 172.31.32.145 172.31.32.150 172.31.32.147
+  tasks:
+
+  - name: Disconnect forensics host {{ host }} from Infinibox {{ ibox }}
+    shell: |
+      for i in {{ ibox_portals }}; do
+        iscsiadm --mode node --target {{ ibox_iqn }} -p $i --logout
+      done
+      for i in {{ ibox_portals }}; do
+        iscsiadm --mode discoverydb -t sendtargets -p $i -o delete --discover
+      done
+    become: yes
+
+### Localhost
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - infinidat.infinibox
+  vars:
+    network_space: InfiniSafe-Fenced-Network # iSCSI
+    service: ISCSI_SERVICE
+    pool: infinisafe
+    volume: app_vol
+    snap: app_snap
+    host: forensic-validation-host
+    host_iqn: iqn.1993-08.org.debian:01:62ebda3b76cc # io-wt-35
+  tasks:
+
   - name: Remove network space named {{ network_space }}
     infini_network_space:
       name: "{{ network_space }}"
@@ -42,7 +87,7 @@
       password: "{{ password }}"
       system: "{{ system }}"
 
-  - name: Remove snapshot {{ snap }}
+  - name: Remove snapshot {{ snap }} created from volume {{ volume }}
     infini_vol:
       name: "{{ snap }}"
       state: absent

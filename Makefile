@@ -114,6 +114,7 @@ _test_playbook:
 		fi; \
 		ansible-playbook \
 			-v \
+			$$ask_become_pass \
 			--inventory "inventory" \
 			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
 			--vault-password-file ../vault_password.txt \
@@ -164,20 +165,21 @@ test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 
 infinisafe-demo-setup:  ## Setup infinisafe demo.
 	@eval $(_begin)
-	playbook_name=infinisafe_demo_setup.yml $(_make) _test_playbook
+	@playbook_name=infinisafe_demo_setup.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 infinisafe-demo-runtest:  ## Run tests on infinisafe demo snapshot on forensics host.
 	@eval $(_begin)
-	@playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
+	@ask_become_pass="-K" playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@eval $(_begin)
-	playbook_name=infinisafe_demo_teardown.yml $(_make) _test_playbook
+	@ask_become_pass="-K" playbook_name=infinisafe_demo_teardown.yml $(_make) _test_playbook
 	@eval $(_finish)
 
 ##@ Hacking
+#_module_under_test = infini_network_space
 _module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
