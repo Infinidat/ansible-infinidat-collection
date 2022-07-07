@@ -49,9 +49,11 @@ env-show: _check-vars
 	@echo "API_KEY=[ set but redacted ]"
 
 version: _check-vars  ## Show versions.
+	@echo -e $(_begin)
 	ansible --version
 	@echo
 	ansible-galaxy collection list
+	@echo -e $(_finish)
 
 _test-venv:
 	@# Test that a venv is activated
@@ -64,41 +66,41 @@ endif
 	@echo "Virtual environment set"
 
 pylint:
-	@eval $(_begin)
+	@echo -e $(_begin)
 	cd plugins/modules && \
 		pylint infini_network_space.py
 	cd -
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 pyfind:  ## Search project python files using: f='search term' make pyfind
 	find . -name "*.py" | xargs grep -n "$$f" | egrep -v 'venv|eggs|parts|\.git|external-projects|build'
 
 ##@ Galaxy
 galaxy-collection-build:  ## Build the collection.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 galaxy-collection-build-force: ## Force build the collection. Overwrite an existing collection file.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	ansible-galaxy collection build --force
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 galaxy-collection-publish: _check-vars  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	ansible-galaxy collection publish --api-key $(API_KEY) ./$(_namespace)-$(_name)-$(_version).tar.gz -vvv
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 galaxy-collection-install:  ## Download and install from galaxy.ansible.com. This will wipe $(_install_path).
-	@eval $(_begin)
+	@echo -e $(_begin)
 	ansible-galaxy collection install $(_namespace).$(_name) --collections-path $(_install_path) --force
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 galaxy-collection-install-locally:  ## Download and install from local tar file.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	ansible-galaxy collection install --force $(_namespace)-$(_name)-$(_version).tar.gz --collections-path $(_install_path_local)
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 ##@ Playbooks Testing
 _test_playbook:
@@ -121,61 +123,61 @@ _test_playbook:
 	cd -
 
 test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_create_resources.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 test-remove-resources:  ## Run full removal  test suite as run by Gitlab CICD.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_remove_resources.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 test-create-snapshots:  ## Test creating immutable snapshots.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_create_snapshots.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 test-remove-snapshots:  ## Test removing immutable snapshots (teardown).
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_remove_snapshots.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 test-create-net-spaces: dev-install-modules-to-local-collection  ## Test creating network spaces.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_create_network_spaces.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 test-remove-net-spaces:  ## Test removing net spaces (teardown).
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_remove_network_spaces.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 test-create-map-cluster:  ## Run full creation test suite as run by Gitlab CICD.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_create_map_cluster.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 ##@ Infinisafe Demo
 
 infinisafe-demo-setup:  ## Setup infinisafe demo.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	playbook_name=infinisafe_demo_setup.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 infinisafe-demo-runtest:  ## Run tests on infinisafe demo snapshot on forensics host.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	ask_become_pass="-K" playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 infinisafe-demo-teardown:  ## Teardown infinisafe demo.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	ask_become_pass="-K" playbook_name=infinisafe_demo_teardown.yml $(_make) _test_playbook
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 ##@ Hacking
 #_module_under_test = infini_network_space
@@ -230,7 +232,7 @@ find-default-module-path:  ## Find module path.
 
 _collection_local_path = ~/.ansible/collections/ansible_collections/infinidat/infinibox/plugins
 dev-install-modules-to-local-collection:  ## Copy modules to local collection
-	@eval $(_begin)
+	@echo -e $(_begin)
 	@echo "local collection path: $(_collection_local_path)"
 	@echo "Installing modules locally"
 	@cp plugins/modules/*.py $(_collection_local_path)/modules
@@ -238,7 +240,7 @@ dev-install-modules-to-local-collection:  ## Copy modules to local collection
 	@cp plugins/module_utils/*.py $(_collection_local_path)/module_utils
 	@echo "Installing filters locally"
 	@cp plugins/filter/*.py $(_collection_local_path)/filter
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 ##@ ansible-test
 test-sanity:  ## Run ansible sanity tests
@@ -286,7 +288,7 @@ infinishell-events:  # Run infinishell with hint to watch events.
 	@TERM=xterm infinishell $(_infinishell_creds)
 
 infinishell-network-space-iscsi-create:  ## Create a network space using infinishell.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	@TERM=xterm infinishell --cmd="config.net_space.create name=iSCSI service=iSCSI interface=PG1 network=172.31.32.0/19 -y" $(_infinishell_creds) 2>&1 \
 		| egrep 'created|already exists' && \
 	for ip in $(_network_space_ips); do \
@@ -295,10 +297,10 @@ infinishell-network-space-iscsi-create:  ## Create a network space using infinis
 			| egrep 'created|NET_SPACE_ADDRESS_CONFLICT' && \
 		echo "Enabling IP $$ip"; \
 	done
-	@eval $(_finish)
+	@echo -e $(_finish)
 
 infinishell-network-space-iscsi-delete:  ## Delete a network space using infinishell.
-	@eval $(_begin)
+	@echo -e $(_begin)
 	@for ip in $(_network_space_ips); do \
 		echo "Disabling IP $$ip" && \
 		TERM=xterm infinishell --cmd="config.net_space.ip.disable net_space=iSCSI ip_address=$$ip -y" $(_infinishell_creds) 2>&1 \
@@ -311,4 +313,4 @@ infinishell-network-space-iscsi-delete:  ## Delete a network space using infinis
 	@echo "Deleting network space iSCSI" && \
 	TERM=xterm infinishell --cmd="config.net_space.delete net_space=iSCSI -y" $(_infinishell_creds) 2>&1 \
 		| egrep 'deleted|No such network space';
-	@eval $(_finish)
+	@echo -e $(_finish)
