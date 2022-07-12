@@ -37,6 +37,9 @@ options:
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
+  cluster_hosts:
+    description: A list of hosts to add to a cluster when state is present.
+    required: false
 extends_documentation_fragment:
     - infinibox
 '''

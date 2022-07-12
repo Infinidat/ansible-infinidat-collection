@@ -27,9 +27,10 @@ _namespace          = $(shell spruce json galaxy.yml | jq '.namespace' | sed 's?
 _name               = $(shell spruce json galaxy.yml | jq '.name'      | sed 's?"??g')
 _install_path       = ~/.ansible/collections
 _install_path_local = $$HOME/.ansible/collections
+_python_version     = python3.8
 _venv               = venv
 #_install_path_local = /opt/atest
-_requirements_file  = requirements_2.10.txt
+_requirements_file  = requirements.txt
 _user               = psus-gitlab-cicd
 _password_file      = vault_password
 _password           = $$(cat vault_password.txt)
@@ -40,6 +41,12 @@ _ansible_clone      = ~/cloud/ansible
 _network_space_ips  = 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
 
 ##@ General
+create-venv: ## Setup venv.
+	$(_python_version) -m venv $(_venv) && \
+	source $(_venv)/bin/activate && \
+	python -m pip install --upgrade pip && \
+	python -m pip install --upgrade --requirement $(_requirements_file)
+
 _check-vars:
 ifeq ($(strip $(API_KEY)),)
 	@echo "API_KEY variable is unset" && false
@@ -254,7 +261,7 @@ test-sanity:  ## Run ansible sanity tests
 _setup-sanity-locally:
 	@# Setup a test env.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		python3 -m venv $(_venv) && \
+		$(_python_version) -m venv $(_venv) && \
 		source $(_venv)/bin/activate && \
 		python -m pip install --upgrade pip && \
 		python -m pip install --upgrade --requirement $(_requirements_file)

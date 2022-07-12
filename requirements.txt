@@ -39,7 +39,6 @@ mypy-extensions
 packaging
 pact
 pathspec
-pkg_resources
 platformdirs
 pluggy
 py

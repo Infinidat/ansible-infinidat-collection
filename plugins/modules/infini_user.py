@@ -31,15 +31,15 @@ options:
   user_email:
     description:
       - The new user's Email address
-    required: true
+    required: false
   user_password:
     description:
       - The new user's password
-    required: true
+    required: false
   user_role:
     description:
       - The user's role
-    required: true
+    required: false
     choices: [ "admin", "pool_admin", "read_only" ]
   user_enabled:
     description:
@@ -50,7 +50,7 @@ options:
   user_pool:
     description:
       - Use with role==pool_admin. Specify the new user's pool.
-    required: False
+    required: false
   state:
     description:
       - Creates/Modifies user when present or removes when absent

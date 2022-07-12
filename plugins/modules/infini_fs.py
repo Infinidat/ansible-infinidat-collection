@@ -16,10 +16,10 @@ DOCUMENTATION = r'''
 ---
 module: infini_fs
 version_added: 2.3
-short_description:  Create, Delete or Modify filesystems on Infinibox
+short_description: Create, Delete or Modify filesystems on Infinibox
 description:
     - This module creates, deletes or modifies filesystems on Infinibox.
-author: Gregory Shulov (@GR360RY)
+author: David Ohlemacher (@ohlemacher)
 options:
   name:
     description:
@@ -31,14 +31,14 @@ options:
     required: false
     default: present
     choices: [ "present", "absent" ]
-  size:
-    description:
-      - File system size in MB, GB or TB units. See examples.
-    required: false
   pool:
     description:
       - Pool that will host file system.
     required: true
+  size:
+    description:
+      - File system size in MB, GB or TB units. See examples.
+    required: false
 extends_documentation_fragment:
     - infinibox
 requirements:

@@ -19,7 +19,7 @@ version_added: 2.3
 short_description: Create, Delete and Modify Pools on Infinibox
 description:
     - This module to creates, deletes or modifies pools on Infinibox.
-author: Gregory Shulov (@GR360RY)
+author: David Ohlemacher (@ohlemacher)
 options:
   name:
     description:
@@ -30,7 +30,7 @@ options:
       - Creates/Modifies Pool when present or removes when absent
     required: false
     default: present
-    choices: [ "present", "absent" ]
+    choices: [ "stat", "present", "absent" ]
   size:
     description:
       - Pool Physical Capacity in MB, GB or TB units.
@@ -55,7 +55,6 @@ options:
     required: false
     default: yes
     type: bool
-    version_added: 2.8
 
 notes:
   - Infinibox Admin level access is required for pool modifications

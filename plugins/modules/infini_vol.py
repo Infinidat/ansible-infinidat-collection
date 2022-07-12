@@ -4,36 +4,35 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
-
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
 
 
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: infini_vol
 version_added: 2.3
 short_description:  Create, Delete or Modify volumes on Infinibox
 description:
     - This module creates, deletes or modifies a volume on Infinibox.
-author: Gregory Shulov (@GR360RY)
+author: David Ohlemacher (@ohlemacher)
 options:
   name:
     description:
       - Volume Name
     required: true
-  state:
+  parent_volume_name:
     description:
-      - Creates/Modifies master volume or snapshot when present or removes when absent.
+      - Specify a volume name. This is the volume parent for creating a snapshot. Required if volume_type is snapshot.
     required: false
-    default: present
-    choices: [ "stat", "present", "absent" ]
+  pool:
+    description:
+      - Pool that master volume will reside within.  Required for creating a master volume, but not a snapshot.
+    required: false
   size:
     description:
       - Volume size in MB, GB or TB units.  Required for creating a master volume, but not a snapshot
@@ -49,6 +48,12 @@ options:
     type: bool
     required: false
     default: false
+  state:
+    description:
+      - Creates/Modifies master volume or snapshot when present or removes when absent.
+    required: false
+    default: present
+    choices: [ "stat", "present", "absent" ]
   thin_provision:
     description:
       - Whether the master volume should be thin provisioned.  Required for creating a master volume, but not a snapshot.
@@ -56,27 +61,19 @@ options:
     required: false
     default: true
     version_added: '2.8'
-  pool:
+  write_protected:
     description:
-      - Pool that master volume will reside within.  Required for creating a master volume, but not a snapshot.
+      - Specifies if the volume should be write protected. Default will be True for snapshots, False for regular volumes.
     required: false
+    default: "Default"
+    choices: ["Default", "True", "False"]
+    version_added: '2.10'
   volume_type:
     description:
       - Specifies the volume type, regular volume or snapshot.
     required: false
     default: master
     choices: [ "master", "snapshot" ]
-  write_protected:
-    description:
-      - Specifies if the volume should be write protected. Default will be True for snapshots, False for regular volumes.
-      required: false
-      default: "Default"
-      choices: ["Default", "True", "False"]
-      version_added: '2.10'
-  parent_volume_name:
-    description:
-      - Specify a volume name. This is the volume parent for creating a snapshot. Required if volume_type is snapshot.
-    required: false
   restore_volume_from_snapshot:
     description:
       - Specify true to restore a volume (parent_volume_name) from an existing snapshot specified by the name field. State must be set to present and volume_type must be 'snapshot'.
@@ -87,9 +84,9 @@ extends_documentation_fragment:
     - infinibox
 requirements:
     - capacity
-"""
+'''
 
-EXAMPLES = r"""
+EXAMPLES = r'''
 - name: Create new volume named foo under pool named bar
   infini_vol:
     name: foo
@@ -124,7 +121,7 @@ EXAMPLES = r"""
     user: admin
     password: secret
     system: ibox001
-"""
+'''
 
 # RETURN = r''' # '''
 

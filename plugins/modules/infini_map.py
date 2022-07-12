@@ -31,10 +31,6 @@ options:
     description:
       - Cluster Name
     required: false
-  volume:
-    description:
-      - Volume name to map to the host
-    required: true
   state:
     description:
       - Creates mapping when present or removes when absent, or provides
@@ -42,6 +38,13 @@ options:
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
+  volume:
+    description:
+      - Volume name to map to the host.
+    required: true
+  lun:
+    description:
+      - Volume lun.
 extends_documentation_fragment:
     - infinibox
 '''

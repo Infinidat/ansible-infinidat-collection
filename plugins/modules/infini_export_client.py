@@ -19,13 +19,12 @@ version_added: 2.3
 short_description: Create, Delete or Modify NFS Client(s) for existing exports on Infinibox
 description:
     - This module creates, deletes or modifys NFS client(s) for existing exports on Infinibox.
-author: Gregory Shulov (@GR360RY)
+author: David Ohlemacher (@ohlemacher)
 options:
   client:
     description:
       - Client IP or Range. Ranges can be defined as follows
         192.168.0.1-192.168.0.254.
-    aliases: ['name']
     required: true
   state:
     description:
@@ -242,9 +241,9 @@ def main():
     argument_spec.update(
         dict(
             client=dict(required=True),
+            state=dict(default='present', choices=['stat', 'present', 'absent']),
             access_mode=dict(choices=['RO', 'RW'], default='RW'),
             no_root_squash=dict(type='bool', default='no'),
-            state=dict(default='present', choices=['stat', 'present', 'absent']),
             export=dict(required=True)
         )
     )

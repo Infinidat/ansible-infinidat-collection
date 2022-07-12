@@ -19,7 +19,7 @@ version_added: 2.3
 short_description: Create, Delete or Modify NFS Exports on Infinibox
 description:
     - This module creates, deletes or modifies NFS exports on Infinibox.
-author: Gregory Shulov (@GR360RY)
+author: David Ohlemacher (@ohlemacher)
 options:
   name:
     description:

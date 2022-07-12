@@ -20,7 +20,7 @@ version_added: 2.3
 short_description: Create, Delete and Modify Hosts on Infinibox
 description:
     - This module creates, deletes or modifies hosts on Infinibox.
-author: Gregory Shulov (@GR360RY)
+author: David Ohlemacher (@ohlemacher)
 options:
   name:
     description:
