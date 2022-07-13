@@ -1,21 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2020, Infinidat <info@infinidat.com>
+
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
-
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-
 
 DOCUMENTATION = r'''
 ---
 module: infini_export_client
-version_added: 2.3
+version_added: '2.3.0'
 short_description: Create, Delete or Modify NFS Client(s) for existing exports on Infinibox
 description:
     - This module creates, deletes or modifys NFS client(s) for existing exports on Infinibox.
@@ -26,18 +21,21 @@ options:
       - Client IP or Range. Ranges can be defined as follows
         192.168.0.1-192.168.0.254.
     required: true
+    type: str
   state:
     description:
       - Creates/Modifies client when present and removes when absent.
     required: false
     default: "present"
-    choices: [ "present", "absent" ]
+    choices: [ "stat", "present", "absent" ]
+    type: str
   access_mode:
     description:
       - Read Write or Read Only Access.
     choices: [ "RW", "RO" ]
-    default: RW
+    default: "RW"
     required: false
+    type: str
   no_root_squash:
     description:
       - Don't squash root user to anonymous. Will be set to "no" on creation if not specified explicitly.
@@ -48,6 +46,7 @@ options:
     description:
       - Name of the export.
     required: true
+    type: str
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -82,6 +81,8 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
 import traceback
 
 MUNCH_IMP_ERR = None
@@ -89,13 +90,18 @@ try:
     from munch import Munch, unmunchify
     HAS_MUNCH = True
 except ImportError:
-    MUNCH_IMP_ERR = traceback.format_exc()
+    MUNCH_IMPORT_ERROR = traceback.format_exc()
     HAS_MUNCH = False
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_system, get_export, merge_two_dicts
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_system, get_export, merge_two_dicts
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 @api_wrapper
@@ -137,6 +143,7 @@ def update_client(module, export):
 
     return changed
 
+
 @api_wrapper
 def delete_client(module, export):
     """Update export client list"""
@@ -169,9 +176,8 @@ def get_sys_exp(module):
 
 
 def get_export_client_fields(export, client_name):
-    fields = export.get_fields() #from_cache=True, raw_value=True)
+    fields = export.get_fields()  # from_cache=True, raw_value=True)
     permissions = fields.get('permissions', None)
-    #field_dict = {}
     for munched_perm in permissions:
         perm = unmunchify(munched_perm)
         if perm['client'] == client_name:  # Found client
@@ -180,7 +186,7 @@ def get_export_client_fields(export, client_name):
                 no_root_squash=perm['no_root_squash'],
             )
             return field_dict
-    assert False, "No client match to exports found"
+    raise AssertionError("No client {0} match to exports found".format(client_name))
 
 
 def handle_stat(module):
@@ -200,11 +206,11 @@ def handle_stat(module):
 def handle_present(module):
     system, export = get_sys_exp(module)
     if not export:
-        msg='Export {0} not found'.format(module.params['export'])
+        msg = 'Export {0} not found'.format(module.params['export'])
         module.fail_json(msg=msg)
 
     changed = update_client(module, export)
-    msg="Export client updated"
+    msg = "Export client updated"
     module.exit_json(changed=changed, msg=msg)
 
 
@@ -212,11 +218,11 @@ def handle_absent(module):
     system, export = get_sys_exp(module)
     if not export:
         changed = False
-        msg="Export client already absent"
+        msg = "Export client already absent"
         module.exit_json(changed=False, msg=msg)
     else:
         changed = delete_client(module, export)
-        msg="Export client removed"
+        msg = "Export client removed"
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -242,7 +248,7 @@ def main():
         dict(
             client=dict(required=True),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
-            access_mode=dict(choices=['RO', 'RW'], default='RW'),
+            access_mode=dict(choices=['RO', 'RW'], default='RW', type="str"),
             no_root_squash=dict(type='bool', default='no'),
             export=dict(required=True)
         )
@@ -250,10 +256,13 @@ def main():
 
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
-    if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
     if not HAS_MUNCH:
-        module.fail_json(msg=missing_required_lib('munch'), exception=MUNCH_IMP_ERR)
+        module.fail_json(msg=missing_required_lib('munch'),
+                         exception=MUNCH_IMPORT_ERROR)
+
+    if not HAS_INFINISDK:
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     execute_state(module)
 

@@ -1,49 +1,38 @@
 # -*- coding: utf-8 -*-
-# This code is part of Ansible, but is an independent component.
-# This particular file snippet, and this file snippet only, is BSD licensed.
-# Modules you write using this snippet, which is embedded dynamically by Ansible
-# still belong to the author of the module, and may assign their own license
-# to the complete work.
-#
-# Copyright: (c) 2020, Infinidat <info@infinidat.com>
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
-#
-#    * Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
-#    * Redistributions in binary form must reproduce the above copyright notice,
-#      this list of conditions and the following disclaimer in the documentation
-#      and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-# IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-# USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
 
-HAS_INFINISDK = True
+from ansible.module_utils.six import raise_from
+#from ansible.module_utils.errors import AnsibleError
+import ansible.module_utils.errors
+
 try:
     from infinisdk import InfiniBox, core
-except ImportError:
+    from infinisdk.core.exceptions import ObjectNotFound
+except ImportError as imp_exc:
     HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = imp_exc
+else:
+    HAS_INFINISDK = True
+    INFINISDK_IMPORT_ERROR = None
+
+if INFINISDK_IMPORT_ERROR:
+    raise_from(
+        ansible.module_utils.errors.AnsibleError('INFINIDAT SDK must be installed to use this plugin'),
+        INFINISDK_IMPORT_ERROR)
 
 from functools import wraps
 from os import environ
 from os import path
 from datetime import datetime
-from infinisdk.core.exceptions import ObjectNotFound
 
 
 def unixMillisecondsToDate(unix_ms):
-    return (datetime.utcfromtimestamp(unix_ms/1000.), 'UTC')
+    return (datetime.utcfromtimestamp(unix_ms / 1000.), 'UTC')
 
 
 def api_wrapper(func):
@@ -96,9 +85,9 @@ def get_system(module):
     if user and password:
         system = InfiniBox(box, auth=(user, password), use_ssl=True)
     elif environ.get('INFINIBOX_USER') and environ.get('INFINIBOX_PASSWORD'):
-        system = InfiniBox(box, \
-                           auth=(environ.get('INFINIBOX_USER'), \
-                                 environ.get('INFINIBOX_PASSWORD')), \
+        system = InfiniBox(box,
+                           auth=(environ.get('INFINIBOX_USER'),
+                                 environ.get('INFINIBOX_PASSWORD')),
                            use_ssl=True)
     elif path.isfile(path.expanduser('~') + '/.infinidat/infinisdk.ini'):
         system = InfiniBox(box, use_ssl=True)
@@ -215,7 +204,7 @@ def get_host(module, system):
 def get_cluster(module, system):
     """Find a cluster by the name specified in the module"""
     cluster = None
-    #print("dir:", dir(system))
+    # print("dir:", dir(system))
 
     for a_cluster in system.host_clusters.to_list():
         a_cluster_name = a_cluster.get_name()

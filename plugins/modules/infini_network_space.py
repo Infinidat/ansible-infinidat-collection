@@ -1,25 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
-from infi.dtypes.iqn import make_iscsi_name
 
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
-
-
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: infini_network_space
-version_added: 2.12.4
+version_added: '2.12.0'
 short_description: Create, Delete and Modify network spaces on Infinibox
 description:
     - This module creates, deletes or modifies network spaces on Infinibox.
@@ -35,6 +27,12 @@ options:
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
+  interfaces:
+    description:
+      - A list of interfaces for the space.
+    required: false
+    type: list
+    elements: str
   service:
     description:
       - Choose a service.
@@ -46,51 +44,74 @@ options:
       - Set an MTU. If not specified, defaults to 1500 bytes.
     required: false
     type: int
-    default: None
   network:
     description:
       - Starting IP address.
     required: false
-    default: None
-    type: string
+    type: str
   netmask:
     description:
       - Network mask.
     required: false
-    default: None
     type: int
-  ip_list:
+  ips:
     description:
       - List of IPs.
     required: false
     default: []
-    type: list(int)
+    type: list
+    elements: str
   rate_limit:
     description:
-      - Specify the throughput limit per node. The limit is specified in Mbps, megabits per second (not megabytes). Note the limit affects NFS, iSCSI and async-replication traffic. It does not affect sync-replication or active-active traffic.
+      - Specify the throughput limit per node.
+      - The limit is specified in Mbps, megabits per second (not megabytes).
+      - Note the limit affects NFS, iSCSI and async-replication traffic.
+      - It does not affect sync-replication or active-active traffic.
     required: false
     type: int
 
 extends_documentation_fragment:
     - infinibox
-"""
+'''
 
-EXAMPLES = r"""
+EXAMPLES = r'''
 - name: Create new network space
   infini_network_space:
     name: iSCSI
-    TBD
+    state: present
+    interfaces:
+        - 1680
+        - 1679
+        - 1678
+    service: ISCSI_SERVICE
+    netmask: 19
+    network: 172.31.32.0
+    default_gateway: 172.31.63.254
+    ips:
+        - 172.31.32.145
+        - 172.31.32.146
+        - 172.31.32.147
+        - 172.31.32.148
+        - 172.31.32.149
+        - 172.31.32.150
     user: admin
     password: secret
     system: ibox001
-"""
+'''
 
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from infinisdk.core.exceptions import APICommandFailed
+
+import traceback
+
+HAS_INFINISDK = False
+INFINISDK_IMPORT_ERROR = None
 
 try:
+    from infinisdk.core.exceptions import APICommandFailed
+    from infi.dtypes.iqn import make_iscsi_name
+
     # Import from collection (recommended)
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
         HAS_INFINISDK,
@@ -101,17 +122,12 @@ try:
         merge_two_dicts,
         get_net_space,
     )
-except ModuleNotFoundError:
-    # Import from ansible clone (hacking only)
-    from ansible.module_utils.infinibox import (
-        HAS_INFINISDK,
-        api_wrapper,
-        infinibox_argument_spec,
-        get_system,
-        unixMillisecondsToDate,
-        merge_two_dicts,
-        get_net_space,
-    )
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
+
 
 # try:
 #     # Import from collection (recommended)
@@ -123,6 +139,7 @@ except ModuleNotFoundError:
 #       Config
 
 from infinisdk.core.exceptions import ObjectNotFound
+
 
 @api_wrapper
 def create_empty_network_space(module, system):
@@ -138,9 +155,9 @@ def create_empty_network_space(module, system):
     }
     interfaces = module.params["interfaces"]
 
-    print(f"Creating network space {network_space_name}")
+    # print("Creating network space {0}".format(network_space_name))
     product_id = system.api.get('system/product_id')
-    print(f"api: {product_id.get_result()}")
+    # print("api: {0}".format(product_id.get_result()))
 
     net_create_url = "network/spaces"
     net_create_data = {
@@ -158,7 +175,8 @@ def create_empty_network_space(module, system):
         path=net_create_url,
         data=net_create_data
     )
-    print(f"net_create: {net_create}")
+    # print("net_create: {0}".format(net_create))
+
 
 @api_wrapper
 def find_network_space_id(module, system):
@@ -166,31 +184,33 @@ def find_network_space_id(module, system):
     Find the ID of this network space
     """
     network_space_name = module.params["name"]
-    net_id_url = "network/spaces?name={}&fields=id".format(network_space_name)
+    net_id_url = "network/spaces?name={0}&fields=id".format(network_space_name)
     net_id = system.api.get(
         path=net_id_url
     )
     result = net_id.get_json()['result'][0]
     space_id = result['id']
-    print(f"Network space has ID {space_id}")
+    # print("Network space has ID {0}".format(space_id))
     return space_id
+
 
 @api_wrapper
 def add_ips_to_network_space(module, system, space_id):
     network_space_name = module.params["name"]
-    print(f"Adding IPs to network space {network_space_name}")
+    # print("Adding IPs to network space {0}".format(network_space_name))
 
     ips = module.params["ips"]
     for ip in ips:
-        ip_url = "network/spaces/{}/ips".format(space_id)
+        ip_url = "network/spaces/{0}/ips".format(space_id)
         ip_data = ip
         ip_add = system.api.post(
             path=ip_url,
             data=ip_data
         )
-        print(f"add_ips json: {ip_add.get_json()}")
+        # print("add_ips json: {0}".format(ip_add.get_json()))
         result = ip_add.get_json()['result']
-        print(f"add ip result: {result}")
+        # print("add ip result: {0}".format(result))
+
 
 @api_wrapper
 def create_network_space(module, system):
@@ -207,6 +227,7 @@ def create_network_space(module, system):
         changed = False
 
     return changed
+
 
 def update_network_space(module, system):
     """
@@ -235,12 +256,12 @@ def update_network_space(module, system):
     }
     interfaces = module.params["interfaces"]
 
-    print(f"Updating network space {network_space_name}")
+    # print("Updating network space {0}".format(network_space_name))
 
     # Find space's ID
     space_id = find_network_space_id(module, system)
 
-    net_url = "network/spaces/{}".format(space_id)
+    net_url = "network/spaces/{0}".format(space_id)
     net_data = {
         "name": network_space_name,
         "service": service,
@@ -249,13 +270,13 @@ def update_network_space(module, system):
     }
 
     # Find existing space
-    net_existing = system.api.get(path=path)
+    net_existing = system.api.get(path=net_url)
 
     net_update = system.api.put(
         path=net_url,
         data=net_data
     )
-    print(f"net_update: {net_update}")
+    # print("net_update: {0}".format(net_update))
 
 
 def get_network_space_fields(module, network_space):
@@ -322,34 +343,35 @@ def handle_absent(module):
         msg = "Network space {0} already absent".format(network_space_name)
     else:
         # Find IPs from space
-        ips = [ip for ip in network_space.get_ips()]
+        ips = list(network_space.get_ips())
 
         # Disable and delete IPs from space
         if not module.check_mode:
             for ip in ips:
                 addr = ip["ip_address"]
 
-                print(f"Disabling IP {addr}")
+                # print("Disabling IP {0}".format(addr))
                 try:
                     network_space.disable_ip_address(addr)
                 except APICommandFailed as err:
                     if err.error_code == "IP_ADDRESS_ALREADY_DISABLED":
-                        print(f"Already disabled IP {addr}")
+                        pass
+                        # print("Already disabled IP {0}".format(addr))
                     else:
-                        print(f"Failed to disable IP {addr}")
-                        network.fail_json(
-                            msg="Disabling of network space {} IP {} failed".format(
+                        # print("Failed to disable IP {0}".format(addr))
+                        module.fail_json(
+                            msg="Disabling of network space {0} IP {1} failed".format(
                                 network_space_name, addr
                             )
                         )
 
-                print(f"Removing IP {addr}")
+                # print("Removing IP {0}".format(addr))
                 try:
                     network_space.remove_ip_address(addr)
-                except:
-                    network.fail_json(
-                        msg="Removal of network space {} IP {} failed".format(
-                            network_space_name, addr
+                except Exception as err:
+                    module.fail_json(
+                        msg="Removal of network space {0} IP {1} failed: {2}".format(
+                            network_space_name, addr, err
                         )
                     )
 
@@ -401,9 +423,9 @@ def main():
             network=dict(default=None, required=False),
             netmask=dict(default=None, required=False, type=int),
             default_gateway=dict(default=None, required=False),
-            interfaces=dict(default=list(), required=False, type=list),
+            interfaces=dict(default=list(), required=False, type="list", elements="int"),
             network_config=dict(default=dict(), required=False, type=dict),
-            ips=dict(default=list(), required=False, type=list),
+            ips=dict(default=list(), required=False, type="list", elements="str"),
             rate_limit=dict(default=None, required=False, type=int),
         )
         # required_one_of = [["var_1", "var_2"]]
@@ -413,7 +435,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"))
+        module.fail_json(msg=missing_required_lib("infinisdk"),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     execute_state(module)
 

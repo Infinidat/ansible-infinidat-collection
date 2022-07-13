@@ -1,21 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2020, Infinidat <info@infinidat.com>
+
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
-
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-
 
 DOCUMENTATION = r'''
 ---
 module: infini_fs
-version_added: 2.3
+version_added: '2.3.0'
 short_description: Create, Delete or Modify filesystems on Infinibox
 description:
     - This module creates, deletes or modifies filesystems on Infinibox.
@@ -25,20 +21,24 @@ options:
     description:
       - File system name.
     required: true
+    type: str
   state:
     description:
       - Creates/Modifies file system when present or removes when absent.
     required: false
     default: present
-    choices: [ "present", "absent" ]
+    choices: [ "stat", "present", "absent" ]
+    type: str
   pool:
     description:
       - Pool that will host file system.
     required: true
+    type: str
   size:
     description:
       - File system size in MB, GB or TB units. See examples.
     required: false
+    type: str
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -59,6 +59,8 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
 import traceback
 
 CAPACITY_IMP_ERR = None
@@ -69,10 +71,15 @@ except ImportError:
     CAPACITY_IMP_ERR = traceback.format_exc()
     HAS_CAPACITY = False
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_pool, get_system, get_filesystem
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_pool, get_system, get_filesystem
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 @api_wrapper
@@ -121,7 +128,7 @@ def handle_stat(module):
         module.fail_json(msg='Pool {0} not found'.format(module.params['pool']))
     if not filesystem:
         module.fail_json(msg='File system {0} not found'.format(module.params['name']))
-    fields = filesystem.get_fields() #from_cache=True, raw_value=True)
+    fields = filesystem.get_fields()  # from_cache=True, raw_value=True)
     used = fields.get('used_size', None)
     filesystem_id = fields.get('id', None)
 
@@ -186,9 +193,12 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
+
     if not HAS_CAPACITY:
-        module.fail_json(msg=missing_required_lib('capacity'), exception=CAPACITY_IMP_ERR)
+        module.fail_json(msg=missing_required_lib('capacity'),
+                         exception=CAPACITY_IMP_ERR)
 
     if module.params['size']:
         try:

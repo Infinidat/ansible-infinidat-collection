@@ -1,26 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2020, Infinidat <info@infinidat.com>
+
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
-
-try:
-    from infi.dtypes.iqn import make_iscsi_name
-    HAS_INFI_MOD = True
-except ImportError:
-    HAS_INFI_MOD = False
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-
 
 DOCUMENTATION = r'''
 ---
 module: infini_cluster
-version_added: 2.9
+version_added: '2.9.0'
 short_description: Create, Delete and Modify Host Cluster on Infinibox
 description:
     - This module creates, deletes or modifies host clusters on Infinibox.
@@ -30,16 +20,20 @@ options:
     description:
       - Cluster Name
     required: true
+    type: str
   state:
     description:
       - Creates/Modifies Cluster when present, removes when absent, or provides
         details of a cluster when stat.
     required: false
+    type: str
     default: present
     choices: [ "stat", "present", "absent" ]
   cluster_hosts:
     description: A list of hosts to add to a cluster when state is present.
     required: false
+    type: list
+    elements: dict
 extends_documentation_fragment:
     - infinibox
 '''
@@ -57,12 +51,23 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
+import traceback
+
+try:
+    from infi.dtypes.iqn import make_iscsi_name
+    HAS_INFI_MOD = True
+    HAS_INFI_MOD_ERROR = traceback.format_exc()
+except ImportError:
+    HAS_INFI_MOD = False
+    INFINIMOD_IMPORT_ERROR = traceback.format_exc()
+
 try:
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
         HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
         get_system, get_cluster, unixMillisecondsToDate, merge_two_dicts
 except ImportError:
     HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
 
 
 @api_wrapper
@@ -80,7 +85,7 @@ def get_host_by_name(system, host_name):
 
 @api_wrapper
 def create_cluster(module, system):
-    print("create cluster")
+    # print("create cluster")
     changed = True
     if not module.check_mode:
         cluster = system.host_clusters.create(name=module.params['name'])
@@ -89,25 +94,25 @@ def create_cluster(module, system):
             if cluster_host['host_cluster_state'] == 'present':
                 host = get_host_by_name(system, cluster_host['host_name'])
                 cluster.add_host(host)
-                print("Added host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
-            else:
-                print("Skipped adding (absent) host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
+            #     print("Added host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
+            # else:
+            #     print("Skipped adding (absent) host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
     return changed
 
 
 @api_wrapper
 def update_cluster(module, system, cluster):
-    print("update cluster")
+    # print("update cluster")
     changed = False
 
     # e.g. of one host dict found in the module.params['cluster_hosts'] list:
     #    {host_name: <'some_name'>, host_cluster_state: <'present' or 'absent'>}
     module_cluster_hosts = module.params['cluster_hosts']
     current_cluster_hosts_names = [host.get_name() for host in cluster.get_field('hosts')]
-    print("current_cluster_hosts_names:", current_cluster_hosts_names)
+    # print("current_cluster_hosts_names:", current_cluster_hosts_names)
     for module_cluster_host in module_cluster_hosts:
         module_cluster_host_name = module_cluster_host['host_name']
-        print("module_cluster_host_name:", module_cluster_host_name)
+        # print("module_cluster_host_name:", module_cluster_host_name)
         # Need to add host to cluster?
         if module_cluster_host_name not in current_cluster_hosts_names:
             if module_cluster_host['host_cluster_state'] == 'present':
@@ -119,7 +124,7 @@ def update_cluster(module, system, cluster):
                     )
                     module.fail_json(msg=msg)
                 cluster.add_host(host)
-                print("Added host {0} to cluster {1}".format(host.get_name(), cluster.get_name()))
+                # print("Added host {0} to cluster {1}".format(host.get_name(), cluster.get_name()))
                 changed = True
         # Need to remove host from cluster?
         elif module_cluster_host_name in current_cluster_hosts_names:
@@ -132,14 +137,16 @@ def update_cluster(module, system, cluster):
                     )
                     module.fail_json(msg=msg)
                 cluster.remove_host(host)
-                print("Removed host {0} from cluster {1}".format(host.get_name(), cluster.get_name()))
+                # print("Removed host {0} from cluster {1}".format(host.get_name(), cluster.get_name()))
                 changed = True
     return changed
 
 
 @api_wrapper
 def delete_cluster(module, cluster):
-    assert cluster, "Cluster not found"
+    if not cluster:
+        msg = "Cluster {0} not found".format(cluster.get_name())
+        module.fail_json(msg=msg)
     changed = True
     if not module.check_mode:
         cluster.delete()
@@ -190,14 +197,14 @@ def handle_present(module):
     cluster_name = module.params["name"]
     if not cluster:
         changed = create_cluster(module, system)
-        msg='Cluster {0} created'.format(cluster_name)
+        msg = 'Cluster {0} created'.format(cluster_name)
         module.exit_json(changed=changed, msg=msg)
     else:
         changed = update_cluster(module, system, cluster)
         if changed:
-            msg='Cluster {0} updated'.format(cluster_name)
+            msg = 'Cluster {0} updated'.format(cluster_name)
         else:
-            msg='Cluster {0} required no changes'.format(cluster_name)
+            msg = 'Cluster {0} required no changes'.format(cluster_name)
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -206,10 +213,10 @@ def handle_absent(module):
     cluster_name = module.params["name"]
     if not cluster:
         changed = False
-        msg="Cluster {0} already absent".format(cluster_name)
+        msg = "Cluster {0} already absent".format(cluster_name)
     else:
         changed = delete_cluster(module, cluster)
-        msg="Cluster {0} removed".format(cluster_name)
+        msg = "Cluster {0} removed".format(cluster_name)
     module.exit_json(changed=changed, msg=msg)
 
 
@@ -241,7 +248,7 @@ def check_options(module):
                 # Check host has required keys
                 valid_keys = ['host_name', 'host_cluster_state']
                 for valid_key in valid_keys:
-                    _ = host[valid_key]
+                    not_used = host[valid_key]
                 # Check host has no unknown keys
                 if len(host.keys()) != len(valid_keys):
                     raise KeyError
@@ -258,17 +265,19 @@ def main():
         dict(
             name=dict(required=True),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
-            cluster_hosts=dict(required=False, type=list),
+            cluster_hosts=dict(required=False, type="list", elements="dict"),
         )
     )
 
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFI_MOD:
-        module.fail_json(msg=missing_required_lib('infi.dtypes.iqn'))
+        module.fail_json(msg=missing_required_lib('infi.dtypes.iqn'),
+                         exception=INFINIMOD_IMPORT_ERROR)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     check_options(module)
     execute_state(module)

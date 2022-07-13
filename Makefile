@@ -1,4 +1,8 @@
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 # vim: set foldmethod=indent foldnestmax=1 foldcolumn=1:
+
 # A Makefile for creating, running and testing Infindat's Ansible collection.
 
 ### Dependencies ###
@@ -258,7 +262,7 @@ test-sanity:  ## Run ansible sanity tests
 	cd $(_install_path)/ansible_collections/infinidat/infinibox && \
 		ansible-test sanity --docker default -v
 
-_setup-sanity-locally:
+_setup-sanity-locally: galaxy-collection-build-force galaxy-collection-install-locally
 	@# Setup a test env.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
 		$(_python_version) -m venv $(_venv) && \
@@ -270,16 +274,8 @@ test-sanity-locally: _setup-sanity-locally  ## Run ansible sanity tests locally.
 	@# in accordance with
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
 	@# This runs on an collection installed locally making it useful for dev and debugging.
-	@# Not sure why, but ansible-test fails to discover py scripts to test.
-	@# This specifies a "$test_file".
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		source $(_venv)/bin/activate && \
-		export test_file="plugins/modules/infini_map.py" && \
-		echo -e "\n$$(date) - Sanity testing $$test_file\n" && \
-		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/modules:$$ANSIBLE_LIBRARY" && \
-		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/module_utils:$$ANSIBLE_LIBRARY" && \
-		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/filters:$$ANSIBLE_LIBRARY" && \
-		ansible-test sanity --docker default -v "$$test_file"
+		ansible-test sanity --docker default --requirements $(_requirements_file)
 
 test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install-locally test-sanity-locally  ## Run all sanity tests locally.
 	@# Run local build, install and sanity test.

@@ -29,11 +29,10 @@
           - 172.31.32.148
           - 172.31.32.149
           - 172.31.32.150
-
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-        register: create_out
+      register: create_out
 
     - name: debug
       ansible.builtin.debug:

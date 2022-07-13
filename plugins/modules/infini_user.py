@@ -1,22 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2020, Infinidat <info@infinidat.com>
+
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
-from infi.dtypes.iqn import make_iscsi_name
-
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-
 
 DOCUMENTATION = r'''
 ---
 module: infini_user
-version_added: '2.10'
+version_added: '2.9.0'
 short_description: Create, Delete and Modify a User on Infinibox
 description:
     - This module creates, deletes or modifies a user on Infinibox.
@@ -28,19 +22,23 @@ options:
         changed from this module. It may be changed from the UI or from
         infinishell.
     required: true
+    type: str
   user_email:
     description:
       - The new user's Email address
     required: false
+    type: str
   user_password:
     description:
       - The new user's password
     required: false
+    type: str
   user_role:
     description:
       - The user's role
     required: false
     choices: [ "admin", "pool_admin", "read_only" ]
+    type: str
   user_enabled:
     description:
       - Specify whether to enable the user
@@ -51,12 +49,14 @@ options:
     description:
       - Use with role==pool_admin. Specify the new user's pool.
     required: false
+    type: str
   state:
     description:
       - Creates/Modifies user when present or removes when absent
     required: false
     default: present
     choices: [ "stat", "reset_password", "present", "absent" ]
+    type: str
 
 extends_documentation_fragment:
     - infinibox
@@ -78,25 +78,38 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
+
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_system, get_user, get_pool, unixMillisecondsToDate, merge_two_dicts
+
+import traceback
+
+HAS_INFINISDK = True
+
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_system, get_user, get_pool, unixMillisecondsToDate, merge_two_dicts
+    from infi.dtypes.iqn import make_iscsi_name
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 @api_wrapper
 def create_user(module, system):
     if not module.check_mode:
         user = system.users.create(name=module.params['user_name'],
-                                  password=module.params['user_password'],
-                                  email=module.params['user_email'],
-                                  enabled=module.params['user_enabled'],
-                                  )
+                                   password=module.params['user_password'],
+                                   email=module.params['user_email'],
+                                   enabled=module.params['user_enabled'],
+                                   )
         # Set the user's role
         user.update_role(module.params['user_role'])
         if module.params['user_pool']:
-            assert module.params['user_role'] == 'pool_admin', \
-                'user_pool set, but role is not pool_admin'
+            if not module.params['user_role'] == 'pool_admin':
+                raise AssertionError("user_pool set, but role is not 'pool_admin'")
             # Add the user to the pool's owners
             pool = system.pools.get(name=module.params['user_pool'])
             add_user_to_pool_owners(user, pool)
@@ -111,23 +124,23 @@ def add_user_to_pool_owners(user, pool):
     get owners, add user, then set owners.  Further, we need to know if the
     owners changed.  Use sets of owners to compare.
     """
-    #print("add_user_to_pool_owners(): start")
+    # print("add_user_to_pool_owners(): start")
     changed = False
     pool_fields = pool.get_fields(from_cache=True, raw_value=True)
     pool_owners = pool_fields.get('owners', [])
-    #print('pool_owners:', pool_owners, 'pool_owners type:', type(pool_owners))
-    #print('user:', user)
-    #print('pool:', pool)
+    # print('pool_owners:', pool_owners, 'pool_owners type:', type(pool_owners))
+    # print('user:', user)
+    # print('pool:', pool)
     pool_owners_set = set(pool_owners)
-    #print('pool_owners_set:', pool_owners_set)
+    # print('pool_owners_set:', pool_owners_set)
     new_pool_owners_set = pool_owners_set.copy()
     new_pool_owners_set.add(user.id)
-    #print('new_pool_owners_set:', new_pool_owners_set)
+    # print('new_pool_owners_set:', new_pool_owners_set)
     if pool_owners_set != new_pool_owners_set:
-        pool.set_owners([user]) #(pool_owners.append(user))
+        pool.set_owners([user])
         changed = True
-    #print("changed:", changed)
-    #print("add_user_to_pool_owners(): end")
+    # print("changed:", changed)
+    # print("add_user_to_pool_owners(): end")
     return changed
 
 
@@ -146,12 +159,14 @@ def remove_user_from_pool_owners(user, pool):
 
 @api_wrapper
 def update_user(module, system, user):
-    #print("update_user()")
-    assert user is not None, "Cannot update user. User not found."
+    # print("update_user()")
+    if user is None:
+        raise AssertionError("Cannot update user {0}. User not found.".format(module.params["user_name"]))
+
     changed = False
     fields = user.get_fields(from_cache=True, raw_value=True)
     if fields.get('role') != module.params['user_role'].upper():
-        user.update_field('role',  module.params['user_role'])
+        user.update_field('role', module.params['user_role'])
         changed = True
     if fields.get('enabled') != module.params['user_enabled']:
         user.update_field('enabled', module.params['user_enabled'])
@@ -173,8 +188,9 @@ def update_user(module, system, user):
 
 @api_wrapper
 def reset_user_password(module, system, user):
-    #print("update_user()")
-    assert user is not None, "Cannot change user password. User not found."
+    # print("update_user()")
+    if user is None:
+        raise AssertionError("Cannot change user {0} password. User not found.".format(module.params["user_name"]))
     user.update_password(module.params['user_password'])
 
 
@@ -193,7 +209,7 @@ def delete_user(module, user):
 def get_sys_user(module):
     system = get_system(module)
     user = get_user(module, system)
-    #print("get_sys_user(): user:", user)
+    # print("get_sys_user(): user:", user)
     return (system, user)
 
 
@@ -231,13 +247,13 @@ def handle_present(module):
     user_name = module.params["user_name"]
     if not user:
         changed = create_user(module, system)
-        msg='User {0} created'.format(user_name)
+        msg = 'User {0} created'.format(user_name)
     else:
         changed = update_user(module, system, user)
         if changed:
-            msg='User {0} updated'.format(user_name)
+            msg = 'User {0} updated'.format(user_name)
         else:
-            msg='User {0} update required no changes'.format(user_name)
+            msg = 'User {0} update required no changes'.format(user_name)
     module.exit_json(changed=changed, msg=msg)
 
 
@@ -246,10 +262,10 @@ def handle_absent(module):
     user_name = module.params["user_name"]
     if not user:
         changed = False
-        msg="User {0} already absent".format(user_name)
+        msg = "User {0} already absent".format(user_name)
     else:
         changed = delete_user(module, user)
-        msg="User {0} removed".format(user_name)
+        msg = "User {0} removed".format(user_name)
     module.exit_json(changed=changed, msg=msg)
 
 
@@ -261,7 +277,7 @@ def handle_reset_password(module):
         module.fail_json(msg=msg)
     else:
         reset_user_password(module, system, user)
-        msg='User {0} password changed'.format(user_name)
+        msg = 'User {0} password changed'.format(user_name)
         module.exit_json(changed=True, msg=msg)
 
 
@@ -284,7 +300,7 @@ def execute_state(module):
 
 
 def check_options(module):
-    state     = module.params['state']
+    state = module.params['state']
     user_role = module.params['user_role']
     user_pool = module.params['user_pool']
     if state == 'present':
@@ -295,12 +311,13 @@ def check_options(module):
 
         valid_keys = ['user_email', 'user_password', 'user_role', 'user_enabled']
         for valid_key in valid_keys:
+            # Check required keys provided
             try:
-                _ = module.params[valid_key]
+                not_used = module.params[valid_key]
             except KeyError:
                 msg = 'For state "present", options {0} are required'.format(", ".join(valid_keys))
                 module.fail_json(msg=msg)
-    elif  state == 'reset_password':
+    elif state == 'reset_password':
         if not module.params['user_password']:
             msg = 'For state "reset_password", user_password is required'
 
@@ -313,7 +330,7 @@ def main():
             user_email=dict(required=False),
             user_password=dict(required=False, no_log=True),
             user_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only']),
-            user_enabled=dict(required=False, type='bool'),
+            user_enabled=dict(required=False, type='bool', default=True),
             user_pool=dict(required=False),
             state=dict(default='present', choices=['stat', 'reset_password', 'present', 'absent']),
         )
@@ -322,7 +339,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     check_options(module)
     execute_state(module)

@@ -1,22 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2021, Infinidat <info@infinidat.com>
+
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
-
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-
 
 DOCUMENTATION = r'''
 ---
 module: infini_map
-version_added: '2.10'
+version_added: '2.9.0'
 short_description: Create and Delete mapping of a volume to a host or cluster on Infinibox
 description:
     - This module creates or deletes mappings of volumes to hosts or clusters
@@ -38,6 +33,7 @@ options:
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
+    type: str
   volume:
     description:
       - Volume name to map to the host.
@@ -87,26 +83,35 @@ EXAMPLES = r'''
     password: secret
 '''
 
+
 # RETURN = r''' # '''
 
-
-from infinisdk.core.exceptions import APICommandFailed, ObjectNotFound
-
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_pool, get_system, get_volume, get_host, get_cluster, merge_two_dicts
+
+import traceback
+
+
+try:
+    from infinisdk.core.exceptions import APICommandFailed, ObjectNotFound
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_pool, get_system, get_volume, get_host, get_cluster, merge_two_dicts
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 def vol_is_mapped_to_host(volume, host):
     volume_fields = volume.get_fields()
     volume_id = volume_fields.get('id')
     host_luns = host.get_luns()
-    #print('volume id: {0}'.format(volume_id))
-    #print('host luns: {0}'.format(str(host_luns)))
+    # print('volume id: {0}'.format(volume_id))
+    # print('host luns: {0}'.format(str(host_luns)))
     for lun in host_luns:
         if lun.volume == volume:
-            #print('found mapped volume: {0}'.format(volume))
+            # print('found mapped volume: {0}'.format(volume))
             return True
     return False
 
@@ -115,13 +120,12 @@ def vol_is_mapped_to_cluster(volume, cluster):
     volume_fields = volume.get_fields()
     volume_id = volume_fields.get('id')
     cluster_luns = cluster.get_luns()
-    #print('volume id: {0}'.format(volume_id))
-    #print('host luns: {0}'.format(str(host_luns)))
+    # print('volume id: {0}'.format(volume_id))
+    # print('host luns: {0}'.format(str(host_luns)))
 
     for lun in cluster_luns:
-        #raise AssertionError("lun.volume: {0}, volume: {1}".format(lun.volume, volume))
         if lun.volume == volume:
-            #print('found mapped volume: {0}'.format(volume))
+            # print('found mapped volume: {0}'.format(volume))
             return True
     return False
 
@@ -209,8 +213,7 @@ def create_mapping_to_cluster(module, system):
 
     lun_use = find_cluster_lun_use(module, cluster, volume)
     if lun_use['lun_used']:
-        #assert not lun_use['lun_volume_matches'], "Cannot have matching lun and volume in create_mapping()"
-        msg = "Cannot create mapping of volume '{}' to cluster '{}' using lun '{}'. Lun in use.".format(
+        msg = "Cannot create mapping of volume '{0}' to cluster '{1}' using lun '{2}'. Lun in use.".format(
             volume.get_name(),
             cluster.get_name(),
             module.params['lun'])
@@ -243,8 +246,7 @@ def create_mapping_to_host(module, system):
 
     lun_use = find_host_lun_use(module, host, volume)
     if lun_use['lun_used']:
-        #assert not lun_use['lun_volume_matches'], "Cannot have matching lun and volume in create_mapping()"
-        msg = "Cannot create mapping of volume '{}' to host '{}' using lun '{}'. Lun in use.".format(
+        msg = "Cannot create mapping of volume '{0}' to host '{1}' using lun '{2}'. Lun in use.".format(
             volume.get_name(),
             host.get_name(),
             module.params['lun'])
@@ -271,12 +273,17 @@ def update_mapping_to_host(module, system):
     volume = get_volume(module, system)
     desired_lun = module.params['lun']
 
-    assert vol_is_mapped_to_host(volume, host)
+    if not vol_is_mapped_to_host(volume, host):
+        msg = "Volume {0} is not mapped to host {1}".format(
+            volume.get_name(),
+            host.get_name(),
+        )
+        module.fail_json(msg=msg)
 
     if desired_lun:
         found_lun = find_host_lun(host, volume)
         if found_lun != desired_lun:
-            msg = "Cannot change the lun from '{}' to '{}' for existing mapping of volume '{}' to host '{}'".format(
+            msg = "Cannot change the lun from '{0}' to '{1}' for existing mapping of volume '{2}' to host '{3}'".format(
                 found_lun,
                 desired_lun,
                 volume.get_name(),
@@ -293,12 +300,17 @@ def update_mapping_to_cluster(module, system):
     volume = get_volume(module, system)
     desired_lun = module.params['lun']
 
-    assert vol_is_mapped_to_cluster(volume, cluster)
+    if not vol_is_mapped_to_cluster(volume, cluster):
+        msg = "Volume {0} is not mapped to cluster {1}".format(
+            volume.get_name(),
+            cluster.get_name(),
+        )
+        module.fail_json(msg=msg)
 
     if desired_lun:
         found_lun = find_cluster_lun(cluster, volume)
         if found_lun != desired_lun:
-            msg = "Cannot change the lun from '{}' to '{}' for existing mapping of volume '{}' to cluster '{}'".format(
+            msg = "Cannot change the lun from '{0}' to '{1}' for existing mapping of volume '{2}' to cluster '{3}'".format(
                 found_lun,
                 desired_lun,
                 volume.get_name(),
@@ -472,7 +484,7 @@ def handle_stat(module):
                 changed=False,
                 volume_lun=found_lun,
                 msg=msg,
-        )
+            )
         else:
             msg = 'Volume {0} is not mapped to host {1}'.format(volume_name, host_name)
             module.fail_json(msg=msg)
@@ -485,7 +497,7 @@ def handle_stat(module):
                 changed=False,
                 volume_lun=found_lun,
                 msg=msg,
-        )
+            )
         else:
             msg = 'Volume {0} is not mapped to cluster {1}'.format(volume_name, cluster_name)
             module.fail_json(msg=msg)
@@ -589,6 +601,7 @@ def check_parameters(module):
         msg = "infini_map requires a host or a cluster to be provided"
         module.fail_json(msg=msg)
 
+
 def main():
     """
     Gather auguments and manage mapping of vols to hosts.
@@ -607,7 +620,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     check_parameters(module)
     execute_state(module)

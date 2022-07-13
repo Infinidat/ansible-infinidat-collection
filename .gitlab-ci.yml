@@ -42,12 +42,12 @@ playbook_testing:
     - git_project="ansible-infinidat-collection"
     - echo "$git_project commit -> $(git log --max-count=1 --oneline)"
     - pushd ./playbooks > /dev/null
-    -     export ANSIBLE_CONFIG="/builds/PSUS/$git_project/playbooks/ansible.cfg"
-    -     export ANSIBLE_FORCE_COLOR=true
-    -     ibox_extra_vars="@../ibox_vars/iboxCICD.yaml"
-    -     verbosity="-v"
-    -     ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_create_resources.yml "${verbosity}"
-    -     ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_remove_resources.yml "${verbosity}"
+    - export ANSIBLE_CONFIG="/builds/PSUS/$git_project/playbooks/ansible.cfg"
+    - export ANSIBLE_FORCE_COLOR=true
+    - ibox_extra_vars="@../ibox_vars/iboxCICD.yaml"
+    - verbosity="-v"
+    - ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_create_resources.yml "${verbosity}"
+    - ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_remove_resources.yml "${verbosity}"
     - popd > /dev/null
 
     # Show summery of execution tasks
@@ -57,12 +57,12 @@ playbook_testing:
     - git_project="ansible-infinidat-collection"
     - echo "$git_project commit -> $(git log --max-count=1 --oneline)"
     - pushd ./playbooks > /dev/null
-    -     export ANSIBLE_CONFIG="/builds/PSUS/$git_project/playbooks/ansible.cfg"
-    -     export ANSIBLE_FORCE_COLOR=true
-    -     ibox_extra_vars="@../ibox_vars/iboxCICD.yaml"
-    -     verbosity="-v"
-    -     ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_create_map_cluster.yml "${verbosity}"
-    -     ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_remove_map_cluster.yml "${verbosity}"
+    - export ANSIBLE_CONFIG="/builds/PSUS/$git_project/playbooks/ansible.cfg"
+    - export ANSIBLE_FORCE_COLOR=true
+    - ibox_extra_vars="@../ibox_vars/iboxCICD.yaml"
+    - verbosity="-v"
+    - ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_create_map_cluster.yml "${verbosity}"
+    - ansible-playbook --extra-vars "$ibox_extra_vars" --vault-password-file "$VAULT_PASSWORD_FILE" test_remove_map_cluster.yml "${verbosity}"
     - popd > /dev/null
 
     # Show summery of execution tasks

@@ -1,23 +1,18 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2020, Infinidat <info@infinidat.com>
+
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
-from infi.dtypes.iqn import make_iscsi_name
-
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-
 
 DOCUMENTATION = r'''
 ---
 module: infini_host
-version_added: 2.3
-short_description: Create, Delete and Modify Hosts on Infinibox
+version_added: '2.3.0'
+short_description: Create, Delete or Modify Hosts on Infinibox
 description:
     - This module creates, deletes or modifies hosts on Infinibox.
 author: David Ohlemacher (@ohlemacher)
@@ -48,9 +43,19 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_system, get_host, unixMillisecondsToDate, merge_two_dicts
+
+import traceback
+
+try:
+    from infi.dtypes.iqn import make_iscsi_name
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_system, get_host, unixMillisecondsToDate, merge_two_dicts
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 @api_wrapper
@@ -62,10 +67,12 @@ def create_host(module, system):
         host = system.hosts.create(name=module.params['name'])
     return changed
 
+
 @api_wrapper
 def update_host(module, host):
     changed = False
     return changed
+
 
 @api_wrapper
 def delete_host(module, host):
@@ -128,11 +135,11 @@ def handle_present(module):
     host_name = module.params["name"]
     if not host:
         changed = create_host(module, system)
-        msg='Host {0} created'.format(host_name)
+        msg = 'Host {0} created'.format(host_name)
         module.exit_json(changed=changed, msg=msg)
     else:
         changed = update_host(module, host)
-        msg='Host {0} updated'.format(host_name)
+        msg = 'Host {0} updated'.format(host_name)
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -140,11 +147,11 @@ def handle_absent(module):
     system, host = get_sys_host(module)
     host_name = module.params["name"]
     if not host:
-        msg="Host {0} already absent".format(host_name)
+        msg = "Host {0} already absent".format(host_name)
         module.exit_json(changed=False, msg=msg)
     else:
         changed = delete_host(module, host)
-        msg="Host {0} removed".format(host_name)
+        msg = "Host {0} removed".format(host_name)
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -176,7 +183,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     execute_state(module)
 
