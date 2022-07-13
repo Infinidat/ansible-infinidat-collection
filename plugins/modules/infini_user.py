@@ -3,7 +3,7 @@
 # Copyright: (c) 2020, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 from infi.dtypes.iqn import make_iscsi_name
 
@@ -16,7 +16,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: infini_user
-version_added: '2.10'
+version_added: '2.9'
 short_description: Create, Delete and Modify a User on Infinibox
 description:
     - This module creates, deletes or modifies a user on Infinibox.

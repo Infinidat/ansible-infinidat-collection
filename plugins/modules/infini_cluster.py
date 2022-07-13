@@ -3,14 +3,8 @@
 # Copyright: (c) 2020, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
-
-try:
-    from infi.dtypes.iqn import make_iscsi_name
-    HAS_INFI_MOD = True
-except ImportError:
-    HAS_INFI_MOD = False
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
@@ -56,6 +50,12 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
+try:
+    from infi.dtypes.iqn import make_iscsi_name
+    HAS_INFI_MOD = True
+except ImportError:
+    HAS_INFI_MOD = False
 
 try:
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
@@ -139,7 +139,9 @@ def update_cluster(module, system, cluster):
 
 @api_wrapper
 def delete_cluster(module, cluster):
-    assert cluster, "Cluster not found"
+    if not cluster:
+        msg = "Cluster {0} not found".format(cluster.get_name())
+        module.fail_json(msg=msg)
     changed = True
     if not module.check_mode:
         cluster.delete()

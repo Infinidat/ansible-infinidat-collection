@@ -5,7 +5,7 @@
 # still belong to the author of the module, and may assign their own license
 # to the complete work.
 #
-# Copyright: (c) 2020, Infinidat <info@infinidat.com>
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -27,13 +27,17 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import (absolute_import, division, print_function)
 
 
-HAS_INFINISDK = True
 try:
     from infinisdk import InfiniBox, core
 except ImportError:
     HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
+
 
 from functools import wraps
 from os import environ
@@ -43,7 +47,7 @@ from infinisdk.core.exceptions import ObjectNotFound
 
 
 def unixMillisecondsToDate(unix_ms):
-    return (datetime.utcfromtimestamp(unix_ms/1000.), 'UTC')
+    return (datetime.utcfromtimestamp(unix_ms / 1000.), 'UTC')
 
 
 def api_wrapper(func):
@@ -96,9 +100,9 @@ def get_system(module):
     if user and password:
         system = InfiniBox(box, auth=(user, password), use_ssl=True)
     elif environ.get('INFINIBOX_USER') and environ.get('INFINIBOX_PASSWORD'):
-        system = InfiniBox(box, \
-                           auth=(environ.get('INFINIBOX_USER'), \
-                                 environ.get('INFINIBOX_PASSWORD')), \
+        system = InfiniBox(box,
+                           auth=(environ.get('INFINIBOX_USER'),
+                                 environ.get('INFINIBOX_PASSWORD')),
                            use_ssl=True)
     elif path.isfile(path.expanduser('~') + '/.infinidat/infinisdk.ini'):
         system = InfiniBox(box, use_ssl=True)
@@ -215,7 +219,7 @@ def get_host(module, system):
 def get_cluster(module, system):
     """Find a cluster by the name specified in the module"""
     cluster = None
-    #print("dir:", dir(system))
+    # print("dir:", dir(system))
 
     for a_cluster in system.host_clusters.to_list():
         a_cluster_name = a_cluster.get_name()

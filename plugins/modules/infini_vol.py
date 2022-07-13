@@ -3,7 +3,7 @@
 # Copyright: (c) 2020, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 
@@ -67,7 +67,7 @@ options:
     required: false
     default: "Default"
     choices: ["Default", "True", "False"]
-    version_added: '2.10'
+    version_added: '2.9'
   volume_type:
     description:
       - Specifies the volume type, regular volume or snapshot.
@@ -79,7 +79,7 @@ options:
       - Specify true to restore a volume (parent_volume_name) from an existing snapshot specified by the name field. State must be set to present and volume_type must be 'snapshot'.
     required: false
     default: false
-    version_added: '2.10'
+    version_added: '2.9'
 extends_documentation_fragment:
     - infinibox
 requirements:

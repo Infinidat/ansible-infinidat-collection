@@ -258,7 +258,7 @@ test-sanity:  ## Run ansible sanity tests
 	cd $(_install_path)/ansible_collections/infinidat/infinibox && \
 		ansible-test sanity --docker default -v
 
-_setup-sanity-locally:
+_setup-sanity-locally: galaxy-collection-build-force galaxy-collection-install-locally
 	@# Setup a test env.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
 		$(_python_version) -m venv $(_venv) && \

@@ -3,7 +3,7 @@
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 from infi.dtypes.iqn import make_iscsi_name
@@ -138,9 +138,9 @@ def create_empty_network_space(module, system):
     }
     interfaces = module.params["interfaces"]
 
-    print(f"Creating network space {network_space_name}")
+    print("Creating network space {0}".format(network_space_name))
     product_id = system.api.get('system/product_id')
-    print(f"api: {product_id.get_result()}")
+    print("api: {0}".format(product_id.get_result()))
 
     net_create_url = "network/spaces"
     net_create_data = {
@@ -158,7 +158,7 @@ def create_empty_network_space(module, system):
         path=net_create_url,
         data=net_create_data
     )
-    print(f"net_create: {net_create}")
+    print("net_create: {0}".format(net_create))
 
 @api_wrapper
 def find_network_space_id(module, system):
@@ -172,13 +172,13 @@ def find_network_space_id(module, system):
     )
     result = net_id.get_json()['result'][0]
     space_id = result['id']
-    print(f"Network space has ID {space_id}")
+    print("Network space has ID {0}".format(space_id))
     return space_id
 
 @api_wrapper
 def add_ips_to_network_space(module, system, space_id):
     network_space_name = module.params["name"]
-    print(f"Adding IPs to network space {network_space_name}")
+    print("Adding IPs to network space {0}".format(network_space_name))
 
     ips = module.params["ips"]
     for ip in ips:
@@ -188,9 +188,9 @@ def add_ips_to_network_space(module, system, space_id):
             path=ip_url,
             data=ip_data
         )
-        print(f"add_ips json: {ip_add.get_json()}")
+        print("add_ips json: {0}".format(ip_add.get_json()))
         result = ip_add.get_json()['result']
-        print(f"add ip result: {result}")
+        print("add ip result: {0}".format(result))
 
 @api_wrapper
 def create_network_space(module, system):
@@ -235,7 +235,7 @@ def update_network_space(module, system):
     }
     interfaces = module.params["interfaces"]
 
-    print(f"Updating network space {network_space_name}")
+    print("Updating network space {0}".format(network_space_name))
 
     # Find space's ID
     space_id = find_network_space_id(module, system)
@@ -255,7 +255,7 @@ def update_network_space(module, system):
         path=net_url,
         data=net_data
     )
-    print(f"net_update: {net_update}")
+    print("net_update: {0}".format(net_update))
 
 
 def get_network_space_fields(module, network_space):
@@ -329,21 +329,21 @@ def handle_absent(module):
             for ip in ips:
                 addr = ip["ip_address"]
 
-                print(f"Disabling IP {addr}")
+                print("Disabling IP {0}".format(addr))
                 try:
                     network_space.disable_ip_address(addr)
                 except APICommandFailed as err:
                     if err.error_code == "IP_ADDRESS_ALREADY_DISABLED":
-                        print(f"Already disabled IP {addr}")
+                        print("Already disabled IP {0}".format(addr))
                     else:
-                        print(f"Failed to disable IP {addr}")
+                        print("Failed to disable IP {0}".format(addr))
                         network.fail_json(
                             msg="Disabling of network space {} IP {} failed".format(
                                 network_space_name, addr
                             )
                         )
 
-                print(f"Removing IP {addr}")
+                print("Removing IP {0}".format(addr))
                 try:
                     network_space.remove_ip_address(addr)
                 except:

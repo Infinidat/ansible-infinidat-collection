@@ -3,7 +3,7 @@
 # Copyright: (c) 2020, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
@@ -18,7 +18,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r"""
 ---
 module: infini_port
-version_added: 2.10
+version_added: 2.9
 short_description: Add and Delete fiber channel and iSCSI ports to a host on Infinibox
 description:
     - This module adds or deletes fiber channel or iSCSI ports to hosts on
