@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: infini_export_client
-version_added: 2.3
+version_added: 2.3.0
 short_description: Create, Delete or Modify NFS Client(s) for existing exports on Infinibox
 description:
     - This module creates, deletes or modifys NFS client(s) for existing exports on Infinibox.
@@ -26,18 +26,21 @@ options:
       - Client IP or Range. Ranges can be defined as follows
         192.168.0.1-192.168.0.254.
     required: true
+    type: str
   state:
     description:
       - Creates/Modifies client when present and removes when absent.
     required: false
     default: "present"
-    choices: [ "present", "absent" ]
+    choices: [ "stat", "present", "absent" ]
+    type: str
   access_mode:
     description:
       - Read Write or Read Only Access.
     choices: [ "RW", "RO" ]
-    default: RW
+    default: "RW"
     required: false
+    type: str
   no_root_squash:
     description:
       - Don't squash root user to anonymous. Will be set to "no" on creation if not specified explicitly.
@@ -48,6 +51,7 @@ options:
     description:
       - Name of the export.
     required: true
+    type: str
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -137,6 +141,7 @@ def update_client(module, export):
 
     return changed
 
+
 @api_wrapper
 def delete_client(module, export):
     """Update export client list"""
@@ -169,9 +174,8 @@ def get_sys_exp(module):
 
 
 def get_export_client_fields(export, client_name):
-    fields = export.get_fields() #from_cache=True, raw_value=True)
+    fields = export.get_fields()  # from_cache=True, raw_value=True)
     permissions = fields.get('permissions', None)
-    #field_dict = {}
     for munched_perm in permissions:
         perm = unmunchify(munched_perm)
         if perm['client'] == client_name:  # Found client
@@ -180,7 +184,7 @@ def get_export_client_fields(export, client_name):
                 no_root_squash=perm['no_root_squash'],
             )
             return field_dict
-    assert False, "No client match to exports found"
+    raise AssertionError("No client {0} match to exports found".format(client_name))
 
 
 def handle_stat(module):
@@ -200,11 +204,11 @@ def handle_stat(module):
 def handle_present(module):
     system, export = get_sys_exp(module)
     if not export:
-        msg='Export {0} not found'.format(module.params['export'])
+        msg = 'Export {0} not found'.format(module.params['export'])
         module.fail_json(msg=msg)
 
     changed = update_client(module, export)
-    msg="Export client updated"
+    msg = "Export client updated"
     module.exit_json(changed=changed, msg=msg)
 
 
@@ -212,11 +216,11 @@ def handle_absent(module):
     system, export = get_sys_exp(module)
     if not export:
         changed = False
-        msg="Export client already absent"
+        msg = "Export client already absent"
         module.exit_json(changed=False, msg=msg)
     else:
         changed = delete_client(module, export)
-        msg="Export client removed"
+        msg = "Export client removed"
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -242,7 +246,7 @@ def main():
         dict(
             client=dict(required=True),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
-            access_mode=dict(choices=['RO', 'RW'], default='RW'),
+            access_mode=dict(choices=['RO', 'RW'], default='RW', type="str"),
             no_root_squash=dict(type='bool', default='no'),
             export=dict(required=True)
         )

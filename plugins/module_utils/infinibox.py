@@ -29,21 +29,22 @@
 
 from __future__ import (absolute_import, division, print_function)
 
+__metaclass__ = type
 
+import traceback
 try:
     from infinisdk import InfiniBox, core
+    from infinisdk.core.exceptions import ObjectNotFound
 except ImportError:
     HAS_INFINISDK = False
     INFINISDK_IMPORT_ERROR = traceback.format_exc()
 else:
     HAS_INFINISDK = True
 
-
 from functools import wraps
 from os import environ
 from os import path
 from datetime import datetime
-from infinisdk.core.exceptions import ObjectNotFound
 
 
 def unixMillisecondsToDate(unix_ms):

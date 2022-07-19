@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: infini_fs
-version_added: 2.3
+version_added: 2.3.0
 short_description: Create, Delete or Modify filesystems on Infinibox
 description:
     - This module creates, deletes or modifies filesystems on Infinibox.
@@ -25,20 +25,24 @@ options:
     description:
       - File system name.
     required: true
+    type: str
   state:
     description:
       - Creates/Modifies file system when present or removes when absent.
     required: false
     default: present
-    choices: [ "present", "absent" ]
+    choices: [ "stat", "present", "absent" ]
+    type: str
   pool:
     description:
       - Pool that will host file system.
     required: true
+    type: str
   size:
     description:
       - File system size in MB, GB or TB units. See examples.
     required: false
+    type: str
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -121,7 +125,7 @@ def handle_stat(module):
         module.fail_json(msg='Pool {0} not found'.format(module.params['pool']))
     if not filesystem:
         module.fail_json(msg='File system {0} not found'.format(module.params['name']))
-    fields = filesystem.get_fields() #from_cache=True, raw_value=True)
+    fields = filesystem.get_fields()  # from_cache=True, raw_value=True)
     used = fields.get('used_size', None)
     filesystem_id = fields.get('id', None)
 

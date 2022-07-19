@@ -270,16 +270,8 @@ test-sanity-locally: _setup-sanity-locally  ## Run ansible sanity tests locally.
 	@# in accordance with
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
 	@# This runs on an collection installed locally making it useful for dev and debugging.
-	@# Not sure why, but ansible-test fails to discover py scripts to test.
-	@# This specifies a "$test_file".
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		source $(_venv)/bin/activate && \
-		export test_file="plugins/modules/infini_map.py" && \
-		echo -e "\n$$(date) - Sanity testing $$test_file\n" && \
-		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/modules:$$ANSIBLE_LIBRARY" && \
-		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/module_utils:$$ANSIBLE_LIBRARY" && \
-		export ANSIBLE_LIBRARY="$(_install_path_local)/ansible_collections/infinidat/infinibox/plugins/filters:$$ANSIBLE_LIBRARY" && \
-		ansible-test sanity --docker default -v "$$test_file"
+		ansible-test sanity --docker default --requirements $(_requirements_file)
 
 test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install-locally test-sanity-locally  ## Run all sanity tests locally.
 	@# Run local build, install and sanity test.

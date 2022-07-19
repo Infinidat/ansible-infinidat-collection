@@ -41,11 +41,13 @@ options:
   user:
     description:
       - Infinibox User username with sufficient priveledges ( see notes ).
-    required: false
+    type: str
+    required: true
   password:
     description:
       - Infinibox User password.
     type: str
+    required: true
 notes:
   - This module requires infinisdk python library
   - You must set INFINIBOX_USER and INFINIBOX_PASSWORD environment variables

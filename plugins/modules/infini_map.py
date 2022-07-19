@@ -16,7 +16,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: infini_map
-version_added: '2.9'
+version_added: 2.9.0
 short_description: Create and Delete mapping of a volume to a host or cluster on Infinibox
 description:
     - This module creates or deletes mappings of volumes to hosts or clusters

@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: infini_export
-version_added: 2.3
+version_added: 2.3.0
 short_description: Create, Delete or Modify NFS Exports on Infinibox
 description:
     - This module creates, deletes or modifies NFS exports on Infinibox.
@@ -25,6 +25,7 @@ options:
     description:
       - Export name. Must start with a forward slash, e.g. name=/data.
     required: true
+    type: str
   state:
     description:
       - Creates/Modifies export when present, removes when absent, or provides
@@ -32,16 +33,19 @@ options:
     required: false
     default: "present"
     choices: [ "stat", "present", "absent" ]
+    type: str
   client_list:
     description:
       - List of dictionaries with client entries. See examples.
         Check infini_export_client module to modify individual NFS client entries for export.
-    default: "All Hosts(*), RW, no_root_squash: True"
     required: false
+    type: list
+    elements: dict
   filesystem:
     description:
       - Name of exported file system.
     required: true
+    type: str
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -118,7 +122,8 @@ def transform(d):
 
 def create_export(module, export, filesystem, system):
     """ Create new filesystem or update existing one"""
-    assert not export
+    if export:
+        raise AssertionError("Export {0} already exists".format(export.get_name()))
     changed = False
 
     name = module.params['name']
@@ -128,20 +133,24 @@ def create_export(module, export, filesystem, system):
         export = system.exports.create(export_path=name, filesystem=filesystem)
         if client_list:
             export.update_permissions(client_list)
-    changed = True
+            changed = True
     return changed
 
 
 @api_wrapper
 def update_export(module, export, filesystem, system):
     """ Create new filesystem or update existing one"""
-    assert export
+    if not export:
+        raise AssertionError("Export {0} does not exist and cannot be updated".format(export.get_name()))
+
     changed = False
 
     name = module.params['name']
     client_list = module.params['client_list']
 
     if client_list:
+        # msg = "client_list: {0}, type: {1}".format(client_list, type(client_list))
+        # module.fail_json(msg=msg)
         if set(map(transform, unmunchify(export.get_permissions()))) \
                 != set(map(transform, client_list)):
             if not module.check_mode:
@@ -167,7 +176,7 @@ def get_sys_exp_fs(module):
 
 
 def get_export_fields(export):
-    fields = export.get_fields() #from_cache=True, raw_value=True)
+    fields = export.get_fields()  # from_cache=True, raw_value=True)
     export_id = fields.get('id', None)
     permissions = fields.get('permissions', None)
     enabled = fields.get('enabled', None)
@@ -185,7 +194,7 @@ def handle_stat(module):
     """
     system, export, filesystem = get_sys_exp_fs(module)
     if not export:
-        module.fail_json(msg='Export "{}" of file system "{}" not found'.format(
+        module.fail_json(msg='Export "{0}" of file system "{1}" not found'.format(
             module.params['name'],
             module.params['filesystem'],
         ))
@@ -215,11 +224,11 @@ def handle_absent(module):
     system, export, filesystem = get_sys_exp_fs(module)
     if not export:
         changed = False
-        msg="Export of {0} already absent".format(module.params['filesystem'])
+        msg = "Export of {0} already absent".format(module.params['filesystem'])
         module.exit_json(changed=changed, msg=msg)
     else:
         changed = delete_export(module, export)
-        msg="Export of {0} deleted".format(module.params['filesystem'])
+        msg = "Export of {0} deleted".format(module.params['filesystem'])
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -246,7 +255,7 @@ def main():
             name=dict(required=True),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             filesystem=dict(required=True),
-            client_list=dict(type='list')
+            client_list=dict(type='list', elements='dict')
         )
     )
 

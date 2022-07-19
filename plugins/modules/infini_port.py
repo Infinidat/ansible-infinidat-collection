@@ -18,7 +18,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r"""
 ---
 module: infini_port
-version_added: 2.9
+version_added: 2.9.0
 short_description: Add and Delete fiber channel and iSCSI ports to a host on Infinibox
 description:
     - This module adds or deletes fiber channel or iSCSI ports to hosts on
@@ -41,11 +41,15 @@ options:
       - List of wwns of the host
     required: false
     default: []
+    type: list
+    elements: str
   iqns:
     description:
       - List of iqns of the host
     required: false
     default: []
+    type: list
+    elements: str
 extends_documentation_fragment:
     - infinibox
 """
@@ -380,8 +384,8 @@ def main():
         dict(
             host=dict(required=True, type=str),
             state=dict(default="present", choices=["stat", "present", "absent"]),
-            wwns=dict(type="list", default=list()),
-            iqns=dict(type="list", default=list()),
+            wwns=dict(type="list", elements="str", default=list()),
+            iqns=dict(type="list", elements="str", default=list()),
         )
     )
 

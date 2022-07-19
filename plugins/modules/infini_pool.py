@@ -4,8 +4,8 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
+__metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: infini_pool
-version_added: 2.3
+version_added: 2.3.0
 short_description: Create, Delete and Modify Pools on Infinibox
 description:
     - This module to creates, deletes or modifies pools on Infinibox.
@@ -25,24 +25,28 @@ options:
     description:
       - Pool Name
     required: true
+    type: str
   state:
     description:
       - Creates/Modifies Pool when present or removes when absent
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
+    type: str
   size:
     description:
       - Pool Physical Capacity in MB, GB or TB units.
         If pool size is not set on pool creation, size will be equal to 1TB.
         See examples.
     required: false
+    type: str
   vsize:
     description:
       - Pool Virtual Capacity in MB, GB or TB units.
         If pool vsize is not set on pool creation, Virtual Capacity will be equal to Physical Capacity.
         See examples.
     required: false
+    type: str
   ssd_cache:
     description:
       - Enable/Disable SSD Cache on Pool
@@ -144,7 +148,7 @@ def update_pool(module, system, pool):
 
     size = module.params['size']
     vsize = module.params['vsize']
-    #ssd_cache = module.params['ssd_cache']
+    # ssd_cache = module.params['ssd_cache']
     compression = module.params['compression']
 
     # Roundup the capacity to mimic Infinibox behaviour
@@ -162,10 +166,10 @@ def update_pool(module, system, pool):
                 pool.update_virtual_capacity(virtual_capacity)
             changed = True
 
-    #if pool.is_ssd_enabled() != ssd_cache:
-    #    if not module.check_mode:
-    #        pool.update_ssd_enabled(ssd_cache)
-    #    changed = True
+    # if pool.is_ssd_enabled() != ssd_cache:
+    #     if not module.check_mode:
+    #         pool.update_ssd_enabled(ssd_cache)
+    #     changed = True
 
     if pool.is_compression_enabled() != compression:
         if not module.check_mode:
@@ -198,8 +202,8 @@ def handle_stat(module):
     system, pool = get_sys_pool(module)
     if not pool:
         module.fail_json(msg='Pool {0} not found'.format(module.params['name']))
-    fields = pool.get_fields() #from_cache=True, raw_value=True)
-    print('fields: {0}'.format(fields))
+    fields = pool.get_fields()
+    # print('fields: {0}'.format(fields))
     free_physical_capacity = fields.get('free_physical_capacity', None)
     pool_id = fields.get('id', None)
 

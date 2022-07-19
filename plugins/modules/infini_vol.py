@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: infini_vol
-version_added: 2.3
+version_added: 2.3.0
 short_description:  Create, Delete or Modify volumes on Infinibox
 description:
     - This module creates, deletes or modifies a volume on Infinibox.
@@ -60,14 +60,12 @@ options:
     type: bool
     required: false
     default: true
-    version_added: '2.8'
   write_protected:
     description:
       - Specifies if the volume should be write protected. Default will be True for snapshots, False for regular volumes.
     required: false
     default: "Default"
     choices: ["Default", "True", "False"]
-    version_added: '2.9'
   volume_type:
     description:
       - Specifies the volume type, regular volume or snapshot.
@@ -76,10 +74,10 @@ options:
     choices: [ "master", "snapshot" ]
   restore_volume_from_snapshot:
     description:
-      - Specify true to restore a volume (parent_volume_name) from an existing snapshot specified by the name field. State must be set to present and volume_type must be 'snapshot'.
+      - Specify true to restore a volume (parent_volume_name) from an existing snapshot specified by the name field.
+      - State must be set to present and volume_type must be 'snapshot'.
     required: false
     default: false
-    version_added: '2.9'
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -191,12 +189,12 @@ def find_vol_id(module, system, vol_name):
     """
     Find the ID of this vol
     """
-    vol_url = "volumes?name={}&fields=id".format(vol_name)
+    vol_url = "volumes?name={0}&fields=id".format(vol_name)
     vol = system.api.get(path=vol_url)
 
     result = vol.get_json()["result"]
     if len(result) != 1:
-        module.fail_json("Cannot find a volume with name '{}'".format(vol_name))
+        module.fail_json("Cannot find a volume with name '{0}'".format(vol_name))
 
     vol_id = result[0]["id"]
     # print("Volume {} has ID {}".format(vol_name, vol_id))
@@ -215,7 +213,8 @@ def restore_volume_from_snapshot(module, system):
     parent_volume_id = find_vol_id(module, system, parent_volume_name)
 
     # Check params
-    assert is_restoring, "A programming error occurred. is_restoring is not True"
+    if not is_restoring:
+        raise AssertionError("A programming error occurred. is_restoring is not True")
     if volume_type != "snapshot":
         module.fail_json(
             msg="Cannot restore a parent volume from snapshot unless the volume "
@@ -228,7 +227,7 @@ def restore_volume_from_snapshot(module, system):
         )
 
     if not module.check_mode:
-        restore_url = "volumes/{}/restore?approved=true".format(parent_volume_id)
+        restore_url = "volumes/{0}/restore?approved=true".format(parent_volume_id)
         restore_data = {
             "source_id": snap_id,
         }
@@ -283,12 +282,12 @@ def create_snapshot(module, system):
     try:
         parent_volume = system.volumes.get(name=parent_volume_name)
     except ObjectNotFound as err:
-        msg = "Cannot create snapshot {}. Parent volume {} not found".format(
+        msg = "Cannot create snapshot {0}. Parent volume {1} not found".format(
             snapshot_name, parent_volume_name
         )
         module.fail_json(msg=msg)
     if not parent_volume:
-        msg = "Cannot find new snapshot's parent volume named {}".format(
+        msg = "Cannot find new snapshot's parent volume named {0}".format(
             parent_volume_name
         )
         module.fail_json(msg=msg)
@@ -370,14 +369,14 @@ def check_snapshot_lock_options(module):
         now = arrow.utcnow()
         if lock_expires_at <= now:
             msg = "Cannot lock snapshot with a snapshot_lock_expires_at "
-            msg += "of '{}' from the past".format(snapshot_lock_expires_at)
+            msg += "of '{0}' from the past".format(snapshot_lock_expires_at)
             module.fail_json(msg=msg)
 
         # Check for lock later than max lock, i.e. too far in future.
         max_delta_minutes = 43200  # 30 days in minutes
         max_lock_expires_at = now.shift(minutes=max_delta_minutes)
         if lock_expires_at >= max_lock_expires_at:
-            msg = "snapshot_lock_expires_at exceeds {} days in the future".format(
+            msg = "snapshot_lock_expires_at exceeds {0} days in the future".format(
                 max_delta_minutes // 24 // 60
             )
             module.fail_json(msg=msg)
@@ -400,7 +399,7 @@ def manage_snapshot_locks(module, snapshot):
         lock_expires_at = arrow.get(snapshot_lock_expires_at)
         if snap_is_locked and lock_expires_at < current_lock_expires_at:
             # Lock earlier than current lock
-            msg = "snapshot_lock_expires_at '{}' preceeds the current lock time of '{}'".format(
+            msg = "snapshot_lock_expires_at '{0}' preceeds the current lock time of '{1}'".format(
                 lock_expires_at, current_lock_expires_at
             )
             module.fail_json(msg=msg)
@@ -418,7 +417,7 @@ def manage_snapshot_locks(module, snapshot):
 def handle_stat(module):
     system, pool, volume, parname = get_sys_pool_vol_parname(module)
     if not volume:
-        msg = "Volume {} not found. Cannot stat.".format(module.params["name"])
+        msg = "Volume {0} not found. Cannot stat.".format(module.params["name"])
         module.fail_json(msg=msg)
     fields = volume.get_fields()  # from_cache=True, raw_value=True)
     created_at = str(fields.get("created_at", None))
@@ -525,7 +524,8 @@ def execute_state(module):
     else:
         msg = "A programming error has occurred handling volume type value"
         module.fail_json(msg=msg)
-    assert module.params["write_protected"] in [True, False]
+    if module.params["write_protected"] not in [True, False]:
+        raise AssertionError("Invalid write_protected value specified")
 
     state = module.params["state"]
     try:
