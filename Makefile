@@ -1,4 +1,8 @@
+# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 # vim: set foldmethod=indent foldnestmax=1 foldcolumn=1:
+
 # A Makefile for creating, running and testing Infindat's Ansible collection.
 
 ### Dependencies ###
