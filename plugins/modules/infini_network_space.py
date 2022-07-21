@@ -430,9 +430,9 @@ def main():
             network=dict(default=None, required=False),
             netmask=dict(default=None, required=False, type=int),
             default_gateway=dict(default=None, required=False),
-            interfaces=dict(default=list(), required=False, type=list, elements=str),
+            interfaces=dict(default=list(), required=False, type="list", elements="int"),
             network_config=dict(default=dict(), required=False, type=dict),
-            ips=dict(default=list(), required=False, type=list, elements=str),
+            ips=dict(default=list(), required=False, type="list", elements="str"),
             rate_limit=dict(default=None, required=False, type=int),
         )
         # required_one_of = [["var_1", "var_2"]]
