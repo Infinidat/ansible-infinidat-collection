@@ -62,12 +62,6 @@ except ImportError:
     INFINIMOD_IMPORT_ERROR = traceback.format_exc()
 
 try:
-    from infi.dtypes.iqn import make_iscsi_name
-    HAS_INFI_MOD = True
-except ImportError:
-    HAS_INFI_MOD = False
-
-try:
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
         HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
         get_system, get_cluster, unixMillisecondsToDate, merge_two_dicts

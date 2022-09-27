@@ -42,7 +42,6 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
-import traceback
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 import traceback
