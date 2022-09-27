@@ -51,6 +51,16 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
+import traceback
+
+try:
+    from infi.dtypes.iqn import make_iscsi_name
+    HAS_INFI_MOD = True
+    HAS_INFI_MOD_ERROR = traceback.format_exc()
+except ImportError:
+    HAS_INFI_MOD = False
+    INFINIMOD_IMPORT_ERROR = traceback.format_exc()
+
 try:
     from infi.dtypes.iqn import make_iscsi_name
     HAS_INFI_MOD = True
@@ -63,6 +73,7 @@ try:
         get_system, get_cluster, unixMillisecondsToDate, merge_two_dicts
 except ImportError:
     HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
 
 
 @api_wrapper
@@ -267,10 +278,12 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFI_MOD:
-        module.fail_json(msg=missing_required_lib('infi.dtypes.iqn'))
+        module.fail_json(msg=missing_required_lib('infi.dtypes.iqn'),
+                         exception=INFINIMOD_IMPORT_ERROR)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     check_options(module)
     execute_state(module)

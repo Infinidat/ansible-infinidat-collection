@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: infini_port
 version_added: '2.9.0'
@@ -29,6 +29,7 @@ options:
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
+    type: str
   wwns:
     description:
       - List of wwns of the host
@@ -45,9 +46,9 @@ options:
     elements: str
 extends_documentation_fragment:
     - infinibox
-"""
+'''
 
-EXAMPLES = r"""
+EXAMPLES = r'''
 - name: Make sure host bar is available with wwn/iqn ports
   infini_host:
     name: bar.example.com
@@ -60,21 +61,32 @@ EXAMPLES = r"""
     system: ibox01
     user: admin
     password: secret
-"""
+'''
 
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-    HAS_INFINISDK,
-    api_wrapper,
-    infinibox_argument_spec,
-    get_system,
-    get_host,
-    merge_two_dicts,
-)
-from infi.dtypes.wwn import WWN
-from infi.dtypes.iqn import make_iscsi_name
+
+import traceback
+
+HAS_INFINISDK = False
+
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+        HAS_INFINISDK,
+        api_wrapper,
+        infinibox_argument_spec,
+        get_system,
+        get_host,
+        merge_two_dicts,
+    )
+    from infi.dtypes.wwn import WWN
+    from infi.dtypes.iqn import make_iscsi_name
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 @api_wrapper
@@ -385,7 +397,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"))
+        module.fail_json(msg=missing_required_lib("infinisdk"),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     check_options(module)
     execute_state(module)

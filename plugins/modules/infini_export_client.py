@@ -81,6 +81,8 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
 import traceback
 
 MUNCH_IMP_ERR = None
@@ -88,13 +90,18 @@ try:
     from munch import Munch, unmunchify
     HAS_MUNCH = True
 except ImportError:
-    MUNCH_IMP_ERR = traceback.format_exc()
+    MUNCH_IMPORT_ERROR = traceback.format_exc()
     HAS_MUNCH = False
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-    HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-    get_system, get_export, merge_two_dicts
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
+        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
+        get_system, get_export, merge_two_dicts
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 @api_wrapper
@@ -249,10 +256,13 @@ def main():
 
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
-    if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
     if not HAS_MUNCH:
-        module.fail_json(msg=missing_required_lib('munch'), exception=MUNCH_IMP_ERR)
+        module.fail_json(msg=missing_required_lib('munch'),
+                         exception=MUNCH_IMPORT_ERROR)
+
+    if not HAS_INFINISDK:
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     execute_state(module)
 

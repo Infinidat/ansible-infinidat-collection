@@ -5,13 +5,14 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
 module: infini_host
 version_added: '2.3.0'
-short_description: Create, Delete and Modify Hosts on Infinibox
+short_description: Create, Delete or Modify Hosts on Infinibox
 description:
     - This module creates, deletes or modifies hosts on Infinibox.
 author: David Ohlemacher (@ohlemacher)
@@ -44,6 +45,8 @@ EXAMPLES = r'''
 import traceback
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
+import traceback
+
 try:
     from infi.dtypes.iqn import make_iscsi_name
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
@@ -52,6 +55,8 @@ try:
 except ImportError:
     HAS_INFINISDK = False
     INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 
 @api_wrapper
@@ -179,7 +184,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'))
+        module.fail_json(msg=missing_required_lib('infinisdk'),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     execute_state(module)
 

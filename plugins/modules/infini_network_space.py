@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: infini_network_space
 version_added: '2.12.0'
@@ -72,9 +72,9 @@ options:
 
 extends_documentation_fragment:
     - infinibox
-"""
+'''
 
-EXAMPLES = r"""
+EXAMPLES = r'''
 - name: Create new network space
   infini_network_space:
     name: iSCSI
@@ -97,14 +97,19 @@ EXAMPLES = r"""
     user: admin
     password: secret
     system: ibox001
-"""
+'''
 
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from infinisdk.core.exceptions import APICommandFailed
+
+import traceback
+
+HAS_INFINISDK = False
+INFINISDK_IMPORT_ERROR = None
 
 try:
+    from infinisdk.core.exceptions import APICommandFailed
     from infi.dtypes.iqn import make_iscsi_name
 
     # Import from collection (recommended)
@@ -117,27 +122,11 @@ try:
         merge_two_dicts,
         get_net_space,
     )
-
-except ModuleNotFoundError:
-    # Import from ansible clone (hacking only)
-    from ansible.module_utils.infinibox import (
-        HAS_INFINISDK,
-        api_wrapper,
-        infinibox_argument_spec,
-        get_system,
-        unixMillisecondsToDate,
-        merge_two_dicts,
-        get_net_space,
-    )
-
-# try:
-#     # Import from collection (recommended)
-#     from ansible_collections.infinidat.infinibox.plugins.module_utils.iboxbase import \
-#         Config
-# except ModuleNotFoundError:
-#     # Import from ansible clone (hacking only)
-#     from ansible.module_utils.iboxbase import \
-#       Config
+except ImportError:
+    HAS_INFINISDK = False
+    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+else:
+    HAS_INFINISDK = True
 
 from infinisdk.core.exceptions import ObjectNotFound
 
@@ -436,7 +425,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"))
+        module.fail_json(msg=missing_required_lib("infinisdk"),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     execute_state(module)
 

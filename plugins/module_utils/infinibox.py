@@ -6,15 +6,23 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import traceback
+from ansible.module_utils.six import raise_from
+import ansible.module_utils.errors
+
 try:
     from infinisdk import InfiniBox, core
     from infinisdk.core.exceptions import ObjectNotFound
-except ImportError:
+except ImportError as imp_exc:
     HAS_INFINISDK = False
-    INFINISDK_IMPORT_ERROR = traceback.format_exc()
+    INFINISDK_IMPORT_ERROR = imp_exc
 else:
     HAS_INFINISDK = True
+    INFINISDK_IMPORT_ERROR = None
+
+if INFINISDK_IMPORT_ERROR:
+    raise_from(
+        ansible.module_utils.errors.AnsibleError('INFINIDAT SDK must be installed to use this plugin'),
+        INFINISDK_IMPORT_ERROR)
 
 from functools import wraps
 from os import environ

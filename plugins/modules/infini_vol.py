@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -118,6 +119,14 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
+import traceback
+
+HAS_INFINISDK = False
+INFINISDK_IMPORT_ERROR = None
+HAS_CAPACITY = False
+
 try:
     from capacity import KiB, Capacity
 
@@ -125,10 +134,8 @@ try:
 except ImportError:
     HAS_CAPACITY = False
 
-import arrow
-
 try:
-    from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+    import arrow
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
         HAS_INFINISDK,
         api_wrapper,
@@ -139,18 +146,8 @@ try:
         get_volume,
         get_vol_sn,
     )
-except ModuleNotFoundError:
-    # Import from ansible clone (hacking only)
-    from ansible.module_utils.infinibox import (
-        HAS_INFINISDK,
-        ObjectNotFound,
-        api_wrapper,
-        get_pool,
-        get_system,
-        get_volume,
-        get_vol_sn,
-        infinibox_argument_spec,
-    )
+except Exception:
+    HAS_INFINISDK = False
 
 
 @api_wrapper
@@ -596,7 +593,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"))
+        module.fail_json(msg=missing_required_lib("infinisdk"),
+                         exception=INFINISDK_IMPORT_ERROR)
 
     if module.params["size"]:
         try:
