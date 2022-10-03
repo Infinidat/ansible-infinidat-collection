@@ -1,5 +1,3 @@
-ansible
-ansible-core
 api-object-schema
 appdirs
 arrow
@@ -42,13 +40,9 @@ pathspec
 platformdirs
 pluggy
 py
-pycodestyle
 pycparser
-pylint
 pyparsing
-pytest
 python-dateutil
-PyYAML
 regex
 requests
 resolvelib

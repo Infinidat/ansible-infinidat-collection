@@ -16,40 +16,42 @@
 # Format:
 # API_KEY=someAnsibleGalaxyApiKey
 # The key only needs to be valid to use target galaxy-colletion-publish.
+
 _env = ~/.ssh/ansible-galaxy.sh
 include $(_env)
 export $(shell sed 's/=.*//' $(_env))
 
 # Use color in Makefiles.
-# _use_color = true
+_use_color = true
 
 include Makefile-help
 
 ### Vars ###
-_version            = $(shell spruce json galaxy.yml | jq '.version'   | sed 's?"??g')
-_namespace          = $(shell spruce json galaxy.yml | jq '.namespace' | sed 's?"??g')
-_name               = $(shell spruce json galaxy.yml | jq '.name'      | sed 's?"??g')
-_install_path       = ~/.ansible/collections
-_install_path_local = $$HOME/.ansible/collections
-_python_version     = python3.8
-_venv               = venv
-#_install_path_local = /opt/atest
-_requirements_file  = requirements.txt
-_user               = psus-gitlab-cicd
-_password_file      = vault_password
-_password           = $$(cat vault_password.txt)
-_ibox_url           = ibox1521
-_infinishell_creds  = --user $(_user) --password $(_password) $(_ibox_url)
-SHELL               = /bin/bash
-_ansible_clone      = ~/cloud/ansible
-_network_space_ips  = 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
+_version            	= $(shell spruce json galaxy.yml | jq '.version'   | sed 's?"??g')
+_namespace          	= $(shell spruce json galaxy.yml | jq '.namespace' | sed 's?"??g')
+_name               	= $(shell spruce json galaxy.yml | jq '.name'      | sed 's?"??g')
+_install_path       	= ~/.ansible/collections
+_install_path_local 	= $$HOME/.ansible/collections
+_python_version     	= python3.8
+_venv               	= venv
+_requirements-file  	= requirements.txt
+_requirements-dev-file  = requirements-dev.txt
+_user               	= psus-gitlab-cicd
+_password_file      	= vault_password
+_password           	= $$(cat vault_password.txt)
+_ibox_url           	= ibox1521
+_infinishell_creds  	= --user $(_user) --password $(_password) $(_ibox_url)
+SHELL               	= /bin/bash
+_ansible_clone      	= ~/cloud/ansible
+_network_space_ips  	= 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
 
 ##@ General
 create-venv: ## Setup venv.
 	$(_python_version) -m venv $(_venv) && \
 	source $(_venv)/bin/activate && \
 	python -m pip install --upgrade pip && \
-	python -m pip install --upgrade --requirement $(_requirements_file)
+	python -m pip install --upgrade --requirement $(_requirements-file)
+	python -m pip install --upgrade --requirement $(_requirements-dev-file)
 
 _check-vars:
 ifeq ($(strip $(API_KEY)),)
@@ -87,6 +89,7 @@ pyfind:  ## Search project python files using: f='search term' make pyfind
 	find . -name "*.py" | xargs grep -n "$$f" | egrep -v 'venv|eggs|parts|\.git|external-projects|build'
 
 ##@ Galaxy
+
 galaxy-collection-build:  ## Build the collection.
 	@echo -e $(_begin)
 	rm -rf collections/
@@ -268,14 +271,14 @@ _setup-sanity-locally: galaxy-collection-build-force galaxy-collection-install-l
 		$(_python_version) -m venv $(_venv) && \
 		source $(_venv)/bin/activate && \
 		python -m pip install --upgrade pip && \
-		python -m pip install --upgrade --requirement $(_requirements_file)
+		python -m pip install --upgrade --requirement $(_requirements-file)
 
 test-sanity-locally: _setup-sanity-locally  ## Run ansible sanity tests locally.
 	@# in accordance with
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
 	@# This runs on an collection installed locally making it useful for dev and debugging.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		ansible-test sanity --docker default --requirements $(_requirements_file)
+		ansible-test sanity --docker default --requirements $(_requirements-file)
 
 test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install-locally test-sanity-locally  ## Run all sanity tests locally.
 	@# Run local build, install and sanity test.
