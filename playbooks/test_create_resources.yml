@@ -36,12 +36,45 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create file system named {{ auto_prefix }}fs under pool {{ auto_prefix }}pool
+    - name: POSITIVE test -> Create THICK (default) file system named {{ auto_prefix }}fs_thick_default under pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fs_thick_default"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Create THICK (explicit) file system named {{ auto_prefix }}fs_thick under pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fs_thick"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        thin_provision: false
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Create THIN file system named {{ auto_prefix }}fs under pool {{ auto_prefix }}pool
       infini_fs:
         name: "{{ auto_prefix }}fs"
         size: 1GB
         pool: "{{ auto_prefix }}pool"
         state: present
+        thin_provision: true
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Change THIN file system named {{ auto_prefix }}fs to THICK provisioning
+      infini_fs:
+        name: "{{ auto_prefix }}fs"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        thin_provision: false
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"

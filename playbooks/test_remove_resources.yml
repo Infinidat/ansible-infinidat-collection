@@ -101,6 +101,26 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: POSITIVE test -> Remove file system named {{ auto_prefix }}fs_thick_default under pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fs_thick_default"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Remove file system named {{ auto_prefix }}fs_thick under pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fs_thick"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: POSITIVE test -> Remove file system named {{ auto_prefix }}fs under pool {{ auto_prefix }}pool
       infini_fs:
         name: "{{ auto_prefix }}fs"

@@ -29,6 +29,12 @@ options:
     default: present
     choices: [ "stat", "present", "absent" ]
     type: str
+  thin_provision:
+    description:
+      - Whether the master file system should be thin provisioned.  Required for creating a master file system, but not a snapshot.
+    type: bool
+    required: false
+    default: true
   pool:
     description:
       - Pool that will host file system.
@@ -51,6 +57,7 @@ EXAMPLES = r'''
     name: foo
     size: 1TB
     pool: bar
+    thin_provision: true
     state: present
     user: admin
     password: secret
@@ -87,7 +94,15 @@ def create_filesystem(module, system):
     """Create Filesystem"""
     changed = True
     if not module.check_mode:
-        filesystem = system.filesystems.create(name=module.params['name'], pool=get_pool(module, system))
+        if module.params['thin_provision']:
+            provisioning = 'THIN'
+        else:
+            provisioning = 'THICK'
+        filesystem = system.filesystems.create(
+            name=module.params['name'],
+            pool=get_pool(module, system),
+            provtype=provisioning,
+        )
         if module.params['size']:
             size = Capacity(module.params['size']).roundup(64 * KiB)
             filesystem.update_size(size)
@@ -103,6 +118,16 @@ def update_filesystem(module, filesystem):
         if filesystem.get_size() != size:
             if not module.check_mode:
                 filesystem.update_size(size)
+            changed = True
+    if module.params['thin_provision'] is not None:
+        provisioning = str(filesystem.get_provisioning())
+        if provisioning == 'THICK' and module.params['thin_provision']:
+            if not module.check_mode:
+                filesystem.update_provisioning('THIN')
+            changed = True
+        if provisioning == 'THIN' and not module.params['thin_provision']:
+            if not module.check_mode:
+                filesystem.update_provisioning('THICK')
             changed = True
     return changed
 
@@ -131,12 +156,14 @@ def handle_stat(module):
     fields = filesystem.get_fields()  # from_cache=True, raw_value=True)
     used = fields.get('used_size', None)
     filesystem_id = fields.get('id', None)
+    provisioning = fields.get('provtype', None)
 
     result = dict(
         changed=False,
         size=str(filesystem.get_size()),
         used=str(used),
         id=filesystem_id,
+        provisioning=provisioning,
         msg='File system stat found'
     )
     module.exit_json(**result)
@@ -186,7 +213,8 @@ def main():
             name=dict(required=True),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             pool=dict(required=True),
-            size=dict()
+            size=dict(),
+            thin_provision=dict(type='bool', default=False),
         )
     )
 

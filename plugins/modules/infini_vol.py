@@ -419,6 +419,7 @@ def handle_stat(module):
     mapped = str(fields.get("mapped", None))
     name = fields.get("name", None)
     parent_id = fields.get("parent_id", None)
+    provisioning = fields.get("provtype", None)
     serial = str(volume.get_serial())
     size = str(volume.get_size())
     updated_at = str(fields.get("updated_at", None))
@@ -441,6 +442,7 @@ def handle_stat(module):
         mapped=mapped,
         msg=msg,
         parent_id=parent_id,
+        provisioning=provtype,
         serial=serial,
         size=size,
         updated_at=updated_at,
