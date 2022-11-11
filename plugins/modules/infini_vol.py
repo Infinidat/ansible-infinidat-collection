@@ -442,7 +442,7 @@ def handle_stat(module):
         mapped=mapped,
         msg=msg,
         parent_id=parent_id,
-        provisioning=provtype,
+        provisioning=provisioning,
         serial=serial,
         size=size,
         updated_at=updated_at,
