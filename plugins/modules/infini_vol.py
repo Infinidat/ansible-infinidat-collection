@@ -52,7 +52,7 @@ options:
     choices: [ "stat", "present", "absent" ]
   thin_provision:
     description:
-      - Whether the master volume should be thin provisioned.  Required for creating a master volume, but not a snapshot.
+      - Whether the master volume should be thin or thick provisioned.
     type: bool
     required: false
     default: true
@@ -419,7 +419,7 @@ def handle_stat(module):
     mapped = str(fields.get("mapped", None))
     name = fields.get("name", None)
     parent_id = fields.get("parent_id", None)
-    provisioning = fields.get("provtype", None)
+    provisioning = fields.get("provisioning", None)
     serial = str(volume.get_serial())
     size = str(volume.get_size())
     updated_at = str(fields.get("updated_at", None))

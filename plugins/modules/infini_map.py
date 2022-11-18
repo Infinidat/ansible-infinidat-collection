@@ -86,21 +86,39 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-
 import traceback
 
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+        HAS_INFINISDK,
+        api_wrapper,
+        get_cluster,
+        get_host,
+        get_pool,
+        get_system,
+        get_volume,
+        infinibox_argument_spec,
+        merge_two_dicts
+    )
+except ModuleNotFoundError:
+    from infinibox import (
+        HAS_INFINISDK,
+        api_wrapper,
+        get_cluster,
+        get_host,
+        get_pool,
+        get_system,
+        get_volume,
+        infinibox_argument_spec,
+        merge_two_dicts
+    )
 
 try:
     from infinisdk.core.exceptions import APICommandFailed, ObjectNotFound
-    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-        get_pool, get_system, get_volume, get_host, get_cluster, merge_two_dicts
 except ImportError:
-    HAS_INFINISDK = False
-    INFINISDK_IMPORT_ERROR = traceback.format_exc()
-else:
-    HAS_INFINISDK = True
+    pass  # Handled by HAS_INFINISDK from module_utils
 
 
 def vol_is_mapped_to_host(volume, host):
@@ -620,8 +638,7 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'),
-                         exception=INFINISDK_IMPORT_ERROR)
+        module.fail_json(msg=missing_required_lib('infinisdk'))
 
     check_parameters(module)
     execute_state(module)

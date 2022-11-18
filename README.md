@@ -4,8 +4,8 @@
 All Infindat InfiniBoxes are supported.
 
 ## Prerequisites
-- Ansible 2.9 or newer
-- InfiniSDK 151.1.1 or newer. It is likely that earlier versions will also work.
+- Ansible 2.12 or newer
+- InfiniSDK 151.1.1 or newer.
 
 ## Modules
 - infini_cluster: Creates, deletes or modifies host clusters.

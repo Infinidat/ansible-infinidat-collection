@@ -9,7 +9,7 @@ v1.3.8 (2022-11-11)
 ^^^^^^^^^^^^^^^^^^^^
 Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
-* Support thin and thick (default) provisioning in infini_fs.
+* Support thin and thick provisioning in infini_fs.
 
 -------------------
 v1.3.7 (2022-10-03)

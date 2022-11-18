@@ -44,6 +44,7 @@ _infinishell_creds  	= --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               	= /bin/bash
 _ansible_clone      	= ~/cloud/ansible
 _network_space_ips  	= 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
+_modules                = "infini_cluster.py" "infini_export.py" "infini_host.py" "infini_network_space.py" "infini_port.py" "infini_vol.py" "infini_export_client.py" "infini_fs.py" "infini_map.py" "infini_pool.py" "infini_user.py"
 
 ##@ General
 create-venv: ## Setup venv.
@@ -195,11 +196,11 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 
 ##@ Hacking
 #_module_under_test = infini_network_space
-_module_under_test = infini_vol
+_module_under_test = infini_map
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@#echo "Creating hacking module links"
-	@for m in "infini_network_space.py" "infini_vol.py"; do \
+	@for m in $(_modules); do \
 		ln --force --symbolic $$(pwd)/plugins/modules/$$m $(_ansible_clone)/lib/ansible/modules/infi/$$m; \
 	done
 	@#echo "Creating hacking module_utils links $(_module_utilities)"
@@ -210,33 +211,42 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
 	@cwd=$$(pwd) && \
 	cd $(_ansible_clone) && \
+		JSON_IN="$$cwd/tests/hacking/$(_module_under_test)_$${state}.json" && \
+		if [[ ! -a "$$JSON_IN" ]]; then \
+			>&2 echo "Error: $$JSON_IN not found"; \
+			exit; \
+		fi; \
 		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
 		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
-		python -m ansible.modules.infi.$(_module_under_test) $$cwd/tests/hacking/$(_module_under_test)_$${name}$${state}.json 2>&1 | \
+		AIC=/home/dohlemacher/cloud/ansible-infinidat-collection \
+		ANS=/home/dohlemacher/cloud/ansible \
+		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/modules" \
+		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/module_utils" \
+		PYTHONPATH="$$PYTHONPATH:$$ANS/lib" \
+		PYTHONPATH="$$PYTHONPATH:$$ANS/hacking/build_library/build_ansible" \
+		python -m "$(_module_under_test)" "$$JSON_IN" 2>&1 | \
 			grep -v 'Unverified HTTPS request'
 
 _dev-hack-module-jq:  # If module is running to the point of returning json, use this to run it and prettyprint using jq.
 	@$(_make) _dev-hack-module | egrep 'changed|failed' | jq '.'
 
 dev-hack-module-stat:  ## Hack stat.
-	name="" state=stat    $(_make) _dev-hack-module
+	@state=stat    $(_make) _dev-hack-module
 
 dev-hack-module-stat-jq:  ## Hack stat with jq.
-	name="" state=stat    $(_make) _dev-hack-module-jq
+	@state=stat    $(_make) _dev-hack-module-jq
 
 dev-hack-module-present:  ## Hack present.
-	name="" state=present $(_make) _dev-hack-module
+	@state=present $(_make) _dev-hack-module
 
 dev-hack-module-present-jq:  ## Hack present with jq.
-	name="" state=present $(_make) _dev-hack-module-jq
+	@state=present $(_make) _dev-hack-module-jq
 
 dev-hack-module-absent:  ## Hack absent.
-	name="" state=absent $(_make) _dev-hack-module
+	@state=absent $(_make) _dev-hack-module
 
 dev-hack-module-absent-jq:  ## Hack absent with jq.
-	name="" state=absent $(_make) _dev-hack-module-jq
-
-
+	@state=absent $(_make) _dev-hack-module-jq
 
 ##@ Test Module
 _module = infini_network_space.py

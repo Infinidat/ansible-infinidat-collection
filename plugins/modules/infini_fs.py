@@ -31,10 +31,10 @@ options:
     type: str
   thin_provision:
     description:
-      - Whether the master file system should be thin provisioned.  Required for creating a master file system, but not a snapshot.
-    type: bool
+      - Whether the master file system should be thin or thick provisioned.
     required: false
     default: true
+    type: bool
   pool:
     description:
       - Pool that will host file system.
@@ -103,6 +103,7 @@ def create_filesystem(module, system):
             pool=get_pool(module, system),
             provtype=provisioning,
         )
+
         if module.params['size']:
             size = Capacity(module.params['size']).roundup(64 * KiB)
             filesystem.update_size(size)
@@ -119,7 +120,7 @@ def update_filesystem(module, filesystem):
             if not module.check_mode:
                 filesystem.update_size(size)
             changed = True
-    if module.params['thin_provision'] is not None:
+
         provisioning = str(filesystem.get_provisioning())
         if provisioning == 'THICK' and module.params['thin_provision']:
             if not module.check_mode:
@@ -154,15 +155,17 @@ def handle_stat(module):
     if not filesystem:
         module.fail_json(msg='File system {0} not found'.format(module.params['name']))
     fields = filesystem.get_fields()  # from_cache=True, raw_value=True)
+    name = fields.get("name", None)
     used = fields.get('used_size', None)
     filesystem_id = fields.get('id', None)
-    provisioning = fields.get('provtype', None)
+    provisioning = fields.get('provisioning', None)
 
     result = dict(
         changed=False,
+        name=name,
         size=str(filesystem.get_size()),
         used=str(used),
-        id=filesystem_id,
+        filesystem_id=filesystem_id,
         provisioning=provisioning,
         msg='File system stat found'
     )
@@ -214,7 +217,7 @@ def main():
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             pool=dict(required=True),
             size=dict(),
-            thin_provision=dict(type='bool', default=False),
+            thin_provision=dict(type=bool, default=True),
         )
     )
 

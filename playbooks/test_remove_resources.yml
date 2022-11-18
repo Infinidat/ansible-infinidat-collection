@@ -101,9 +101,9 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Remove file system named {{ auto_prefix }}fs_thick_default under pool {{ auto_prefix }}pool
+    - name: POSITIVE test -> Remove file system named {{ auto_prefix }}fs_default under pool {{ auto_prefix }}pool
       infini_fs:
-        name: "{{ auto_prefix }}fs_thick_default"
+        name: "{{ auto_prefix }}fs_default"
         size: 1GB
         pool: "{{ auto_prefix }}pool"
         state: absent

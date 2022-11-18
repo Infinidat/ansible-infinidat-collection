@@ -71,6 +71,8 @@ coverage.xml
 /test/integration/targets/*/backup/
 /test/cache/*
 # Development
+tests/hacking
+tests/sanity
 /test/develop
 venv
 Vagrantfile

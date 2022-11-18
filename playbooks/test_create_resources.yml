@@ -36,9 +36,10 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create THICK (default) file system named {{ auto_prefix }}fs_thick_default under pool {{ auto_prefix }}pool
+    - name: POSITIVE test -> Create default THIN, file system named {{ auto_prefix }}fs_default under pool {{ auto_prefix }}pool
+      # See IBox settings: Dataset default provisioning.
       infini_fs:
-        name: "{{ auto_prefix }}fs_thick_default"
+        name: "{{ auto_prefix }}fs_default"
         size: 1GB
         pool: "{{ auto_prefix }}pool"
         state: present
@@ -46,7 +47,21 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create THICK (explicit) file system named {{ auto_prefix }}fs_thick under pool {{ auto_prefix }}pool
+    - name: POSITIVE test -> Stat file system named {{ auto_prefix }}fs_default under pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fs_default"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: stat
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: def_stat
+
+    - debug:
+        msg: stat - {{ def_stat }}
+
+    - name: POSITIVE test -> Create THICK file system named {{ auto_prefix }}fs_thick under pool {{ auto_prefix }}pool
       infini_fs:
         name: "{{ auto_prefix }}fs_thick"
         size: 1GB
@@ -75,6 +90,17 @@
         pool: "{{ auto_prefix }}pool"
         state: present
         thin_provision: false
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Change THICK file system named {{ auto_prefix }}fs back to THIN provisioning
+      infini_fs:
+        name: "{{ auto_prefix }}fs"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        thin_provision: true
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
