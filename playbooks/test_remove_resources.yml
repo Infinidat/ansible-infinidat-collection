@@ -30,6 +30,11 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: POSITIVE test -> Rescan with remove option after removing mapping
+      shell: |
+        rescan-scsi-bus.sh --remove
+      become: True
+
     - name: IDEMPOTENT test -> Remove mapping of volume {{ auto_prefix }}vol from host {{ auto_prefix }}host again
       infini_map:
         host: "{{ auto_prefix }}host"

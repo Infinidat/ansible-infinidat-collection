@@ -415,6 +415,11 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: POSITIVE test -> Rescan after mapping
+      shell: |
+        rescan-scsi-bus.sh
+      become: True
+
     - name: POSITIVE test -> Stat map of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host
       infini_map:
         host: "{{ auto_prefix }}host"
@@ -433,6 +438,11 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: POSITIVE test -> Rescan with remove option after removing mapping
+      shell: |
+        rescan-scsi-bus.sh --remove
+      become: True
+
     - name: POSITIVE test -> Map volume {{ auto_prefix }}vol to host {{ auto_prefix }}host using lun 0
       infini_map:
         host: "{{ auto_prefix }}host"
@@ -442,6 +452,11 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+
+    - name: POSITIVE test -> Rescan after mapping
+      shell: |
+        rescan-scsi-bus.sh
+      become: True
 
     - name: POSITIVE test -> Stat map of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host using lun 0
       infini_map:

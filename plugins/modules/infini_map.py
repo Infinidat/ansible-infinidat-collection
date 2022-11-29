@@ -16,6 +16,9 @@ short_description: Create and Delete mapping of a volume to a host or cluster on
 description:
     - This module creates or deletes mappings of volumes to hosts or clusters
       on Infinibox.
+    - For Linux hosts, after calling this module, the playbook should execute "rescan-scsi-bus.sh" on the host when creating mappings.
+    - When removing mappings "rescan-scsi-bus.sh --remove" should be called.
+    - For Windows hosts, consider using "'rescan' | diskpart" or "Update-HostStorageCache".
 author: David Ohlemacher (@ohlemacher)
 options:
   host:
@@ -87,6 +90,10 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 import traceback
+# import sh
+
+# rescan_scsi = sh.Command("rescan-scsi-bus.sh")
+# rescan_scsi_remove = rescan_scsi.bake("--remove")
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
@@ -216,6 +223,12 @@ def create_mapping(module, system):
     else:
         msg = "A programming error has occurred in create_mapping()"
         module.fail_json(msg=msg)
+
+    # if changed:
+    #     with sh.contrib.sudo:
+    #         print("rescanning")
+    #         rescan_scsi()
+
     return changed
 
 
@@ -350,6 +363,12 @@ def delete_mapping(module, system):
     else:
         msg = "A programming error has occurred in delete_mapping()"
         module.fail_json(msg=msg)
+
+    # if changed:
+    #     with sh.contrib.sudo:
+    #         print("rescanning --remove")
+    #         rescan_scsi_remove()
+
     return changed
 
 
@@ -378,6 +397,7 @@ def delete_mapping_to_host(module, system):
                     module.params['host'],
                     existing_lun,
                 )
+
             except KeyError as err:
                 if 'has no logical units' not in str(err):
                     module.fail_json('Cannot unmap volume {0} from host {1}: {2}'.format(

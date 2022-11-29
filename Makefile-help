@@ -7,7 +7,7 @@
 #   @echo -e $(_finish)
 
 # Use color in Makefiles.
-_USE_COLOR ?= false
+_USE_COLOR ?= true
 
 .DEFAULT_GOAL := help
 

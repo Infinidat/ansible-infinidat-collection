@@ -139,12 +139,12 @@ _test_playbook:
 
 test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
-	playbook_name=test_create_resources.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_create_resources.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
 test-remove-resources:  ## Run full removal  test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
-	playbook_name=test_remove_resources.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_remove_resources.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
 test-create-snapshots:  ## Test creating immutable snapshots.
@@ -216,8 +216,8 @@ _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using br
 			>&2 echo "Error: $$JSON_IN not found"; \
 			exit; \
 		fi; \
-		source venv/bin/activate 1> /dev/null 2> /dev/null  && \
-		source hacking/env-setup 1> /dev/null 2> /dev/null  && \
+		source venv/bin/activate 1> /dev/null 2> /dev/null && \
+		source hacking/env-setup 1> /dev/null 2> /dev/null && \
 		AIC=/home/dohlemacher/cloud/ansible-infinidat-collection \
 		ANS=/home/dohlemacher/cloud/ansible \
 		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/modules" \
