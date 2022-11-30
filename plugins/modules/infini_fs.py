@@ -66,27 +66,38 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
+import sys
+print(f"path: {sys.path}")
+
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 import traceback
+
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+        HAS_INFINISDK,
+        api_wrapper,
+        infinibox_argument_spec,
+        get_pool,
+        get_system,
+        get_filesystem
+    )
+except ModuleNotFoundError:
+    from infinibox import (  # Used when hacking
+        HAS_INFINISDK,
+        api_wrapper,
+        infinibox_argument_spec,
+        get_pool,
+        get_system,
+        get_filesystem
+    )
 
 CAPACITY_IMP_ERR = None
 try:
     from capacity import KiB, Capacity
     HAS_CAPACITY = True
 except ImportError:
-    CAPACITY_IMP_ERR = traceback.format_exc()
     HAS_CAPACITY = False
-
-try:
-    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-        get_pool, get_system, get_filesystem
-except ImportError:
-    HAS_INFINISDK = False
-    INFINISDK_IMPORT_ERROR = traceback.format_exc()
-else:
-    HAS_INFINISDK = True
 
 
 @api_wrapper
@@ -224,12 +235,10 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'),
-                         exception=INFINISDK_IMPORT_ERROR)
+        module.fail_json(msg=missing_required_lib('infinisdk'))
 
     if not HAS_CAPACITY:
-        module.fail_json(msg=missing_required_lib('capacity'),
-                         exception=CAPACITY_IMP_ERR)
+        module.fail_json(msg=missing_required_lib('capacity'))
 
     if module.params['size']:
         try:

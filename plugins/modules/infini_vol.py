@@ -123,29 +123,30 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 import traceback
 
-HAS_INFINISDK = False
-INFINISDK_IMPORT_ERROR = None
-HAS_CAPACITY = False
+from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+    HAS_INFINISDK,
+    api_wrapper,
+    infinibox_argument_spec,
+    ObjectNotFound,
+    get_pool,
+    get_system,
+    get_volume,
+    get_vol_sn,
+)
 
+
+HAS_CAPACITY = True
 try:
     from capacity import KiB, Capacity
-
-    HAS_CAPACITY = True
 except ImportError:
     HAS_CAPACITY = False
 
+HAS_ARROW = True
 try:
     import arrow
-    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-        HAS_INFINISDK,
-        api_wrapper,
-        infinibox_argument_spec,
-        ObjectNotFound,
-        get_pool,
-        get_system,
-        get_volume,
-        get_vol_sn,
-    )
+except ImportError:
+    HAS_ARROW = False
+
 except Exception:
     HAS_INFINISDK = False
 
@@ -595,8 +596,10 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"),
-                         exception=INFINISDK_IMPORT_ERROR)
+        module.fail_json(msg=missing_required_lib("infinisdk"))
+
+    if not HAS_ARROW:
+        module.fail_json(msg=missing_required_lib("arrow"))
 
     if module.params["size"]:
         try:

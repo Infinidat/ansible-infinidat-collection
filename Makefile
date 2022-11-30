@@ -196,7 +196,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 
 ##@ Hacking
 #_module_under_test = infini_network_space
-_module_under_test = infini_map
+_module_under_test = infini_fs
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@#echo "Creating hacking module links"
@@ -209,7 +209,7 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 	done
 
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
-	@cwd=$$(pwd) && \
+	cwd=$$(pwd) && \
 	cd $(_ansible_clone) && \
 		JSON_IN="$$cwd/tests/hacking/$(_module_under_test)_$${state}.json" && \
 		if [[ ! -a "$$JSON_IN" ]]; then \
@@ -224,6 +224,7 @@ _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using br
 		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/module_utils" \
 		PYTHONPATH="$$PYTHONPATH:$$ANS/lib" \
 		PYTHONPATH="$$PYTHONPATH:$$ANS/hacking/build_library/build_ansible" \
+		PYTHONPATH="$$PYTHONPATH:$$ANS/venv/lib/python3.8/site-packages" \
 		python -m "$(_module_under_test)" "$$JSON_IN" 2>&1 | \
 			grep -v 'Unverified HTTPS request'
 

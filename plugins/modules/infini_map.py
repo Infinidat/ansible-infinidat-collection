@@ -97,30 +97,17 @@ import traceback
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-try:
-    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-        HAS_INFINISDK,
-        api_wrapper,
-        get_cluster,
-        get_host,
-        get_pool,
-        get_system,
-        get_volume,
-        infinibox_argument_spec,
-        merge_two_dicts
-    )
-except ModuleNotFoundError:
-    from infinibox import (
-        HAS_INFINISDK,
-        api_wrapper,
-        get_cluster,
-        get_host,
-        get_pool,
-        get_system,
-        get_volume,
-        infinibox_argument_spec,
-        merge_two_dicts
-    )
+from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+    HAS_INFINISDK,
+    api_wrapper,
+    get_cluster,
+    get_host,
+    get_pool,
+    get_system,
+    get_volume,
+    infinibox_argument_spec,
+    merge_two_dicts
+)
 
 try:
     from infinisdk.core.exceptions import APICommandFailed, ObjectNotFound

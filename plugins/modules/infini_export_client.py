@@ -85,6 +85,15 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 import traceback
 
+from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+    HAS_INFINISDK,
+    api_wrapper,
+    infinibox_argument_spec,
+    get_system,
+    get_export,
+    merge_two_dicts,
+)
+
 MUNCH_IMP_ERR = None
 try:
     from munch import Munch, unmunchify
@@ -92,16 +101,6 @@ try:
 except ImportError:
     MUNCH_IMPORT_ERROR = traceback.format_exc()
     HAS_MUNCH = False
-
-try:
-    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import \
-        HAS_INFINISDK, api_wrapper, infinibox_argument_spec, \
-        get_system, get_export, merge_two_dicts
-except ImportError:
-    HAS_INFINISDK = False
-    INFINISDK_IMPORT_ERROR = traceback.format_exc()
-else:
-    HAS_INFINISDK = True
 
 
 @api_wrapper

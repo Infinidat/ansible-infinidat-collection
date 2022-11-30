@@ -105,15 +105,7 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 import traceback
 
-HAS_INFINISDK = False
-INFINISDK_IMPORT_ERROR = None
-
-try:
-    from infinisdk.core.exceptions import APICommandFailed
-    from infi.dtypes.iqn import make_iscsi_name
-
-    # Import from collection (recommended)
-    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
         HAS_INFINISDK,
         api_wrapper,
         infinibox_argument_spec,
@@ -122,13 +114,13 @@ try:
         merge_two_dicts,
         get_net_space,
     )
-except ImportError:
-    HAS_INFINISDK = False
-    INFINISDK_IMPORT_ERROR = traceback.format_exc()
-else:
-    HAS_INFINISDK = True
 
-from infinisdk.core.exceptions import ObjectNotFound
+try:
+    from infinisdk.core.exceptions import APICommandFailed
+    from infinisdk.core.exceptions import ObjectNotFound
+    from infi.dtypes.iqn import make_iscsi_name
+except ImportError:
+    pass  # Handled by HAS_INFINISDK from module_utils
 
 
 @api_wrapper
@@ -418,15 +410,12 @@ def main():
             ips=dict(default=list(), required=False, type="list", elements="str"),
             rate_limit=dict(default=None, required=False, type=int),
         )
-        # required_one_of = [["var_1", "var_2"]]
-        # mutually_exclusive = [["var_3", "var_4"]]
     )
 
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"),
-                         exception=INFINISDK_IMPORT_ERROR)
+        module.fail_json(msg=missing_required_lib("infinisdk"))
 
     execute_state(module)
 

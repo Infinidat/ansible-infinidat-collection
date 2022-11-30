@@ -9,8 +9,8 @@ __metaclass__ = type
 from ansible.module_utils.six import raise_from
 try:
     import ansible.module_utils.errors
-except ImportError:
-    import errors
+except (ImportError, ModuleNotFoundError):
+    import errors  # Used during "make dev-hack-module-[present, stat, absent]"
 
 try:
     from infinisdk import InfiniBox, core
@@ -21,11 +21,6 @@ except ImportError as imp_exc:
 else:
     HAS_INFINISDK = True
     INFINISDK_IMPORT_ERROR = None
-
-if INFINISDK_IMPORT_ERROR:
-    raise_from(
-        ansible.module_utils.errors.AnsibleError('INFINIDAT SDK must be installed to use this plugin'),
-        INFINISDK_IMPORT_ERROR)
 
 from functools import wraps
 from os import environ
