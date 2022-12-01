@@ -3,13 +3,20 @@ Change Log
 ==========
 
 -------------------
-v1.3.8 (2022-11-11)
+v1.3.8 (2022-12-01)
 -------------------
 
 ^^^^^^^^^^^^^^^^^^^^
 Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
 * Support thin and thick provisioning in infini_fs.
+* Refactor module imports.
+* In the test_create_resources.yml and test_remove_resources.yml example playbooks, run rescan-scsi-bus.sh on host.
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* Fix infini_vol stat state. Return the provisioning type (thin or thick) properly.
 
 -------------------
 v1.3.7 (2022-10-03)

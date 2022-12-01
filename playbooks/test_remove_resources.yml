@@ -34,6 +34,8 @@
       shell: |
         rescan-scsi-bus.sh --remove
       become: True
+      register: rescan
+      failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
 
     - name: IDEMPOTENT test -> Remove mapping of volume {{ auto_prefix }}vol from host {{ auto_prefix }}host again
       infini_map:

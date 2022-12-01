@@ -260,8 +260,7 @@ def main():
                          exception=MUNCH_IMPORT_ERROR)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib('infinisdk'),
-                         exception=INFINISDK_IMPORT_ERROR)
+        module.fail_json(msg=missing_required_lib('infinisdk'))
 
     execute_state(module)
 

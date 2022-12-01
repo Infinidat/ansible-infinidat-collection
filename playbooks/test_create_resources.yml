@@ -419,6 +419,8 @@
       shell: |
         rescan-scsi-bus.sh
       become: True
+      register: rescan
+      failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
 
     - name: POSITIVE test -> Stat map of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host
       infini_map:
@@ -442,6 +444,8 @@
       shell: |
         rescan-scsi-bus.sh --remove
       become: True
+      register: rescan
+      failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
 
     - name: POSITIVE test -> Map volume {{ auto_prefix }}vol to host {{ auto_prefix }}host using lun 0
       infini_map:
@@ -457,6 +461,8 @@
       shell: |
         rescan-scsi-bus.sh
       become: True
+      register: rescan
+      failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
 
     - name: POSITIVE test -> Stat map of volume {{ auto_prefix }}vol to host {{ auto_prefix }}host using lun 0
       infini_map:

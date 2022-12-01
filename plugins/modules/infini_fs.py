@@ -66,9 +66,6 @@ EXAMPLES = r'''
 
 # RETURN = r''' # '''
 
-import sys
-print(f"path: {sys.path}")
-
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 import traceback

@@ -106,14 +106,14 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 import traceback
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-        HAS_INFINISDK,
-        api_wrapper,
-        infinibox_argument_spec,
-        get_system,
-        unixMillisecondsToDate,
-        merge_two_dicts,
-        get_net_space,
-    )
+    HAS_INFINISDK,
+    api_wrapper,
+    infinibox_argument_spec,
+    get_system,
+    unixMillisecondsToDate,
+    merge_two_dicts,
+    get_net_space,
+)
 
 try:
     from infinisdk.core.exceptions import APICommandFailed

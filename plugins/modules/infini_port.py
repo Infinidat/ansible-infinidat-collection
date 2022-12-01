@@ -84,6 +84,7 @@ try:
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
+
 @api_wrapper
 def update_ports(module, system):
     """
