@@ -2,6 +2,15 @@
 Change Log
 ==========
 
+-------------------
+v1.3.11 (2022-12-03)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Feature Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* Fix module sanity errors not flagged when run locally, but flagged when uploaded to the automation hub for certification.
+
 --------------------
 v1.3.10 (2022-12-03)
 --------------------
