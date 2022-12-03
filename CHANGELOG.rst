@@ -2,6 +2,15 @@
 Change Log
 ==========
 
+--------------------
+v1.3.10 (2022-12-03)
+--------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Feature Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* Add documentation for the delta-time filter. The delta-time filter is used in test_create_resources.yml playbook.
+
 -------------------
 v1.3.9 (2022-12-02)
 -------------------
