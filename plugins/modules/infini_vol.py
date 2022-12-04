@@ -511,16 +511,18 @@ def handle_absent(module):
 def execute_state(module):
     # Handle different write_protected defaults depending on volume_type.
     if module.params["volume_type"] == "snapshot":
-        if module.params["write_protected"] == "Default":
+        if module.params["write_protected"] in ["True", "true", "Default"]:
             module.params["write_protected"] = True
-    elif module.params["volume_type"] == "master":
-        if module.params["write_protected"] == "Default":
+        else:
             module.params["write_protected"] = False
+    elif module.params["volume_type"] == "master":
+        if module.params["write_protected"] in ["False", "false", "Default"]:
+            module.params["write_protected"] = False
+        else:
+            module.params["write_protected"] = True
     else:
-        msg = "A programming error has occurred handling volume type value"
+        msg = f"An error has occurred handling volume_type '{module.params['volume_type']}' or write_protected '{module.params['write_protected']}' values"
         module.fail_json(msg=msg)
-    if module.params["write_protected"] not in [True, False]:
-        raise AssertionError("Invalid write_protected value specified")
 
     state = module.params["state"]
     try:

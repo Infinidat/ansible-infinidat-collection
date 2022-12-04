@@ -207,6 +207,7 @@
         size: 1GB
         pool: "{{ auto_prefix }}pool"
         thin_provision: false
+        write_protected: true
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
