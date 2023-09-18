@@ -33,7 +33,6 @@ _name               	= $(shell spruce json galaxy.yml | jq '.name'      | sed 's
 _install_path       	= ~/.ansible/collections
 _install_path_local 	= $$HOME/.ansible/collections
 _python_version     	= python3.8
-_venv               	= venv
 _requirements-file  	= requirements.txt
 _requirements-dev-file  = requirements-dev.txt
 _user               	= psus-gitlab-cicd
@@ -47,12 +46,12 @@ _network_space_ips  	= 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 1
 _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py" "infini_network_space.py" "infini_port.py" "infini_vol.py" "infini_export_client.py" "infini_fs.py" "infini_map.py" "infini_pool.py" "infini_user.py"
 
 ##@ General
-create-venv: ## Setup venv.
-	$(_python_version) -m venv $(_venv) && \
-	source $(_venv)/bin/activate && \
-	python -m pip install --upgrade pip && \
-	python -m pip install --upgrade --requirement $(_requirements-file)
-	python -m pip install --upgrade --requirement $(_requirements-dev-file)
+setup: ## Setup Python requirements.
+	@# Install pbr early to prevent errors with flux and gossip install.
+	@# e.g. distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('pbr>=3.0')
+	$(_python) -m pip install --user --upgrade pip pbr && \
+	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file)
+	$(_python) -m pip install --user --upgrade --requirement $(_requirements-dev-file)
 
 _check-vars:
 ifeq ($(strip $(API_KEY)),)
@@ -71,13 +70,10 @@ version: _check-vars  ## Show versions.
 
 _test-venv:
 	@# Test that a venv is activated
-ifndef VIRTUAL_ENV
-	@echo "Error: Virtual environment not set"
-	@echo -e "\nRun:\n  make pyvenv"
-	@echo -e "  source $(_venv)/bin/activate\n"
+ifdef VIRTUAL_ENV
+	@echo "Error: Virtual environment set"
 	exit 1
 endif
-	@echo "Virtual environment set"
 
 pylint:
 	@echo -e $(_begin)
@@ -87,9 +83,22 @@ pylint:
 	@echo -e $(_finish)
 
 pyfind:  ## Search project python files using: f='search term' make pyfind
-	find . -name "*.py" | xargs grep -n "$$f" | egrep -v 'venv|eggs|parts|\.git|external-projects|build'
+	find . -name "*.py" | xargs grep -n "$$f" | egrep -v 'eggs|parts|\.git|external-projects|build'
 
 ##@ Galaxy
+
+setup-galaxy: _test-venv
+	@wget --quiet https://github.com/geofffranks/spruce/releases/download/v1.31.0/spruce-linux-amd64 && \
+		mv spruce-linux-amd64 spruce && \
+		chmod +x spruce && \
+		sudo mv spruce /usr/local/bin && \
+	wget --quiet https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64 && \
+		mv jq-linux-amd64 jq && \
+		chmod +x jq && \
+		sudo mv jq /usr/local/bin && \
+	echo "jq and spruce are installed"
+
+	
 
 galaxy-collection-build:  ## Build the collection.
 	@echo -e $(_begin)
@@ -216,7 +225,6 @@ _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using br
 			>&2 echo "Error: $$JSON_IN not found"; \
 			exit; \
 		fi; \
-		source venv/bin/activate 1> /dev/null 2> /dev/null && \
 		source hacking/env-setup 1> /dev/null 2> /dev/null && \
 		AIC=/home/dohlemacher/cloud/ansible-infinidat-collection \
 		ANS=/home/dohlemacher/cloud/ansible \
@@ -224,8 +232,7 @@ _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using br
 		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/module_utils" \
 		PYTHONPATH="$$PYTHONPATH:$$ANS/lib" \
 		PYTHONPATH="$$PYTHONPATH:$$ANS/hacking/build_library/build_ansible" \
-		PYTHONPATH="$$PYTHONPATH:$$ANS/venv/lib/python3.8/site-packages" \
-		python -m "$(_module_under_test)" "$$JSON_IN" 2>&1 | \
+		$(_python) -m "$(_module_under_test)" "$$JSON_IN" 2>&1 | \
 			grep -v 'Unverified HTTPS request'
 
 _dev-hack-module-jq:  # If module is running to the point of returning json, use this to run it and prettyprint using jq.
@@ -279,10 +286,8 @@ test-sanity:  ## Run ansible sanity tests
 _setup-sanity-locally: galaxy-collection-build-force galaxy-collection-install-locally
 	@# Setup a test env.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		$(_python_version) -m venv $(_venv) && \
-		source $(_venv)/bin/activate && \
-		python -m pip install --upgrade pip && \
-		python -m pip install --upgrade --requirement $(_requirements-file)
+		$(_python) -m pip install --user --upgrade pip && \
+		$(_python) -m pip install --user --upgrade --requirement $(_requirements-file)
 
 test-sanity-locally: _setup-sanity-locally  ## Run ansible sanity tests locally.
 	@# in accordance with
