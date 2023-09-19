@@ -50,8 +50,10 @@ setup: ## Setup Python requirements.
 	@# Install pbr early to prevent errors with flux and gossip install.
 	@# e.g. distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('pbr>=3.0')
 	$(_python) -m pip install --user --upgrade pip pbr && \
-	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file)
-	$(_python) -m pip install --user --upgrade --requirement $(_requirements-dev-file)
+	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file) && \
+	$(_python) -m pip install --user --upgrade --requirement $(_requirements-dev-file) && \
+	curl -s https://repo.infinidat.com/setup/main-stable | sudo sh - && \
+	sudo yum install -y infinishell
 
 _check-vars:
 ifeq ($(strip $(API_KEY)),)
@@ -184,6 +186,16 @@ test-create-map-cluster:  ## Run full creation test suite as run by Gitlab CICD.
 test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
 	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
+test-create-volumes:  ## Run volume creation tests.
+	@echo -e $(_begin)
+	ask_become_pass="-K" playbook_name=test_create_volumes.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
+test-remove-volumes:  ## Run volume removal tests.
+	@echo -e $(_begin)
+	ask_become_pass="-K" playbook_name=test_remove_volumes.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
 ##@ Infinisafe Demo

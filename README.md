@@ -1,5 +1,11 @@
 # Infinidat's Ansible Collection
 
+## Links
+- https://galaxy.ansible.com/infinidat/infinibox
+- https://docs.ansible.com/ansible/latest/collections/infinidat/infinibox
+- https://github.com/Infinidat/ansible-infinidat-collection
+- https://git.infinidat.com/PSUS/ansible-infinidat-collection
+
 ## Platforms Supported
 All Infindat InfiniBoxes are supported.
 
