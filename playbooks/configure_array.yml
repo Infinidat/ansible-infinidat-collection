@@ -1,0 +1,109 @@
+---
+# PSDEV-1108: Create playbook automating cluster configuration mobility.
+# Create three volumes: vol_nonwriteable, vol_explicitly_writable and vol_writable.
+- hosts: localhost
+  gather_facts: true  # Required for ansible_date_time
+  collections:
+    - infinidat.infinibox
+  tasks:
+
+    - name: Configure Infinibox - Set default compression to enabled
+      ansible.builtin.debug:
+        msg: (1) Enable compression
+
+    - name: Configure Infinibox - Set default provisioning to thin
+      ansible.builtin.debug:
+        msg: (1) Enable thin provisioning
+
+    - name: Configure Infinibox - Set capacity units to base 2, e.g. GiB, TiB
+      ansible.builtin.debug:
+        msg: (1) Set capacity units
+
+    - name: Configure Infinibox - Set maximum export rows to 3000
+      ansible.builtin.debug:
+        msg: (1) Set export rows 
+
+    - name: Configure Infinibox - Setup LDAP
+      ansible.builtin.debug:
+        msg: (2) Setup LDAP type to AD, name to CN, domain name, bind username and bind password
+
+    - name: Configure Infinibox - Setup LDAP groups
+      ansible.builtin.debug:
+        msg: (3) Add LDAP groups for READ_ONLY and ADMIN roles
+
+    - name: Test Infinibox - Test LDAP
+      ansible.builtin.debug:
+        msg: (4) Test LDAP
+
+    - name: Test Infinibox - Test LDAP roles
+      ansible.builtin.debug:
+        msg: (4) Test LDAP roles
+
+    - name: Configure Infinibox - Change admin password
+      ansible.builtin.debug:
+        msg: (5) Change admin password
+
+    - name: Configure Infinibox - Temporarily setup alerting email
+      ansible.builtin.debug:
+        msg: (6) Create event rule to send email to TEO-Engineering-Alerts@jackhenry.com
+
+    - name: Test Infinibox - Test temporarily  alerting
+      ansible.builtin.debug:
+        msg: (6) Create test event
+
+    - name: Configure Infinibox - Define syslog from list
+      ansible.builtin.debug:
+        msg: (7) Configure syslogs
+
+    - name: Configure Infinibox - Create syslogs
+      ansible.builtin.debug:
+        msg: (7) Create syslogs
+
+    - name: Configure Infinibox - Create network space
+      ansible.builtin.debug:
+        msg: (8) Create network space
+
+    - name: Configure Infinimentrics - Add Infinibox
+      ansible.builtin.debug:
+        msg: (9) Add Infinibox to Infinimetrics
+
+    - name: Configure Infinibox - Create pools
+      ansible.builtin.debug:
+        msg: (10) Create pools
+
+    - name: Configure Infinibox - Label fibre channel switches
+      ansible.builtin.debug:
+        msg: (11) Rename fibre channel switches using names listed in file 
+
+    - name: Test Infinibox - Test labels fibre channel switches
+      ansible.builtin.debug:
+        msg: (11) Test renamed fibre channel switches. Validate WWN in BNA
+
+    # Ensure that JHA CA Certificate is installed by remote support 
+    - name: Configure Infinibox - Update management SSL certificate
+      ansible.builtin.debug:
+        msg: (12) Update management SSL certificate
+
+    - name: Configure Infinibox - Update SA SSL certificate
+      ansible.builtin.debug:
+        msg: (12) Update SA SSL certificate
+
+    - name: Configure Infinibox - Setup alerting production email
+      ansible.builtin.debug:
+        msg: (13) Create event rule to send email to Alerts-CorpSystemsStorage@jackhenry.com
+
+    - name: Configure Infinibox - Remove temporarily alerting email
+      ansible.builtin.debug:
+        msg: (13) Remove event rule to send email to TEO-Engineering-Alerts@jackhenry.com
+
+    - name: Test Infinibox - Test production alerting
+      ansible.builtin.debug:
+        msg: (13) Create test event
+
+    - name: Configure Infinibox - Notify TS-Storage that system is complete and ready for use
+      ansible.builtin.debug:
+        msg: (14) Send event - System is complete and ready for use
+
+
+
+

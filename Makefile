@@ -198,6 +198,12 @@ test-remove-volumes:  ## Run volume removal tests.
 	ask_become_pass="-K" playbook_name=test_remove_volumes.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
+##@ Solution Examples
+configure-ibox:  ## Configure customer Infinibox.
+	@echo -e $(_begin)
+	ask_become_pass="" playbook_name=configure_array.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
 ##@ Infinisafe Demo
 
 infinisafe-demo-setup:  ## Setup infinisafe demo.
