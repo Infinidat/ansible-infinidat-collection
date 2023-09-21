@@ -41,7 +41,7 @@ _password           	= $$(cat vault_password.txt)
 _ibox_url           	= ibox1521
 _infinishell_creds  	= --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               	= /bin/bash
-_ansible_clone      	= ~/cloud/ansible
+_ansible_clone      	= /home/$$USER/workspace/ansible
 _network_space_ips  	= 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
 _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py" "infini_network_space.py" "infini_port.py" "infini_vol.py" "infini_export_client.py" "infini_fs.py" "infini_map.py" "infini_pool.py" "infini_user.py"
 
@@ -49,11 +49,13 @@ _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py
 setup: ## Setup Python requirements.
 	@# Install pbr early to prevent errors with flux and gossip install.
 	@# e.g. distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('pbr>=3.0')
-	$(_python) -m pip install --user --upgrade pip pbr && \
+	$(_python) -m pip install --user --upgrade pip && \
+	$(_python) -m pip install --user --upgrade ansible pbr && \
 	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file) && \
 	$(_python) -m pip install --user --upgrade --requirement $(_requirements-dev-file) && \
 	curl -s https://repo.infinidat.com/setup/main-stable | sudo sh - && \
-	sudo yum install -y infinishell
+	sudo yum install -y infinishell && \
+	which ansible || (echo "Ansible not found. May need $$HOME/.local/bin in PATH"; exit 1)
 
 _check-vars:
 ifeq ($(strip $(API_KEY)),)
@@ -100,8 +102,6 @@ setup-galaxy: _test-venv
 		sudo mv jq /usr/local/bin && \
 	echo "jq and spruce are installed"
 
-	
-
 galaxy-collection-build:  ## Build the collection.
 	@echo -e $(_begin)
 	rm -rf collections/
@@ -134,12 +134,13 @@ _test_playbook:
 	@# See DEV_README.md
 	@# vault_pass env var must be exported.
 	cd playbooks && \
-		export ANSIBLE_LIBRARY=/home/dohlemacher/cloud/ansible-infinidat-collection/playbooks/plugins/modules; \
-		export ANSIBLE_MODULE_UTILS=/home/dohlemacher/cloud/ansible-infinidat-collection/plugins/module_utils; \
+		export ANSIBLE_LIBRARY=$$HOME/workspace/ansible-infinidat-collection/playbooks/plugins/modules; \
+		export ANSIBLE_MODULE_UTILS=$$HOME/workspace/ansible-infinidat-collection/plugins/module_utils; \
 		if [ ! -e "../vault_password.txt" ]; then \
 			echo "Please add your vault password to vault_password.txt"; \
 			exit 1; \
 		fi; \
+		ansible-galaxy collection install --force "$${PWD}"; \
 		ansible-playbook \
 			$$ask_become_pass \
 			--inventory "inventory" \
@@ -198,9 +199,21 @@ test-remove-volumes:  ## Run volume removal tests.
 	ask_become_pass="-K" playbook_name=test_remove_volumes.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
+test-create-metadata:  ## Run metadata creation tests.
+	@echo -e $(_begin)
+	ansible-galaxy collection install --force "$${PWD}"
+	ask_become_pass="" playbook_name=test_create_metadata.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
+test-remove-metadata:  ## Run metadata removal tests.
+	@echo -e $(_begin)
+	ask_become_pass="" playbook_name=test_remove_metadata.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
 ##@ Solution Examples
 configure-ibox:  ## Configure customer Infinibox.
 	@echo -e $(_begin)
+	ansible-galaxy collection install --force "$${PWD}"
 	ask_become_pass="" playbook_name=configure_array.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
@@ -222,17 +235,21 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-#_module_under_test = infini_network_space
-_module_under_test = infini_fs
+_module_under_test = infini_metadata
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@#echo "Creating hacking module links"
+	@if [ ! -d "$(_ansible_clone)" ]; then \
+		echo "Ansible clone not found"; \
+		exit 1; \
+	fi
+	@mkdir -p "$(_ansible_clone)/lib/ansible/modules/infi"
 	@for m in $(_modules); do \
 		ln --force --symbolic $$(pwd)/plugins/modules/$$m $(_ansible_clone)/lib/ansible/modules/infi/$$m; \
 	done
 	@#echo "Creating hacking module_utils links $(_module_utilities)"
 	@for m in "infinibox.py" "iboxbase.py"; do \
-		ln --force --symbolic $$(pwd)/plugins/module_utils//$$m $(_ansible_clone)/lib/ansible/module_utils/$$m; \
+		ln --force --symbolic $$(pwd)/plugins/module_utils/$$m $(_ansible_clone)/lib/ansible/module_utils/$$m; \
 	done
 
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
@@ -244,8 +261,8 @@ _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using br
 			exit; \
 		fi; \
 		source hacking/env-setup 1> /dev/null 2> /dev/null && \
-		AIC=/home/dohlemacher/cloud/ansible-infinidat-collection \
-		ANS=/home/dohlemacher/cloud/ansible \
+		AIC=/home/$$USER/workspace/ansible-infinidat-collection \
+		ANS=/home/$$USER/workspace/ansible \
 		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/modules" \
 		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/module_utils" \
 		PYTHONPATH="$$PYTHONPATH:$$ANS/lib" \

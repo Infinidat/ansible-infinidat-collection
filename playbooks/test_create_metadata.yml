@@ -1,0 +1,58 @@
+---
+# PSDEV-1108: Create playbook automating cluster configuration mobility.
+# Create three volumes: vol_nonwriteable, vol_explicitly_writable and vol_writable.
+- hosts: localhost
+  gather_facts: false  # Required for ansible_date_time
+  collections:
+    - infinidat.infinibox
+  tasks:
+    # TODO:
+    #   David: metadata module
+    #   Wei: config module
+
+    - name: POSITIVE test -> Create system key named foo
+      infini_metadata:
+        object_type: "system"
+        key: "foo"
+        value: "bar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Stat system key named foo
+      infini_metadata:
+        object_type: "system"
+        key: "foo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+
+    - name: Show metadata stat output
+      ansible.builtin.debug:
+        var: metadata_out
+
+    - name: POSITIVE test -> Delete system key named foo
+      infini_metadata:
+        object_type: "system"
+        key: "foo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get non-existent system key named foo
+      infini_metadata:
+        object_type: "system"
+        key: "foo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+
+    - name: Show metadata stat output
+      ansible.builtin.debug:
+        var: metadata_out

@@ -1,5 +1,5 @@
-[all]
-ansible_python_interpreter: "~/workspace/ansible-infinidat-collection/venv/bin/python"
+#[all]
+#ansible_python_interpreter: "~/workspace/ansible-infinidat-collection/venv/bin/python"
 
 [forensics]
 io-wt-35.lab.wt.us.infinidat.com ansible_python_interpreter=python3.8
@@ -9,8 +9,8 @@ io-wt-35.lab.wt.us.infinidat.com ansible_python_interpreter=python3.8
 exng-centos8  # 172.31.88.153
 exng-jammy    # 172.31.88.177
 
-[tester-centos]
+[tester_centos]
 exng-centos8  # 172.31.88.153
 
-[tester-jammy]
+[tester_jammy]
 exng-jammy    # 172.31.88.177

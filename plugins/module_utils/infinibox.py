@@ -31,6 +31,9 @@ from datetime import datetime
 def unixMillisecondsToDate(unix_ms):
     return (datetime.utcfromtimestamp(unix_ms / 1000.), 'UTC')
 
+# Use a global system Infinibox object. Use so that there will only be one
+# session used for this module's instance. main() can then logout properly.
+system = None
 
 def api_wrapper(func):
     """ Catch API Errors Decorator"""
@@ -74,27 +77,34 @@ def merge_two_dicts(dict1, dict2):
 
 @api_wrapper
 def get_system(module):
-    """Return System Object or Fail"""
-    box = module.params['system']
-    user = module.params.get('user', None)
-    password = module.params.get('password', None)
+    """Return System Object if it does not exist or Fail"""
+    global system
 
-    if user and password:
-        system = InfiniBox(box, auth=(user, password), use_ssl=True)
-    elif environ.get('INFINIBOX_USER') and environ.get('INFINIBOX_PASSWORD'):
-        system = InfiniBox(box,
-                           auth=(environ.get('INFINIBOX_USER'),
-                                 environ.get('INFINIBOX_PASSWORD')),
-                           use_ssl=True)
-    elif path.isfile(path.expanduser('~') + '/.infinidat/infinisdk.ini'):
-        system = InfiniBox(box, use_ssl=True)
+    if not system:
+        print("Creating new system object")
+        # Create system and login
+        box = module.params['system']
+        user = module.params.get('user', None)
+        password = module.params.get('password', None)
+        if user and password:
+            system = InfiniBox(box, auth=(user, password), use_ssl=True)
+        elif environ.get('INFINIBOX_USER') and environ.get('INFINIBOX_PASSWORD'):
+            system = InfiniBox(box,
+                            auth=(environ.get('INFINIBOX_USER'),
+                                    environ.get('INFINIBOX_PASSWORD')),
+                            use_ssl=True)
+        elif path.isfile(path.expanduser('~') + '/.infinidat/infinisdk.ini'):
+            system = InfiniBox(box, use_ssl=True)
+        else:
+            module.fail_json(msg="You must set INFINIBOX_USER and INFINIBOX_PASSWORD environment variables or set username/password module arguments")
+
+        try:
+            system.login()
+        except Exception:
+            module.fail_json(msg="Infinibox authentication failed. Check your credentials")
     else:
-        module.fail_json(msg="You must set INFINIBOX_USER and INFINIBOX_PASSWORD environment variables or set username/password module arguments")
+        print("Using existing system object")
 
-    try:
-        system.login()
-    except Exception:
-        module.fail_json(msg="Infinibox authentication failed. Check your credentials")
     return system
 
 

@@ -6,28 +6,52 @@
   collections:
     - infinidat.infinibox
   tasks:
+    # TODO:
+    #   David: metadata module
+    #   Wei: config module
 
     - name: Configure Infinibox - Set default compression to enabled
+      # Ref: http://{{ibox2}}/api/rest/metadata
+      # Add key: /metadata/system
+      # Data: {"ui-dataset-default-provisioning": "THIN"}
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-default-provisioning"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+
+    - name: Show metadata stat output
       ansible.builtin.debug:
-        msg: (1) Enable compression
+        var: metadata_out
 
     - name: Configure Infinibox - Set default provisioning to thin
+      # Ref: http://{{ibox2}}/api/rest/metadata
+      # ui-dataset-default-provisioning
       ansible.builtin.debug:
         msg: (1) Enable thin provisioning
 
     - name: Configure Infinibox - Set capacity units to base 2, e.g. GiB, TiB
+      # Ref: http://{{ibox2}}/api/rest/metadata
+      # ui-dataset-base2-units
       ansible.builtin.debug:
         msg: (1) Set capacity units
 
     - name: Configure Infinibox - Set maximum export rows to 3000
+      # Ref: http://{{ibox2}}/api/rest/metadata
+      # Add key: {"ui-dataset-default-provisioning": {"ui-table-export-limit": 3000}}
       ansible.builtin.debug:
         msg: (1) Set export rows 
 
     - name: Configure Infinibox - Setup LDAP
+      # Ref: http://{{ibox2}}/api/rest/config/ldap
       ansible.builtin.debug:
         msg: (2) Setup LDAP type to AD, name to CN, domain name, bind username and bind password
 
     - name: Configure Infinibox - Setup LDAP groups
+      # Ref: http://{{ibox2}}/api/rest/config/ldap
       ansible.builtin.debug:
         msg: (3) Add LDAP groups for READ_ONLY and ADMIN roles
 
@@ -40,10 +64,12 @@
         msg: (4) Test LDAP roles
 
     - name: Configure Infinibox - Change admin password
+      # Ref: Existing user module
       ansible.builtin.debug:
         msg: (5) Change admin password
 
     - name: Configure Infinibox - Temporarily setup alerting email
+      # Ref: http://{{ibox2}}/api/rest/notification/targets
       ansible.builtin.debug:
         msg: (6) Create event rule to send email to TEO-Engineering-Alerts@jackhenry.com
 
@@ -52,6 +78,7 @@
         msg: (6) Create test event
 
     - name: Configure Infinibox - Define syslog from list
+      # Ref: http://{{ibox2}}/api/rest/notification/targets
       ansible.builtin.debug:
         msg: (7) Configure syslogs
 
@@ -68,10 +95,12 @@
         msg: (9) Add Infinibox to Infinimetrics
 
     - name: Configure Infinibox - Create pools
+      # Ref: Existing pools module
       ansible.builtin.debug:
         msg: (10) Create pools
 
     - name: Configure Infinibox - Label fibre channel switches
+      # Ref: http://{{ibox2}}/api/rest/fc/switches/{ID}
       ansible.builtin.debug:
         msg: (11) Rename fibre channel switches using names listed in file 
 
@@ -81,6 +110,8 @@
 
     # Ensure that JHA CA Certificate is installed by remote support 
     - name: Configure Infinibox - Update management SSL certificate
+      # Ref: https://wiki.infinidat.com/display/TWDRAFTS/.Config+System+SSL+Certificate+commands+vPUBLISHED
+      # Ref: http://{{ibox2}}/api/rest/system/certificates
       ansible.builtin.debug:
         msg: (12) Update management SSL certificate
 
