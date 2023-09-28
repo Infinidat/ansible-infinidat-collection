@@ -238,7 +238,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 _module_under_test = infini_metadata
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
-	@#echo "Creating hacking module links"
+	@echo "HACK - Creating hacking module links"
 	@if [ ! -d "$(_ansible_clone)" ]; then \
 		echo "Ansible clone not found"; \
 		exit 1; \
@@ -247,10 +247,12 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 	@for m in $(_modules); do \
 		ln --force --symbolic $$(pwd)/plugins/modules/$$m $(_ansible_clone)/lib/ansible/modules/infi/$$m; \
 	done
-	@#echo "Creating hacking module_utils links $(_module_utilities)"
-	@for m in "infinibox.py" "iboxbase.py"; do \
-		ln --force --symbolic $$(pwd)/plugins/module_utils/$$m $(_ansible_clone)/lib/ansible/module_utils/$$m; \
-	done
+	@echo "HACK - Creating hacking module_utils links $(_module_utilities)"
+	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$(_ansible_clone)/lib/ansible/module_utils/infinibox.py" && \
+	echo "HACK - Linking module_utils to ansible site-packages to allow changes to be used for dev" && \
+	utils_path="$$HOME/.local/lib/$(_python_version)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils" && \
+	mv "$$utils_path/infinibox.py" "$$utils_path/infinibox_orig.py" && \
+	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$$utils_path/infinibox.py"
 
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
 	cwd=$$(pwd) && \

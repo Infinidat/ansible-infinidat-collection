@@ -10,7 +10,18 @@
     #   David: metadata module
     #   Wei: config module
 
-    - name: POSITIVE test -> Create system key named foo
+    - name: POSITIVE test -> Get volume named foo's metadata key named foo
+      infini_metadata:
+        object_type: "vol"
+        object_name: "foo"
+        key: "foo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+
+    - name: POSITIVE test -> Create metadata system key named foo with value bar
       infini_metadata:
         object_type: "system"
         key: "foo"
@@ -20,7 +31,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat system key named foo
+    - name: POSITIVE test -> Stat metadata system key named foo
       infini_metadata:
         object_type: "system"
         key: "foo"
@@ -34,7 +45,7 @@
       ansible.builtin.debug:
         var: metadata_out
 
-    - name: POSITIVE test -> Delete system key named foo
+    - name: POSITIVE test -> Delete metadat system key named foo
       infini_metadata:
         object_type: "system"
         key: "foo"
@@ -43,9 +54,10 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get non-existent system key named foo
+    - name: POSITIVE test -> Get volume named foo's metadata key named foo
       infini_metadata:
-        object_type: "system"
+        object_type: "vol"
+        object_name: "foo"
         key: "foo"
         state: "stat"
         user: "{{ user }}"

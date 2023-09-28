@@ -28,12 +28,12 @@ from os import path
 from datetime import datetime
 
 
+system = None
+
+
 def unixMillisecondsToDate(unix_ms):
     return (datetime.utcfromtimestamp(unix_ms / 1000.), 'UTC')
 
-# Use a global system Infinibox object. Use so that there will only be one
-# session used for this module's instance. main() can then logout properly.
-system = None
 
 def api_wrapper(func):
     """ Catch API Errors Decorator"""
@@ -77,11 +77,15 @@ def merge_two_dicts(dict1, dict2):
 
 @api_wrapper
 def get_system(module):
-    """Return System Object if it does not exist or Fail"""
+    """
+    Return System Object if it does not exist or Fail.
+    Use a global system Infinibox object so that there will only be one
+    system session used for this module instance.
+    Enables execute_state() to log out of the only session properly.
+    """
     global system
 
     if not system:
-        print("Creating new system object")
         # Create system and login
         box = module.params['system']
         user = module.params.get('user', None)
@@ -102,8 +106,6 @@ def get_system(module):
             system.login()
         except Exception:
             module.fail_json(msg="Infinibox authentication failed. Check your credentials")
-    else:
-        print("Using existing system object")
 
     return system
 
@@ -160,7 +162,10 @@ def get_volume(module, system):
         try:
             volume = system.volumes.get(name=module.params['name'])
         except KeyError:
-            volume = system.volumes.get(name=module.params['volume'])
+            try:
+                volume = system.volumes.get(name=module.params['volume'])
+            except KeyError:
+                volume = system.volumes.get(name=module.params['object_name']) # Used by metadata module
         return volume
     except Exception:
         return None
