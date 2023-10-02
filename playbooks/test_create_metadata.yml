@@ -1,14 +1,68 @@
 ---
-# PSDEV-1108: Create playbook automating cluster configuration mobility.
-# Create three volumes: vol_nonwriteable, vol_explicitly_writable and vol_writable.
+# PSDEV-1108: Playbook for testing creation of metadata resources.
 - hosts: localhost
   gather_facts: false  # Required for ansible_date_time
   collections:
     - infinidat.infinibox
   tasks:
-    # TODO:
-    #   David: metadata module
-    #   Wei: config module
+
+    - name: NEGATIVE test -> Attempt to create a system metadata key while providing a object_name
+      infini_metadata:
+        object_type: "system"
+        object_name: "foo" # Error
+        key: "foo"
+        value: "bar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'object_name for object_type system must not be provided' not in metadata_out.msg"
+
+    - name: NEGATIVE test -> Attempt to create a volume metadata key without providing a object_name
+      infini_metadata:
+        object_type: "vol"
+        # object_name: "foo"
+        key: "foo"
+        value: "bar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'The name of the vol must be provided as object_name' not in metadata_out.msg"
+
+    - name: NEGATIVE test -> Attempt to create a volume metadata key without providing a value
+      infini_metadata:
+        object_type: "vol"
+        object_name: "foo"
+        key: "foo"
+        # value: "bar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when: 
+        - "'Cannot create a' not in metadata_out.msg"
+        - "'without providing a value' not in metadata_out.msg"
+
+    - name: NEGATIVE test -> Attempt to set system metadata key ui-dataset-base2-units to something other than an boolean
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-base2-units"
+        value: "bar"  # Should be a boolean
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Value must be of type bool' not in metadata_out.msg"
+    - ansible.builtin.debug:
+        var: metadata_out
 
     - name: POSITIVE test -> Get volume named foo's metadata key named foo
       infini_metadata:

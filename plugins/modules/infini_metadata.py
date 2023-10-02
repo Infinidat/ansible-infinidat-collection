@@ -74,7 +74,9 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     api_wrapper,
     infinibox_argument_spec,
     get_system,
+    get_volume,
 )
+from infinisdk.core.exceptions import APICommandFailed
 
 HAS_ARROW = True
 try:
@@ -91,8 +93,18 @@ def get_metadata(module, disable_fail=False):
     system = get_system(module)
     object_type = module.params["object_type"]
     key = module.params["key"]
-    url = f"metadata/{object_type}?key={key}"
-    metadata = system.api.get(path=url)
+
+    if object_type == "system":
+        path = f"metadata/{object_type}?key={key}"
+        metadata = system.api.get(path=path)
+    elif object_type == "vol":
+        vol = get_volume(module, system)
+        path = f"metadata/{vol.id}/{key}"
+        metadata = system.api.get(path=path)
+    else:
+        msg = f"Metadata for {object_type} not supported. Cannot stat."
+        module.fail_json(msg=msg)
+
     result = metadata.get_result()
     if not disable_fail and not result:
         msg = f"Metadata for {object_type} with key {key} not found. Cannot stat."
@@ -105,25 +117,25 @@ def put_metadata(module):
     """Create metadata key with a value.  The changed variable is found elsewhere."""
     system = get_system(module)
 
-    if not module.check_mode:
-        object_type = module.params["object_type"]
-        object_name = module.params["object_name"]
-        key = module.params["key"]
-        path = f"metadata/{object_type}"
-        value = module.params["value"]
+    object_type = module.params["object_type"]
+    key = module.params["key"]
+    value = module.params["value"]
 
-        # TODO check value size > 32k
+    # TODO check metadata value size < 32k
 
-        # Create json data
-        data = {key: value}
-        if object_name:
-            assert (
-                object_type != "system"
-            )  # object_type system cannot have an object_name
-            data["object"] = object_name
+    if object_type == "system":
+        path = "metadata/system"
+    elif object_type == "vol":
+        vol = get_volume(module, system)
+        path = f"metadata/{vol.id}"
 
-        # Put
-        system.api.put(path=path, data=data)
+    # Create json data
+    data = {
+        key: value
+    }
+
+    # Put
+    system.api.put(path=path, data=data)
     # changed not returned by design
 
 
@@ -132,23 +144,31 @@ def delete_metadata(module):
     """Remove metadata key"""
     system = get_system(module)
     changed = False
-    if not module.check_mode:
-        object_type = module.params["object_type"]
-        key = module.params["key"]
-        path = f"metadata/{object_type}/{key}"
+    object_type = module.params["object_type"]
+    key = module.params["key"]
+    path = f"metadata/{object_type}/{key}"
+    try:
         system.api.delete(path=path)
         changed = True
+    except APICommandFailed as err:
+        if err.status_code != 404:
+            raise
     return changed
 
 
 def handle_stat(module):
     """Return metadata stat"""
-    metadata = get_metadata(module)
     object_type = module.params["object_type"]
     key = module.params["key"]
-    metadata_id = metadata[0]["id"]
-    object_id = metadata[0]["object_id"]
-    value = metadata[0]["value"]
+    metadata = get_metadata(module)
+    if object_type == "system":
+        metadata_id = metadata[0]["id"]
+        object_id = metadata[0]["object_id"]
+        value = metadata[0]["value"]
+    else:
+        metadata_id = metadata["id"]
+        object_id = metadata["object_id"]
+        value = metadata["value"]
 
     result = {
         "changed": False,
@@ -163,22 +183,30 @@ def handle_stat(module):
 
 def handle_present(module):
     """Make metadata present"""
-    old_metadata = get_metadata(module, disable_fail=True)
-    put_metadata(module)
-    new_metadata = get_metadata(module)
     changed = False
     msg = "Metadata unchanged"
     if not module.check_mode:
+        old_metadata = get_metadata(module, disable_fail=True)
+        put_metadata(module)
+        new_metadata = get_metadata(module)
         changed = new_metadata != old_metadata
         if changed:
             msg = "Metadata changed"
+        else:
+            msg = "Metadata unchanged since the value is the same as the existing metadata"
     module.exit_json(changed=changed, msg=msg)
 
 
 def handle_absent(module):
     """Make metadata absent"""
-    changed = delete_metadata(module)
-    module.exit_json(changed=changed, msg="Metadata removed")
+    msg = "Metadata unchanged"
+    if not module.check_mode:
+        changed = delete_metadata(module)
+        if changed:
+            msg = "Metadata removed"
+        else:
+            msg = "Metadata did not exist so no removal was necessary"
+    module.exit_json(changed=changed, msg=msg)
 
 
 def execute_state(module):
@@ -213,7 +241,7 @@ def check_options(module):
         "pool",
         "system",
         "vol",
-        " vol-snap",
+        "vol-snap",
     ]
     if object_type not in object_types:
         module.fail_json(
@@ -221,21 +249,30 @@ def check_options(module):
         )
 
     # Check object_name
-    if object_type == "system" and object_name is not None:
-        module.fail_json(
-            f"Cannot specify an object name, i.e. {object_name}, "
-            f"if creating metadata key for object type system"
-        )
+    if object_type == "system":
+        if object_name:
+            module.fail_json("An object_name for object_type system must not be provided.")
+    else:
+        if not object_name:
+            module.fail_json(
+                f"The name of the {object_type} must be provided as object_name."
+            )
 
-    if state == "present":
+    key = module.params["key"]
+    if not key:
+        module.fail_json(f"Cannot create a {object_type} metadata key without providing a key name")
+
+    if state == "stat":
+        pass
+    elif state == "present":
         # Check value
         key = module.params["key"]
         value = module.params["value"]
         if not value:
             module.fail_json(
-                f"Cannot create a {object_type} metadata key without providing a value"
+                f"Cannot create a {object_type} metadata key {key} without providing a value"
             )
-        # Check system key
+        # Check system object_type
         if object_type == "system":
             if key == "ui-dataset-default-provisioning":
                 values = ["THICK", "THIN"]
@@ -263,6 +300,8 @@ def check_options(module):
 
     elif state == "absent":
         pass
+    else:
+        module.fail_json(f"Invalid state '{state}' provided")
 
 
 def main():

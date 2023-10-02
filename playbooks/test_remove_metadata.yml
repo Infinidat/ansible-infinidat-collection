@@ -1,0 +1,27 @@
+---
+# PSDEV-1108: Playbook for testing cleanup of metadata resources.
+- hosts: localhost
+  gather_facts: false  # Required for ansible_date_time
+  collections:
+    - infinidat.infinibox
+
+  tasks:
+    - name: POSITIVE test -> Remove system metadata key named foo
+      infini_metadata:
+        object_type: "system"
+        key: "foo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Remove volume named foo metadata key also named foo
+      infini_metadata:
+        object_type: "vol"
+        object_name: "foo"
+        key: "foo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
