@@ -61,64 +61,152 @@
       register: metadata_out
       failed_when:
         - "'Value must be of type bool' not in metadata_out.msg"
-    - ansible.builtin.debug:
-        var: metadata_out
 
-    - name: POSITIVE test -> Get volume named foo's metadata key named foo
+    - name: Create pool {{ auto_prefix }}pool
+      infini_pool:
+        name: "{{ auto_prefix }}pool"
+        size: 1 TB
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
+      infini_vol:
+        name: "{{ auto_prefix }}vol"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Create volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool 
+      infini_vol:
+        name: "{{ auto_prefix }}vol"
+        pool: "{{ auto_prefix }}pool"
+        size: 1 GB
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get volume named {{ auto_prefix }}vol's nonexistent metadata key named volfoo
       infini_metadata:
         object_type: "vol"
-        object_name: "foo"
-        key: "foo"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
         state: "stat"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
+      failed_when:
+        - "'Cannot find vol metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create metadata system key named foo with value bar
+    - name: POSITIVE test -> Create metadata for volume {{ auto_prefix }}vol with key named volfoo with value volbar
       infini_metadata:
-        object_type: "system"
-        key: "foo"
-        value: "bar"
+        object_type: "vol"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
+        value: "volbar"
         state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat metadata system key named foo
+    - name: POSITIVE test -> Stat metadata volume {{ auto_prefix }}vol key named volfoo with value volbar
       infini_metadata:
-        object_type: "system"
-        key: "foo"
+        object_type: "vol"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
         state: "stat"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-      register: metadata_out
 
-    - name: Show metadata stat output
-      ansible.builtin.debug:
-        var: metadata_out
-
-    - name: POSITIVE test -> Delete metadat system key named foo
+    - name: POSITIVE test -> Delete metadata volume {{ auto_prefix }}vol key named volfoo
       infini_metadata:
-        object_type: "system"
-        key: "foo"
+        object_type: "vol"
+        object_name: "volfoo"
+        key: "volbar"
         state: "absent"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Get volume named foo's metadata key named foo
+    - name: Delete volume {{ auto_prefix }}vol in pool PSUS_ANSIBLE_pool
+      infini_vol:
+        name: "{{ auto_prefix }}vol"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    # system
+
+    #- name: POSITIVE test -> Stat metadata system key named foo
+    #  infini_metadata:
+    #    object_type: "system"
+    #    key: "foo"
+    #    state: "stat"
+    #    user: "{{ user }}"
+    #    password: "{{ password }}"
+    #    system: "{{ system }}"
+    #  register: metadata_out
+
+    - name: POSITIVE test -> Delete metadata system key named sysfoo
       infini_metadata:
-        object_type: "vol"
-        object_name: "foo"
-        key: "foo"
+        object_type: "system"
+        key: "sysfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get nonexistent system metadata key named sysfoo
+      infini_metadata:
+        object_type: "system"
+        key: "sysfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Metadata for system with key sysfoo not found' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create metadata system key named sysfoo with value sysbar
+      infini_metadata:
+        object_type: "system"
+        key: "sysfoo"
+        value: "sysbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Stat metadata system key named sysfoo
+      infini_metadata:
+        object_type: "system"
+        key: "sysfoo"
         state: "stat"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
 
-    - name: Show metadata stat output
+    - name: Show system sysfoo metadata key stat output
       ansible.builtin.debug:
         var: metadata_out
+
+    - name: POSITIVE test -> Delete metadata system key named sysfoo
+      infini_metadata:
+        object_type: "system"
+        key: "sysfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+

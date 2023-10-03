@@ -6,22 +6,41 @@
     - infinidat.infinibox
 
   tasks:
-    - name: POSITIVE test -> Remove system metadata key named foo
+    - name: POSITIVE test -> Remove system metadata key named sysfoo
       infini_metadata:
         object_type: "system"
-        key: "foo"
+        key: "sysfoo"
         state: "absent"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Remove volume named foo metadata key also named foo
+    - name: POSITIVE test -> Remove volume named foo metadata key named volfoo
       infini_metadata:
         object_type: "vol"
-        object_name: "foo"
-        key: "foo"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
         state: "absent"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
+
+    - name: Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
+      infini_vol:
+        name: "{{ auto_prefix }}vol"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Delete pool {{ auto_prefix }}pool
+      infini_pool:
+        name: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+

@@ -92,6 +92,7 @@ def get_metadata(module, disable_fail=False):
     """Find and return metadata"""
     system = get_system(module)
     object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
     key = module.params["key"]
 
     if object_type == "system":
@@ -99,8 +100,17 @@ def get_metadata(module, disable_fail=False):
         metadata = system.api.get(path=path)
     elif object_type == "vol":
         vol = get_volume(module, system)
-        path = f"metadata/{vol.id}/{key}"
-        metadata = system.api.get(path=path)
+        if vol:
+            path = f"metadata/{vol.id}/{key}"
+            try:
+                metadata = system.api.get(path=path)
+            except APICommandFailed as err:
+                if not disable_fail:
+                    module.fail_json(
+                        f"Cannot find {object_type} metadata key. Object {object_name} key {key} not found"
+                    )
+                else:
+                    return None
     else:
         msg = f"Metadata for {object_type} not supported. Cannot stat."
         module.fail_json(msg=msg)
