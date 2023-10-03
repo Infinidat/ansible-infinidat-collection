@@ -17,8 +17,18 @@ version_added: '2.13.12'
 short_description:  Create, Delete or Modify metadata on Infinibox
 description:
     - This module creates, deletes or modifies metadata on Infinibox.
+    - Deleting metadata by object, without specifying a key, is not implemented for any object_type (e.g. DELETE api/rest/metadata/system). This would delete all metadata belonging to the object. Instead delete each key explicitely using its key name.
 author: David Ohlemacher (@ohlemacher)
 options:
+  object_type:
+    description:
+      - Type of object
+    required: true
+    choices: ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap"]
+  object_name:
+    description:
+      - Name of the object. Not used if object_type is system
+    required = false
   key:
     description:
       - Name of the metadata key
@@ -36,8 +46,6 @@ options:
 
 extends_documentation_fragment:
     - infinibox
-requirements:
-    - capacity
 """
 
 EXAMPLES = r"""
@@ -107,10 +115,16 @@ def get_metadata(module, disable_fail=False):
             except APICommandFailed as err:
                 if not disable_fail:
                     module.fail_json(
-                        f"Cannot find {object_type} metadata key. Object {object_name} key {key} not found"
+                        f"Cannot find {object_type} metadata key. "
+                        f"Volume {object_name} key {key} not found"
                     )
                 else:
                     return None
+        elif disable_fail:
+            return None
+        else:
+            msg = f"Volume with object name {object_name} not found. Cannot stat its metadata."
+            module.fail_json(msg=msg)
     else:
         msg = f"Metadata for {object_type} not supported. Cannot stat."
         module.fail_json(msg=msg)
@@ -151,12 +165,26 @@ def put_metadata(module):
 
 @api_wrapper
 def delete_metadata(module):
-    """Remove metadata key"""
+    """
+    Remove metadata key.
+    Not implemented by design: Deleting all of the system’s metadata
+    using 'DELETE api/rest/metadata/system'.
+    """
     system = get_system(module)
     changed = False
     object_type = module.params["object_type"]
     key = module.params["key"]
-    path = f"metadata/{object_type}/{key}"
+    if object_type == "system":
+        path = f"metadata/system/{key}"
+    elif object_type == "vol":
+        vol = get_volume(module, system)
+        if not vol:
+            changed = False
+            return changed  # No vol therefore no metadata to delete
+        path = f"metadata/{vol.id}/{key}"
+    else:
+        module.fail_json( f"TODO: Implement for object_type {object_type}")
+
     try:
         system.api.delete(path=path)
         changed = True

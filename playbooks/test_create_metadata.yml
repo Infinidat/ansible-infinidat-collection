@@ -6,7 +6,9 @@
     - infinidat.infinibox
   tasks:
 
-    - name: NEGATIVE test -> Attempt to create a system metadata key while providing a object_name
+    # vol
+
+    - name: NEGATIVE test -> Attempt to create a system metadata key while incorrectly providing an object_name
       infini_metadata:
         object_type: "system"
         object_name: "foo" # Error
@@ -62,7 +64,7 @@
       failed_when:
         - "'Value must be of type bool' not in metadata_out.msg"
 
-    - name: Create pool {{ auto_prefix }}pool
+    - name: SETUP test -> Create pool {{ auto_prefix }}pool
       infini_pool:
         name: "{{ auto_prefix }}pool"
         size: 1 TB
@@ -71,7 +73,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
+    - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool to clear any metadata
       infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
@@ -80,7 +82,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Create volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool 
+    - name: SETUP test -> Create volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
       infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
@@ -114,7 +116,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat metadata volume {{ auto_prefix }}vol key named volfoo with value volbar
+    - name: POSITIVE test -> Stat metadata volume {{ auto_prefix }}vol key named volfoo
       infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
@@ -123,16 +125,34 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "metadata_out['value'] != 'volbar' or metadata_out['changed'] != false"
 
     - name: POSITIVE test -> Delete metadata volume {{ auto_prefix }}vol key named volfoo
       infini_metadata:
         object_type: "vol"
-        object_name: "volfoo"
-        key: "volbar"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
         state: "absent"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+    - ansible.builtin.debug:
+        var: metadata_out
+
+    - name: NEGATIVE test -> Stat nonexistent metadata volume {{ auto_prefix }}vol key named volfoo
+      infini_metadata:
+        object_type: "vol"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find vol metadata key' not in metadata_out.msg"
 
     - name: Delete volume {{ auto_prefix }}vol in pool PSUS_ANSIBLE_pool
       infini_vol:
@@ -144,16 +164,6 @@
         system: "{{ system }}"
 
     # system
-
-    #- name: POSITIVE test -> Stat metadata system key named foo
-    #  infini_metadata:
-    #    object_type: "system"
-    #    key: "foo"
-    #    state: "stat"
-    #    user: "{{ user }}"
-    #    password: "{{ password }}"
-    #    system: "{{ system }}"
-    #  register: metadata_out
 
     - name: POSITIVE test -> Delete metadata system key named sysfoo
       infini_metadata:
