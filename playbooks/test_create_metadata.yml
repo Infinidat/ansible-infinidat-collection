@@ -116,6 +116,17 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: IDEMPOTENT test -> Create metadata for volume {{ auto_prefix }}vol with key named volfoo with value volbar again
+      infini_metadata:
+        object_type: "vol"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
+        value: "volbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: POSITIVE test -> Stat metadata volume {{ auto_prefix }}vol key named volfoo
       infini_metadata:
         object_type: "vol"
@@ -138,8 +149,16 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-    - ansible.builtin.debug:
-        var: metadata_out
+
+    - name: IDEMPOTENT test -> Delete metadata volume {{ auto_prefix }}vol key named volfoo again
+      infini_metadata:
+        object_type: "vol"
+        object_name: "{{ auto_prefix }}vol"
+        key: "volfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 
     - name: NEGATIVE test -> Stat nonexistent metadata volume {{ auto_prefix }}vol key named volfoo
       infini_metadata:
@@ -154,7 +173,7 @@
       failed_when:
         - "'Cannot find vol metadata key' not in metadata_out.msg"
 
-    - name: Delete volume {{ auto_prefix }}vol in pool PSUS_ANSIBLE_pool
+    - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool PSUS_ANSIBLE_pool
       infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
@@ -196,6 +215,16 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: IDEMPOTENT test -> Create metadata system key named sysfoo with value sysbar again
+      infini_metadata:
+        object_type: "system"
+        key: "sysfoo"
+        value: "sysbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: POSITIVE test -> Stat metadata system key named sysfoo
       infini_metadata:
         object_type: "system"
@@ -206,11 +235,16 @@
         system: "{{ system }}"
       register: metadata_out
 
-    - name: Show system sysfoo metadata key stat output
-      ansible.builtin.debug:
-        var: metadata_out
-
     - name: POSITIVE test -> Delete metadata system key named sysfoo
+      infini_metadata:
+        object_type: "system"
+        key: "sysfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Delete metadata system key named sysfoo again
       infini_metadata:
         object_type: "system"
         key: "sysfoo"
