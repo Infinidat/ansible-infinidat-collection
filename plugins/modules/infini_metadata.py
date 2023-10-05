@@ -80,9 +80,10 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
-    infinibox_argument_spec,
+    get_filesystem,
     get_system,
     get_volume,
+    infinibox_argument_spec,
 )
 from infinisdk.core.exceptions import APICommandFailed
 
@@ -93,6 +94,58 @@ except ImportError:
     HAS_ARROW = False
 
 HAS_CAPACITY = False
+
+@api_wrapper
+def get_metadata_vol(module, disable_fail):
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    metadata = None
+
+    vol = get_volume(module, system)
+    if vol:
+        path = f"metadata/{vol.id}/{key}"
+        try:
+            metadata = system.api.get(path=path)
+        except APICommandFailed as err:
+            if not disable_fail:
+                module.fail_json(
+                    f"Cannot find {object_type} metadata key. "
+                    f"Volume {object_name} key {key} not found"
+                )
+    elif not disable_fail:
+        msg = f"Volume with object name {object_name} not found. Cannot stat its metadata."
+        module.fail_json(msg=msg)
+
+    return metadata
+
+@api_wrapper
+def get_metadata_fs(module, disable_fail):
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    metadata = None
+
+    # Function get_filesystem() expects the filesystem name's key to be 'filesystem', not 'object_name'.
+    module.params['filesystem'] = object_name
+    fs = get_filesystem(module, system)
+    if fs:
+        path = f"metadata/{fs.id}/{key}"
+        try:
+            metadata = system.api.get(path=path)
+        except APICommandFailed as err:
+            if not disable_fail:
+                module.fail_json(
+                    f"Cannot find {object_type} metadata key. "
+                    f"File system {object_name} key {key} not found"
+                )
+    elif not disable_fail:
+        msg = f"File system named {object_name} not found. Cannot stat its metadata."
+        module.fail_json(msg=msg)
+
+    return metadata
 
 
 @api_wrapper
@@ -106,34 +159,22 @@ def get_metadata(module, disable_fail=False):
     if object_type == "system":
         path = f"metadata/{object_type}?key={key}"
         metadata = system.api.get(path=path)
+    elif object_type == "fs":
+        metadata = get_metadata_fs(module, disable_fail)
     elif object_type == "vol":
-        vol = get_volume(module, system)
-        if vol:
-            path = f"metadata/{vol.id}/{key}"
-            try:
-                metadata = system.api.get(path=path)
-            except APICommandFailed as err:
-                if not disable_fail:
-                    module.fail_json(
-                        f"Cannot find {object_type} metadata key. "
-                        f"Volume {object_name} key {key} not found"
-                    )
-                else:
-                    return None
-        elif disable_fail:
-            return None
-        else:
-            msg = f"Volume with object name {object_name} not found. Cannot stat its metadata."
-            module.fail_json(msg=msg)
+        metadata = get_metadata_vol(module, disable_fail)
     else:
         msg = f"Metadata for {object_type} not supported. Cannot stat."
         module.fail_json(msg=msg)
 
-    result = metadata.get_result()
-    if not disable_fail and not result:
-        msg = f"Metadata for {object_type} with key {key} not found. Cannot stat."
-        module.fail_json(msg=msg)
-    return result
+    if metadata:
+        result = metadata.get_result()
+        if not disable_fail and not result:
+            msg = f"Metadata for {object_type} with key {key} not found. Cannot stat."
+            module.fail_json(msg=msg)
+        return result
+    else:
+        return None
 
 
 @api_wrapper
@@ -151,6 +192,10 @@ def put_metadata(module):
         path = "metadata/system"
     elif object_type == "vol":
         vol = get_volume(module, system)
+        if not vol:
+            object_name = module.params["object_name"]
+            msg = f"Volume {object_name} not found. Cannot add metadata key {key}."
+            module.fail_json(msg=msg)
         path = f"metadata/{vol.id}"
 
     # Create json data

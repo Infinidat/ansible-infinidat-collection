@@ -6,7 +6,16 @@
     - infinidat.infinibox
   tasks:
 
-    # vol
+    - name: SETUP test -> Create pool {{ auto_prefix }}pool
+      infini_pool:
+        name: "{{ auto_prefix }}pool"
+        size: 1 TB
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    # Test vol object_type
 
     - name: NEGATIVE test -> Attempt to create a system metadata key while incorrectly providing an object_name
       infini_metadata:
@@ -63,15 +72,6 @@
       register: metadata_out
       failed_when:
         - "'Value must be of type bool' not in metadata_out.msg"
-
-    - name: SETUP test -> Create pool {{ auto_prefix }}pool
-      infini_pool:
-        name: "{{ auto_prefix }}pool"
-        size: 1 TB
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
 
     - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool to clear any metadata
       infini_vol:
@@ -163,7 +163,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    # system
+    # Test system object_type
 
     - name: POSITIVE test -> Delete metadata system key named sysfoo
       infini_metadata:
@@ -219,4 +219,36 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    # Test fs object_type
 
+    - name: SETUP test -> Delete fs {{ auto_prefix }}fs in pool {{ auto_prefix }}pool to clear any metadata
+      infini_fs:
+        name: "{{ auto_prefix }}fs"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: SETUP test -> Create fs {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fs"
+        pool: "{{ auto_prefix }}pool"
+        size: 1 GB
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get fs named {{ auto_prefix }}fs's nonexistent metadata key named fsfoo
+      infini_metadata:
+        object_type: "fs"
+        object_name: "{{ auto_prefix }}fs"
+        key: "fsfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find fs metadata key' not in metadata_out.msg"
