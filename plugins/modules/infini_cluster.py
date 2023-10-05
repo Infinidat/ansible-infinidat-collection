@@ -99,17 +99,19 @@ def get_host_by_name(system, host_name):
 @api_wrapper
 def create_cluster(module, system):
     # print("create cluster")
-    changed = True
+    changed = False
     if not module.check_mode:
         cluster = system.host_clusters.create(name=module.params['name'])
         cluster_hosts = module.params['cluster_hosts']
-        for cluster_host in cluster_hosts:
-            if cluster_host['host_cluster_state'] == 'present':
-                host = get_host_by_name(system, cluster_host['host_name'])
-                cluster.add_host(host)
-            #     print("Added host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
-            # else:
-            #     print("Skipped adding (absent) host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
+        if cluster_hosts:
+            for cluster_host in cluster_hosts:
+                if cluster_host['host_cluster_state'] == 'present':
+                    host = get_host_by_name(system, cluster_host['host_name'])
+                    cluster.add_host(host)
+                    changed = True
+                #     print("Added host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
+                # else:
+                #     print("Skipped adding (absent) host {0} to cluster {1}".format(host.get_name, cluster.get_name()))
     return changed
 
 
@@ -123,35 +125,36 @@ def update_cluster(module, system, cluster):
     module_cluster_hosts = module.params['cluster_hosts']
     current_cluster_hosts_names = [host.get_name() for host in cluster.get_field('hosts')]
     # print("current_cluster_hosts_names:", current_cluster_hosts_names)
-    for module_cluster_host in module_cluster_hosts:
-        module_cluster_host_name = module_cluster_host['host_name']
-        # print("module_cluster_host_name:", module_cluster_host_name)
-        # Need to add host to cluster?
-        if module_cluster_host_name not in current_cluster_hosts_names:
-            if module_cluster_host['host_cluster_state'] == 'present':
-                host = get_host_by_name(system, module_cluster_host_name)
-                if not host:
-                    msg = 'Cannot find host {0} to add to cluster {1}'.format(
-                        module_cluster_host_name,
-                        cluster.get_name(),
-                    )
-                    module.fail_json(msg=msg)
-                cluster.add_host(host)
-                # print("Added host {0} to cluster {1}".format(host.get_name(), cluster.get_name()))
-                changed = True
-        # Need to remove host from cluster?
-        elif module_cluster_host_name in current_cluster_hosts_names:
-            if module_cluster_host['host_cluster_state'] == 'absent':
-                host = get_host_by_name(system, module_cluster_host_name)
-                if not host:
-                    msg = 'Cannot find host {0} to add to cluster {1}'.format(
-                        module_cluster_host_name,
-                        cluster.get_name(),
-                    )
-                    module.fail_json(msg=msg)
-                cluster.remove_host(host)
-                # print("Removed host {0} from cluster {1}".format(host.get_name(), cluster.get_name()))
-                changed = True
+    if module_cluster_hosts:
+        for module_cluster_host in module_cluster_hosts:
+            module_cluster_host_name = module_cluster_host['host_name']
+            # print("module_cluster_host_name:", module_cluster_host_name)
+            # Need to add host to cluster?
+            if module_cluster_host_name not in current_cluster_hosts_names:
+                if module_cluster_host['host_cluster_state'] == 'present':
+                    host = get_host_by_name(system, module_cluster_host_name)
+                    if not host:
+                        msg = 'Cannot find host {0} to add to cluster {1}'.format(
+                            module_cluster_host_name,
+                            cluster.get_name(),
+                        )
+                        module.fail_json(msg=msg)
+                    cluster.add_host(host)
+                    # print("Added host {0} to cluster {1}".format(host.get_name(), cluster.get_name()))
+                    changed = True
+            # Need to remove host from cluster?
+            elif module_cluster_host_name in current_cluster_hosts_names:
+                if module_cluster_host['host_cluster_state'] == 'absent':
+                    host = get_host_by_name(system, module_cluster_host_name)
+                    if not host:
+                        msg = 'Cannot find host {0} to add to cluster {1}'.format(
+                            module_cluster_host_name,
+                            cluster.get_name(),
+                        )
+                        module.fail_json(msg=msg)
+                    cluster.remove_host(host)
+                    # print("Removed host {0} from cluster {1}".format(host.get_name(), cluster.get_name()))
+                    changed = True
     return changed
 
 
@@ -252,24 +255,22 @@ def execute_state(module):
 def check_options(module):
     state = module.params['state']
     if state == 'present':
-        if module.params['cluster_hosts'] is None:
-            module.fail_json(msg='Option cluster_hosts, a list, must be provided')
-
         cluster_hosts = module.params['cluster_hosts']
-        for host in cluster_hosts:
-            try:
-                # Check host has required keys
-                valid_keys = ['host_name', 'host_cluster_state']
-                for valid_key in valid_keys:
-                    not_used = host[valid_key]
-                # Check host has no unknown keys
-                if len(host.keys()) != len(valid_keys):
-                    raise KeyError
-            except KeyError:
-                msg = 'With state present, all cluster_hosts ' \
-                    + 'require host_name and host_cluster_state key:values ' \
-                    + 'and no others'
-                module.fail_json(msg=msg)
+        if cluster_hosts:
+            for host in cluster_hosts:
+                try:
+                    # Check host has required keys
+                    valid_keys = ['host_name', 'host_cluster_state']
+                    for valid_key in valid_keys:
+                        not_used = host[valid_key]
+                    # Check host has no unknown keys
+                    if len(host.keys()) != len(valid_keys):
+                        raise KeyError
+                except KeyError:
+                    msg = 'With state present, all cluster_hosts ' \
+                        + 'require host_name and host_cluster_state key:values ' \
+                        + 'and no others'
+                    module.fail_json(msg=msg)
 
 
 def main():

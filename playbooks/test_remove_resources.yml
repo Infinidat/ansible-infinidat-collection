@@ -5,6 +5,14 @@
     - infinidat.infinibox
   tasks:
 
+    - name: POSITIVE test -> Remove cluster {{ auto_prefix }}cluster_zero_hosts
+      infini_cluster:
+        name: "{{ auto_prefix }}cluster_zero_hosts"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: POSITIVE test -> Remove cluster {{ auto_prefix }}cluster
       infini_cluster:
         name: "{{ auto_prefix }}cluster"

@@ -551,6 +551,14 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: POSITIVE test -> Create cluster {{ auto_prefix }}cluster with zero hosts
+      infini_cluster:
+        name: "{{ auto_prefix }}cluster_zero_hosts"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: POSITIVE test -> Create cluster {{ auto_prefix }}cluster with two hosts
       infini_cluster:
         name: "{{ auto_prefix }}cluster"
