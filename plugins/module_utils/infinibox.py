@@ -26,6 +26,10 @@ from functools import wraps
 from os import environ
 from os import path
 from datetime import datetime
+import urllib3
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 system = None
