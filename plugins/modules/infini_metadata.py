@@ -80,6 +80,8 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
+    get_cluster,
+    get_host,
     get_filesystem,
     get_system,
     get_volume,
@@ -128,8 +130,6 @@ def get_metadata_fs(module, disable_fail):
     key = module.params["key"]
     metadata = None
 
-    # Function get_filesystem() expects the filesystem name's key to be 'filesystem', not 'object_name'.
-    module.params['filesystem'] = object_name
     fs = get_filesystem(module, system)
     if fs:
         path = f"metadata/{fs.id}/{key}"
@@ -143,6 +143,58 @@ def get_metadata_fs(module, disable_fail):
                 )
     elif not disable_fail:
         msg = f"File system named {object_name} not found. Cannot stat its metadata."
+        module.fail_json(msg=msg)
+
+    return metadata
+
+
+@api_wrapper
+def get_metadata_host(module, disable_fail):
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    metadata = None
+
+    host = get_host(module, system)
+    if host:
+        path = f"metadata/{host.id}/{key}"
+        try:
+            metadata = system.api.get(path=path)
+        except APICommandFailed as err:
+            if not disable_fail:
+                module.fail_json(
+                    f"Cannot find {object_type} metadata key. "
+                    f"File system {object_name} key {key} not found"
+                )
+    elif not disable_fail:
+        msg = f"Host named {object_name} not found. Cannot stat its metadata."
+        module.fail_json(msg=msg)
+
+    return metadata
+
+
+@api_wrapper
+def get_metadata_cluster(module, disable_fail):
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    metadata = None
+
+    cluster = get_cluster(module, system)
+    if cluster:
+        path = f"metadata/{cluster.id}/{key}"
+        try:
+            metadata = system.api.get(path=path)
+        except APICommandFailed as err:
+            if not disable_fail:
+                module.fail_json(
+                    f"Cannot find {object_type} metadata key. "
+                    f"File system {object_name} key {key} not found"
+                )
+    elif not disable_fail:
+        msg = f"Cluster named {object_name} not found. Cannot stat its metadata."
         module.fail_json(msg=msg)
 
     return metadata
@@ -163,6 +215,10 @@ def get_metadata(module, disable_fail=False):
         metadata = get_metadata_fs(module, disable_fail)
     elif object_type == "vol":
         metadata = get_metadata_vol(module, disable_fail)
+    elif object_type == "host":
+        metadata = get_metadata_host(module, disable_fail)
+    elif object_type == "cluster":
+        metadata = get_metadata_cluster(module, disable_fail)
     else:
         msg = f"Metadata for {object_type} not supported. Cannot stat."
         module.fail_json(msg=msg)
@@ -197,6 +253,27 @@ def put_metadata(module):
             msg = f"Volume {object_name} not found. Cannot add metadata key {key}."
             module.fail_json(msg=msg)
         path = f"metadata/{vol.id}"
+    elif object_type == "fs":
+        fs = get_filesystem(module, system)
+        if not fs:
+            object_name = module.params["object_name"]
+            msg = f"File system {object_name} not found. Cannot add metadata key {key}."
+            module.fail_json(msg=msg)
+        path = f"metadata/{fs.id}"
+    elif object_type == "host":
+        host = get_host(module, system)
+        if not host:
+            object_name = module.params["object_name"]
+            msg = f"Cluster {object_name} not found. Cannot add metadata key {key}."
+            module.fail_json(msg=msg)
+        path = f"metadata/{host.id}"
+    elif object_type == "cluster":
+        cluster = get_cluster(module, system)
+        if not cluster:
+            object_name = module.params["object_name"]
+            msg = f"Cluster {object_name} not found. Cannot add metadata key {key}."
+            module.fail_json(msg=msg)
+        path = f"metadata/{cluster.id}"
 
     # Create json data
     data = {
@@ -205,7 +282,7 @@ def put_metadata(module):
 
     # Put
     system.api.put(path=path, data=data)
-    # changed not returned by design
+    # Variable 'changed' not returned by design
 
 
 @api_wrapper
@@ -227,6 +304,24 @@ def delete_metadata(module):
             changed = False
             return changed  # No vol therefore no metadata to delete
         path = f"metadata/{vol.id}/{key}"
+    elif object_type == "fs":
+        fs = get_filesystem(module, system)
+        if not fs:
+            changed = False
+            return changed  # No fs therefore no metadata to delete
+        path = f"metadata/{fs.id}/{key}"
+    elif object_type == "host":
+        host = get_host(module, system)
+        if not host:
+            changed = False
+            return changed  # No host therefore no metadata to delete
+        path = f"metadata/{host.id}/{key}"
+    elif object_type == "cluster":
+        cluster = get_cluster(module, system)
+        if not cluster:
+            changed = False
+            return changed  # No cluster therefore no metadata to delete
+        path = f"metadata/{cluster.id}/{key}"
     else:
         module.fail_json( f"TODO: Implement for object_type {object_type}")
 

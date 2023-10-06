@@ -137,7 +137,10 @@ def get_filesystem(module, system):
         try:
             filesystem = system.filesystems.get(name=module.params['filesystem'])
         except KeyError:
-            filesystem = system.filesystems.get(name=module.params['name'])
+            try:
+                filesystem = system.filesystems.get(name=module.params['name'])
+            except KeyError:
+                filesystem = system.filesystems.get(name=module.params['object_name'])
         return filesystem
     except Exception:
         return None
@@ -208,7 +211,10 @@ def get_host(module, system):
         try:
             host_param = module.params['name']
         except KeyError:
-            host_param = module.params['host']
+            try:
+                host_param = module.params['host']
+            except KeyError:
+                host_param = module.params['object_name']  # For metadata
 
         if a_host_name == host_param:
             host = a_host
@@ -227,7 +233,10 @@ def get_cluster(module, system):
         try:
             cluster_param = module.params['name']
         except KeyError:
-            cluster_param = module.params['cluster']
+            try:
+                cluster_param = module.params['cluster']
+            except KeyError:
+                cluster_param = module.params['object_name']  # For metadata
 
         if a_cluster_name == cluster_param:
             cluster = a_cluster

@@ -286,3 +286,171 @@
       register: metadata_out
       failed_when:
         - "'Cannot find fs metadata key' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create fs named {{ auto_prefix }}fs's metadata key named fsfoo
+      infini_metadata:
+        object_type: "fs"
+        object_name: "{{ auto_prefix }}fs"
+        key: "fsfoo"
+        value: "fsbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Create fs named {{ auto_prefix }}fs's metadata key named fsfoo again
+      infini_metadata:
+        object_type: "fs"
+        object_name: "{{ auto_prefix }}fs"
+        key: "fsfoo"
+        value: "fsbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    # Test cluster object_type
+
+    - name: SETUP test -> Delete cluster {{ auto_prefix }}cluster to clear any metadata
+      infini_cluster:
+        name: "{{ auto_prefix }}cluster"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: SETUP test -> Create cluster {{ auto_prefix }}cluster
+      infini_cluster:
+        name: "{{ auto_prefix }}cluster"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get cluster named {{ auto_prefix }}cluster's nonexistent metadata key named clusterfoo
+      infini_metadata:
+        object_type: "cluster"
+        object_name: "{{ auto_prefix }}cluster"
+        key: "clusterfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find cluster metadata key' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo
+      infini_metadata:
+        object_type: "cluster"
+        object_name: "{{ auto_prefix }}cluster"
+        key: "clusterfoo"
+        value: "clusterbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Create cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo again
+      infini_metadata:
+        object_type: "cluster"
+        object_name: "{{ auto_prefix }}cluster"
+        key: "clusterfoo"
+        value: "clusterbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Delete cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo
+      infini_metadata:
+        object_type: "cluster"
+        object_name: "{{ auto_prefix }}cluster"
+        key: "clusterfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Delete cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo again
+      infini_metadata:
+        object_type: "cluster"
+        object_name: "{{ auto_prefix }}cluster"
+        key: "clusterfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    # Test host object_type
+
+    - name: SETUP test -> Delete host {{ auto_prefix }}host in pool {{ auto_prefix }}pool to clear any metadata
+      infini_host:
+        name: "{{ auto_prefix }}host"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: SETUP test -> Create host {{ auto_prefix }}host in pool {{ auto_prefix }}pool
+      infini_host:
+        name: "{{ auto_prefix }}host"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get host named {{ auto_prefix }}host's nonexistent metadata key named hostfoo
+      infini_metadata:
+        object_type: "host"
+        object_name: "{{ auto_prefix }}host"
+        key: "hostfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find host metadata key' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create host named {{ auto_prefix }}host's metadata key named hostfoo
+      infini_metadata:
+        object_type: "host"
+        object_name: "{{ auto_prefix }}host"
+        key: "hostfoo"
+        value: "hostbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Create host named {{ auto_prefix }}host's metadata key named hostfoo again
+      infini_metadata:
+        object_type: "host"
+        object_name: "{{ auto_prefix }}host"
+        key: "hostfoo"
+        value: "hostbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Delete host named {{ auto_prefix }}host's metadata key named hostfoo
+      infini_metadata:
+        object_type: "host"
+        object_name: "{{ auto_prefix }}host"
+        key: "hostfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Delete host named {{ auto_prefix }}host's metadata key named hostfoo again
+      infini_metadata:
+        object_type: "host"
+        object_name: "{{ auto_prefix }}host"
+        key: "hostfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"

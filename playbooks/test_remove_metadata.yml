@@ -35,6 +35,31 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: Delete file system {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fs"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Delete host {{ auto_prefix }}host in pool {{ auto_prefix }}pool
+      infini_host:
+        name: "{{ auto_prefix }}host"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Delete cluster {{ auto_prefix }}cluster in pool {{ auto_prefix }}pool
+      infini_cluster:
+        name: "{{ auto_prefix }}cluster"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: Delete pool {{ auto_prefix }}pool
       infini_pool:
         name: "{{ auto_prefix }}pool"

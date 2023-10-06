@@ -50,7 +50,7 @@ setup: ## Setup Python requirements.
 	@# Install pbr early to prevent errors with flux and gossip install.
 	@# e.g. distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('pbr>=3.0')
 	$(_python) -m pip install --user --upgrade pip && \
-	$(_python) -m pip install --user --upgrade ansible pbr && \
+	$(_python) -m pip install --user --upgrade ansible ansible-lint pbr && \
 	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file) && \
 	$(_python) -m pip install --user --upgrade --requirement $(_requirements-dev-file) && \
 	curl -s https://repo.infinidat.com/setup/main-stable | sudo sh - && \
