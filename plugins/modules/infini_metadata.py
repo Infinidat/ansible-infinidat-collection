@@ -81,8 +81,9 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     HAS_INFINISDK,
     api_wrapper,
     get_cluster,
-    get_host,
     get_filesystem,
+    get_host,
+    get_pool,
     get_system,
     get_volume,
     infinibox_argument_spec,
@@ -165,7 +166,7 @@ def get_metadata_host(module, disable_fail):
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
-                    f"File system {object_name} key {key} not found"
+                    f"Host {object_name} key {key} not found"
                 )
     elif not disable_fail:
         msg = f"Host named {object_name} not found. Cannot stat its metadata."
@@ -191,10 +192,88 @@ def get_metadata_cluster(module, disable_fail):
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
-                    f"File system {object_name} key {key} not found"
+                    f"Cluster {object_name} key {key} not found"
                 )
     elif not disable_fail:
         msg = f"Cluster named {object_name} not found. Cannot stat its metadata."
+        module.fail_json(msg=msg)
+
+    return metadata
+
+
+@api_wrapper
+def get_metadata_fssnap(module, disable_fail):
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    metadata = None
+
+    fssnap = get_filesystem(module, system)
+    if fssnap:
+        path = f"metadata/{fssnap.id}/{key}"
+        try:
+            metadata = system.api.get(path=path)
+        except APICommandFailed as err:
+            if not disable_fail:
+                module.fail_json(
+                    f"Cannot find {object_type} metadata key. "
+                    f"File system snapshot {object_name} key {key} not found"
+                )
+    elif not disable_fail:
+        msg = f"File system snapshot named {object_name} not found. Cannot stat its metadata."
+        module.fail_json(msg=msg)
+
+    return metadata
+
+
+@api_wrapper
+def get_metadata_pool(module, disable_fail):
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    metadata = None
+
+    pool = get_pool(module, system)
+    if pool:
+        path = f"metadata/{pool.id}/{key}"
+        try:
+            metadata = system.api.get(path=path)
+        except APICommandFailed as err:
+            if not disable_fail:
+                module.fail_json(
+                    f"Cannot find {object_type} metadata key. "
+                    f"Pool {object_name} key {key} not found"
+                )
+    elif not disable_fail:
+        msg = f"Pool named {object_name} not found. Cannot stat its metadata."
+        module.fail_json(msg=msg)
+
+    return metadata
+
+
+@api_wrapper
+def get_metadata_volsnap(module, disable_fail):
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    metadata = None
+
+    volsnap = get_volume(module, system)
+    if volsnap:
+        path = f"metadata/{volsnap.id}/{key}"
+        try:
+            metadata = system.api.get(path=path)
+        except APICommandFailed as err:
+            if not disable_fail:
+                module.fail_json(
+                    f"Cannot find {object_type} metadata key. "
+                    f"Volume snapshot {object_name} key {key} not found"
+                )
+    elif not disable_fail:
+        msg = f"Volume snapshot named {object_name} not found. Cannot stat its metadata."
         module.fail_json(msg=msg)
 
     return metadata
@@ -219,6 +298,13 @@ def get_metadata(module, disable_fail=False):
         metadata = get_metadata_host(module, disable_fail)
     elif object_type == "cluster":
         metadata = get_metadata_cluster(module, disable_fail)
+    # elif object_type == "fs-snap":   # See psdev-1121
+    #     metadata = get_fssnap(module, disable_fail)
+    elif object_type == "pool":
+        metadata = get_metadata_pool(module, disable_fail)
+    elif object_type == "vol-snap":
+        metadata = get_metadata_volsnap(module, disable_fail)
+
     else:
         msg = f"Metadata for {object_type} not supported. Cannot stat."
         module.fail_json(msg=msg)
@@ -274,6 +360,28 @@ def put_metadata(module):
             msg = f"Cluster {object_name} not found. Cannot add metadata key {key}."
             module.fail_json(msg=msg)
         path = f"metadata/{cluster.id}"
+    # See psdev-1121
+    # elif object_type == "fs-snap":
+    #     fssnap = get_filesystem(module, system)
+    #     if not fssnap:
+    #         object_name = module.params["object_name"]
+    #         msg = f"File system snapshot {object_name} not found. Cannot add metadata key {key}."
+    #         module.fail_json(msg=msg)
+    #     path = f"metadata/{fssnap.id}"
+    elif object_type == "pool":
+        pool = get_pool(module, system)
+        if not pool:
+            object_name = module.params["object_name"]
+            msg = f"Pool {object_name} not found. Cannot add metadata key {key}."
+            module.fail_json(msg=msg)
+        path = f"metadata/{pool.id}"
+    elif object_type == "vol-snap":
+        volsnap = get_volume(module, system)
+        if not volsnap:
+            object_name = module.params["object_name"]
+            msg = f"Volume snapshot {object_name} not found. Cannot add metadata key {key}."
+            module.fail_json(msg=msg)
+        path = f"metadata/{volsnap.id}"
 
     # Create json data
     data = {
@@ -322,6 +430,24 @@ def delete_metadata(module):
             changed = False
             return changed  # No cluster therefore no metadata to delete
         path = f"metadata/{cluster.id}/{key}"
+    elif object_type == "fs-snap":
+        fssnap = get_filesystem(module, system)
+        if not fssnap:
+            changed = False
+            return changed  # No fssnap therefore no metadata to delete
+        path = f"metadata/{fssnap.id}/{key}"
+    elif object_type == "pool":
+        pool = get_pool(module, system)
+        if not pool:
+            changed = False
+            return changed  # No pool therefore no metadata to delete
+        path = f"metadata/{pool.id}/{key}"
+    elif object_type == "vol-snap":
+        volsnap = get_volume(module, system)
+        if not volsnap:
+            changed = False
+            return changed  # No volsnap therefore no metadata to delete
+        path = f"metadata/{volsnap.id}/{key}"
     else:
         module.fail_json( f"TODO: Implement for object_type {object_type}")
 

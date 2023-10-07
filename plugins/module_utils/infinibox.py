@@ -124,7 +124,10 @@ def get_pool(module, system):
         try:
             name = module.params['pool']
         except KeyError:
-            name = module.params['name']
+            try:
+                name = module.params['name']
+            except KeyError:
+                name = module.params['object_name']  # For metadata
         return system.pools.get(name=name)
     except Exception:
         return None

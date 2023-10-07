@@ -6,7 +6,7 @@
     - infinidat.infinibox
 
   tasks:
-    - name: POSITIVE test -> Remove system metadata key named sysfoo
+    - name: Remove system metadata key named sysfoo
       infini_metadata:
         object_type: "system"
         key: "sysfoo"
@@ -15,7 +15,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Remove volume named foo metadata key named volfoo
+    - name: Remove volume named foo metadata key named volfoo
       infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
@@ -26,6 +26,16 @@
         system: "{{ system }}"
       register: metadata_out
 
+    - name: Delete volume snapshot {{ auto_prefix }}volsnap in pool {{ auto_prefix }}pool
+      infini_vol:
+        name: "{{ auto_prefix }}volsnap"
+        pool: "{{ auto_prefix }}pool"
+        volume_type: "snapshot"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
       infini_vol:
         name: "{{ auto_prefix }}vol"
@@ -34,6 +44,8 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+
+    # TODO Delete fs snap. See psdev-1121.
 
     - name: Delete file system {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
       infini_fs:

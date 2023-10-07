@@ -6,16 +6,22 @@
     - infinidat.infinibox
   tasks:
 
-    - name: SETUP test -> Create pool {{ auto_prefix }}pool
-      infini_pool:
-        name: "{{ auto_prefix }}pool"
-        size: 1 TB
-        state: present
+    # Test any object_type
+
+    - name: NEGATIVE test -> Attempt to create a volume metadata key without providing a value
+      infini_metadata:
+        object_type: "vol"
+        object_name: "foo"
+        key: "foo"
+        # value: "bar"
+        state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-
-    # Test vol object_type
+      register: metadata_out
+      failed_when: 
+        - "'Cannot create a' not in metadata_out.msg"
+        - "'without providing a value' not in metadata_out.msg"
 
     - name: NEGATIVE test -> Attempt to create a system metadata key while incorrectly providing an object_name
       infini_metadata:
@@ -45,33 +51,107 @@
       failed_when:
         - "'The name of the vol must be provided as object_name' not in metadata_out.msg"
 
-    - name: NEGATIVE test -> Attempt to create a volume metadata key without providing a value
-      infini_metadata:
-        object_type: "vol"
-        object_name: "foo"
-        key: "foo"
-        # value: "bar"
-        state: "present"
+    # Test pool object_type
+
+    - name: SETUP test -> Delete pool {{ auto_prefix }}pool to clear any metadata
+      infini_pool:
+        name: "{{ auto_prefix }}pool"
+        state: absent
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-      register: metadata_out
-      failed_when: 
-        - "'Cannot create a' not in metadata_out.msg"
-        - "'without providing a value' not in metadata_out.msg"
 
-    - name: NEGATIVE test -> Attempt to set system metadata key ui-dataset-base2-units to something other than an boolean
+    - name: SETUP test -> Create pool {{ auto_prefix }}pool
+      infini_pool:
+        name: "{{ auto_prefix }}pool"
+        size: 1 TB
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get pool named {{ auto_prefix }}pool's nonexistent metadata key named poolfoo
       infini_metadata:
-        object_type: "system"
-        key: "ui-dataset-base2-units"
-        value: "bar"  # Should be a boolean
-        state: "present"
+        object_type: "pool"
+        object_name: "{{ auto_prefix }}pool"
+        key: "poolfoo"
+        state: "stat"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
       failed_when:
-        - "'Value must be of type bool' not in metadata_out.msg"
+        - "'Cannot find pool metadata key' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create metadata for pool {{ auto_prefix }}pool with key named poolfoo with value poolbar
+      infini_metadata:
+        object_type: "pool"
+        object_name: "{{ auto_prefix }}pool"
+        key: "poolfoo"
+        value: "poolbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Create metadata for pool {{ auto_prefix }}pool with key named poolfoo with value poolbar again
+      infini_metadata:
+        object_type: "pool"
+        object_name: "{{ auto_prefix }}pool"
+        key: "poolfoo"
+        value: "poolbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Stat metadata pool {{ auto_prefix }}pool key named poolfoo
+      infini_metadata:
+        object_type: "pool"
+        object_name: "{{ auto_prefix }}pool"
+        key: "poolfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "metadata_out['value'] != 'poolbar' or metadata_out['changed'] != false"
+
+    - name: POSITIVE test -> Delete metadata pool {{ auto_prefix }}pool key named poolfoo
+      infini_metadata:
+        object_type: "pool"
+        object_name: "{{ auto_prefix }}pool"
+        key: "poolfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Delete metadata pool {{ auto_prefix }}pool key named poolfoo again
+      infini_metadata:
+        object_type: "pool"
+        object_name: "{{ auto_prefix }}pool"
+        key: "poolfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Stat nonexistent metadata pool {{ auto_prefix }}pool key named poolfoo
+      infini_metadata:
+        object_type: "pool"
+        object_name: "{{ auto_prefix }}pool"
+        key: "poolfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find pool metadata key' not in metadata_out.msg"
+
+    # Test vol object_type
 
     - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool to clear any metadata
       infini_vol:
@@ -173,18 +253,168 @@
       failed_when:
         - "'Cannot find vol metadata key' not in metadata_out.msg"
 
-    - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool PSUS_ANSIBLE_pool
+    # Test vol-snap object_type
+
+    - name: SETUP test -> Delete volume snapshot {{ auto_prefix }}volsnap in pool {{ auto_prefix }}pool to clear any metadata
       infini_vol:
-        name: "{{ auto_prefix }}vol"
+        name: "{{ auto_prefix }}volsnap"
         pool: "{{ auto_prefix }}pool"
+        volume_type: "snapshot"
         state: absent
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: NEGATIVE test -> Stat nonexistent metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo when snapshot does not exist
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Volume snapshot named' not in metadata_out.msg or 'not found' not in metadata_out.msg"
+
+    - name: SETUP test -> Create volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
+      infini_vol:
+        name: "{{ auto_prefix }}vol"
+        pool: "{{ auto_prefix }}pool"
+        size: 1 GB
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: SETUP test -> Create volume snapshot {{ auto_prefix }}volsnap in pool {{ auto_prefix }}pool
+      infini_vol:
+        name: "{{ auto_prefix }}volsnap"
+        volume_type: "snapshot"
+        parent_volume_name: "{{ auto_prefix }}vol"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get volume snapshot named {{ auto_prefix }}vol's nonexistent metadata key named volsnapfoo
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find vol-snap metadata key' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create metadata for volume snapshot {{ auto_prefix }}volsnap with key named volsnapfoo with value volsnapbar
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        value: "volsnapbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Create metadata for volume snapshot {{ auto_prefix }}volsnap with key named volsnapfoo with value volsnapbar again
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        value: "volsnapbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Stat metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "metadata_out['value'] != 'volsnapbar' or metadata_out['changed'] != false"
+
+    - name: POSITIVE test -> Delete metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Delete metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo again
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Stat nonexistent metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo
+      infini_metadata:
+        object_type: "vol-snap"
+        object_name: "{{ auto_prefix }}volsnap"
+        key: "volsnapfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find vol-snap metadata key' not in metadata_out.msg"
+
+    # - name: SETUP test -> Delete volume snapshot {{ auto_prefix }}volsnap in pool {{ auto_prefix }}pool
+    #   infini_vol:
+    #     name: "{{ auto_prefix }}volsnap"
+    #     pool: "{{ auto_prefix }}pool"
+    #     volume_type: "snapshot"
+    #     state: absent
+    #     user: "{{ user }}"
+    #     password: "{{ password }}"
+    #     system: "{{ system }}"
+
+    # - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
+    #   infini_vol:
+    #     name: "{{ auto_prefix }}vol"
+    #     pool: "{{ auto_prefix }}pool"
+    #     volume_type: "master"
+    #     state: absent
+    #     user: "{{ user }}"
+    #     password: "{{ password }}"
+    #     system: "{{ system }}"
+
     # Test system object_type
 
-    - name: POSITIVE test -> Delete metadata system key named sysfoo
+    - name: NEGATIVE test -> Attempt to set system metadata key ui-dataset-base2-units to something other than an boolean
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-base2-units"
+        value: "bar"  # Should be a boolean
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Value must be of type bool' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Delete metadata system key named sysfoo to clear any metadata
       infini_metadata:
         object_type: "system"
         key: "sysfoo"
@@ -287,7 +517,7 @@
       failed_when:
         - "'Cannot find fs metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create fs named {{ auto_prefix }}fs's metadata key named fsfoo
+    - name: POSITIVE test -> Create fs named {{ auto_prefix }}fs's metadata key named fsfoo with value fsbar
       infini_metadata:
         object_type: "fs"
         object_name: "{{ auto_prefix }}fs"
@@ -308,6 +538,63 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+
+# fs-snap support not implemented. See psdev-1121
+#    # Test fs-snap object_type
+#
+#    - name: SETUP test -> Delete fs snapshot {{ auto_prefix }}fssnap in pool {{ auto_prefix }}pool to clear any metadata
+#      infini_fs:
+#        name: "{{ auto_prefix }}fs"
+#        pool: "{{ auto_prefix }}pool"
+#        state: absent
+#        user: "{{ user }}"
+#        password: "{{ password }}"
+#        system: "{{ system }}"
+#
+#    - name: SETUP test -> Create fs snapshot {{ auto_prefix }}fsnap of {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
+#      infini_fs:
+#        name: "{{ auto_prefix }}fssnap"
+#        pool: "{{ auto_prefix }}pool"
+#        parent_volume_name: "{{ auto_prefix }}fs"
+#        state: present
+#        user: "{{ user }}"
+#        password: "{{ password }}"
+#        system: "{{ system }}"
+#
+#    - name: NEGATIVE test -> Get fs snapshot named {{ auto_prefix }}fssnap's nonexistent metadata key named fssnapfoo
+#      infini_metadata:
+#        object_type: "fs-snap"
+#        object_name: "{{ auto_prefix }}fssnap"
+#        key: "fssnapfoo"
+#        state: "stat"
+#        user: "{{ user }}"
+#        password: "{{ password }}"
+#        system: "{{ system }}"
+#      register: metadata_out
+#      failed_when:
+#        - "'Cannot find fs snapshot metadata key' not in metadata_out.msg"
+#
+#    - name: POSITIVE test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar
+#      infini_metadata:
+#        object_type: "fs-snap"
+#        object_name: "{{ auto_prefix }}fssnap"
+#        key: "fssnapfoo"
+#        value: "fssnapbar"
+#        state: "present"
+#        user: "{{ user }}"
+#        password: "{{ password }}"
+#        system: "{{ system }}"
+#
+#    - name: IDEMPOTENT test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar again
+#      infini_metadata:
+#        object_type: "fs-snap"
+#        object_name: "{{ auto_prefix }}fssnap"
+#        key: "fssnapfoo"
+#        value: "fssnapbar"
+#        state: "present"
+#        user: "{{ user }}"
+#        password: "{{ password }}"
+#        system: "{{ system }}"
 
     # Test cluster object_type
 
