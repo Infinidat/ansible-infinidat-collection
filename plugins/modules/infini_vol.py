@@ -4,11 +4,11 @@
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: infini_vol
 version_added: '2.3.0'
@@ -78,9 +78,9 @@ extends_documentation_fragment:
     - infinibox
 requirements:
     - capacity
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create new volume named foo under pool named bar
   infini_vol:
     name: foo
@@ -115,7 +115,7 @@ EXAMPLES = r'''
     user: admin
     password: secret
     system: ibox001
-'''
+"""
 
 # RETURN = r''' # '''
 
@@ -125,13 +125,15 @@ import traceback
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
-    api_wrapper,
-    infinibox_argument_spec,
     ObjectNotFound,
+    api_wrapper,
+    check_snapshot_lock_options,
     get_pool,
     get_system,
-    get_volume,
     get_vol_sn,
+    get_volume,
+    infinibox_argument_spec,
+    manage_snapshot_locks,
 )
 
 
@@ -146,7 +148,6 @@ try:
     import arrow
 except ImportError:
     HAS_ARROW = False
-
 except Exception:
     HAS_INFINISDK = False
 
@@ -182,15 +183,14 @@ def find_vol_id(module, system, vol_name):
     """
     Find the ID of this vol
     """
-    vol_url = "volumes?name={0}&fields=id".format(vol_name)
+    vol_url = f"volumes?name={vol_name}&fields=id"
     vol = system.api.get(path=vol_url)
 
     result = vol.get_json()["result"]
     if len(result) != 1:
-        module.fail_json("Cannot find a volume with name '{0}'".format(vol_name))
+        module.fail_json(f"Cannot find a volume with name '{vol_name}'")
 
     vol_id = result[0]["id"]
-    # print("Volume {} has ID {}".format(vol_name, vol_id))
     return vol_id
 
 
@@ -220,7 +220,7 @@ def restore_volume_from_snapshot(module, system):
         )
 
     if not module.check_mode:
-        restore_url = "volumes/{0}/restore?approved=true".format(parent_volume_id)
+        restore_url = f"volumes/{parent_volume_id}/restore?approved=true"
         restore_data = {
             "source_id": snap_id,
         }
@@ -233,38 +233,41 @@ def restore_volume_from_snapshot(module, system):
 def update_volume(module, volume):
     """Update Volume"""
     changed = False
+
+    if module.check_mode:
+        return changed
+
     if module.params["size"]:
         size = Capacity(module.params["size"]).roundup(64 * KiB)
         if volume.get_size() != size:
-            if not module.check_mode:
-                volume.update_size(size)
+            volume.update_size(size)
             changed = True
     if module.params["thin_provision"] is not None:
-        type = str(volume.get_provisioning())
-        if type == "THICK" and module.params["thin_provision"]:
-            if not module.check_mode:
-                volume.update_provisioning("THIN")
+        provisioning = str(volume.get_provisioning())
+        if provisioning == "THICK" and module.params["thin_provision"]:
+            volume.update_provisioning("THIN")
             changed = True
-        if type == "THIN" and not module.params["thin_provision"]:
-            if not module.check_mode:
-                volume.update_provisioning("THICK")
+        if provisioning == "THIN" and not module.params["thin_provision"]:
+            volume.update_provisioning("THICK")
             changed = True
     if module.params["write_protected"] is not None:
         is_write_prot = volume.is_write_protected()
         desired_is_write_prot = module.params["write_protected"]
         if is_write_prot != desired_is_write_prot:
             volume.update_field("write_protected", desired_is_write_prot)
+            changed = True
 
     return changed
 
 
 @api_wrapper
 def delete_volume(module, volume):
-    """ Delete Volume. Volume could be a snapshot."""
+    """Delete Volume. Volume could be a snapshot."""
+    changed = False
     if not module.check_mode:
         volume.delete()
-    changed = True
-    return True
+        changed = True
+    return changed
 
 
 @api_wrapper
@@ -275,14 +278,10 @@ def create_snapshot(module, system):
     try:
         parent_volume = system.volumes.get(name=parent_volume_name)
     except ObjectNotFound as err:
-        msg = "Cannot create snapshot {0}. Parent volume {1} not found".format(
-            snapshot_name, parent_volume_name
-        )
+        msg = f"Cannot create snapshot {snapshot_name}. Parent volume {parent_volume_name} not found"
         module.fail_json(msg=msg)
     if not parent_volume:
-        msg = "Cannot find new snapshot's parent volume named {0}".format(
-            parent_volume_name
-        )
+        msg = f"Cannot find new snapshot's parent volume named {parent_volume_name}"
         module.fail_json(msg=msg)
     if not module.check_mode:
         if module.params["snapshot_lock_only"]:
@@ -342,77 +341,13 @@ def get_sys_pool_vol_parname(module):
     return (system, pool, volume, parname)
 
 
-def check_snapshot_lock_options(module):
-    """
-    Check if specified options are feasible for a snapshot.
-
-    Prevent very long lock times.
-    max_delta_minutes limits locks to 30 days (43200 minutes).
-
-    This functionality is broken out from manage_snapshot_locks() to allow
-    it to be called by create_snapshot() before the snapshot is actually
-    created.
-    """
-    snapshot_lock_expires_at = module.params["snapshot_lock_expires_at"]
-
-    if snapshot_lock_expires_at:  # Then user has specified wish to lock snap
-        lock_expires_at = arrow.get(snapshot_lock_expires_at)
-
-        # Check for lock in the past
-        now = arrow.utcnow()
-        if lock_expires_at <= now:
-            msg = "Cannot lock snapshot with a snapshot_lock_expires_at "
-            msg += "of '{0}' from the past".format(snapshot_lock_expires_at)
-            module.fail_json(msg=msg)
-
-        # Check for lock later than max lock, i.e. too far in future.
-        max_delta_minutes = 43200  # 30 days in minutes
-        max_lock_expires_at = now.shift(minutes=max_delta_minutes)
-        if lock_expires_at >= max_lock_expires_at:
-            msg = "snapshot_lock_expires_at exceeds {0} days in the future".format(
-                max_delta_minutes // 24 // 60
-            )
-            module.fail_json(msg=msg)
-
-
-def manage_snapshot_locks(module, snapshot):
-    """
-    Manage the locking of a snapshot. Check for bad lock times.
-    See check_snapshot_lock_options() which has additional checks.
-    """
-    name = module.params["name"]
-    snapshot_lock_expires_at = module.params["snapshot_lock_expires_at"]
-    snap_is_locked = snapshot.get_lock_state() == "LOCKED"
-    current_lock_expires_at = snapshot.get_lock_expires_at()
-    changed = False
-
-    check_snapshot_lock_options(module)
-
-    if snapshot_lock_expires_at:  # Then user has specified wish to lock snap
-        lock_expires_at = arrow.get(snapshot_lock_expires_at)
-        if snap_is_locked and lock_expires_at < current_lock_expires_at:
-            # Lock earlier than current lock
-            msg = "snapshot_lock_expires_at '{0}' preceeds the current lock time of '{1}'".format(
-                lock_expires_at, current_lock_expires_at
-            )
-            module.fail_json(msg=msg)
-        elif snap_is_locked and lock_expires_at == current_lock_expires_at:
-            # Lock already set to correct time
-            pass
-        else:
-            # Set lock
-            if not module.check_mode:
-                snapshot.update_lock_expires_at(lock_expires_at)
-            changed = True
-    return changed
-
-
 def handle_stat(module):
     system, pool, volume, parname = get_sys_pool_vol_parname(module)
     if not volume:
-        msg = "Volume {0} not found. Cannot stat.".format(module.params["name"])
+        msg = f"Volume {module.params["name"]} not found. Cannot stat."
         module.fail_json(msg=msg)
     fields = volume.get_fields()  # from_cache=True, raw_value=True)
+
     created_at = str(fields.get("created_at", None))
     has_children = fields.get("has_children", None)
     lock_expires_at = str(volume.get_lock_expires_at())
@@ -429,7 +364,7 @@ def handle_stat(module):
     volume_type = fields.get("type", None)
     write_protected = fields.get("write_protected", None)
     if volume_type == "SNAPSHOT":
-        msg = "Snapshot stat found"
+        msg = "Volume snapshot stat found"
     else:
         msg = "Volume stat found"
 
@@ -498,10 +433,10 @@ def handle_absent(module):
             changed = delete_volume(module, volume)
             module.exit_json(changed=changed, msg="Volume removed")
     elif volume_type == "snapshot":
-        if not volume:
+        snapshot = volume
+        if not snapshot:
             module.exit_json(changed=False, msg="Snapshot already absent")
         else:
-            snapshot = volume
             changed = delete_volume(module, snapshot)
             module.exit_json(changed=changed, msg="Snapshot removed")
     else:
@@ -534,7 +469,7 @@ def execute_state(module):
             handle_absent(module)
         else:
             module.fail_json(
-                msg="Internal handler error. Invalid state: {0}".format(state)
+                msg=f"Internal handler error. Invalid state: {state}"
             )
     finally:
         system = get_system(module)
@@ -551,14 +486,13 @@ def check_options(module):
 
     if state == "present":
         if volume_type == "master":
-            if state == "present":
-                if parent_volume_name:
-                    msg = "parent_volume_name should not be specified "
-                    msg += "if volume_type is 'volume'. Snapshots only."
-                    module.fail_json(msg=msg)
-                if not size:
-                    msg = "Size is required to create a volume"
-                    module.fail_json(msg=msg)
+            if parent_volume_name:
+                msg = "parent_volume_name should not be specified "
+                msg += "if volume_type is 'master'. Used for snapshots only."
+                module.fail_json(msg=msg)
+            if not size:
+                msg = "Size is required to create a volume"
+                module.fail_json(msg=msg)
         elif volume_type == "snapshot":
             if size or pool:
                 msg = "Neither pool nor size should not be specified "
@@ -572,26 +506,26 @@ def check_options(module):
         else:
             msg = "A programming error has occurred"
             module.fail_json(msg=msg)
+        if not pool:
+            msg = "For state 'present', pool is required"
+            module.fail_json(msg=msg)
 
 
 def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            name=dict(required=False),
+            name=dict(required=True),
             parent_volume_name=dict(default=None, required=False, type=str),
             pool=dict(required=False),
+            restore_volume_from_snapshot=dict(default=False, type=bool),
             size=dict(),
-            serial=dict(),
             snapshot_lock_expires_at=dict(),
             snapshot_lock_only=dict(type="bool", default=False),
             state=dict(default="present", choices=["stat", "present", "absent"]),
             thin_provision=dict(type="bool", default=True),
-            write_protected=dict(
-                default="Default", choices=["Default", "True", "False"]
-            ),
             volume_type=dict(default="master", choices=["master", "snapshot"]),
-            restore_volume_from_snapshot=dict(default=False, type=bool),
+            write_protected=dict( default="Default", choices=["Default", "True", "False"]),
         )
     )
 

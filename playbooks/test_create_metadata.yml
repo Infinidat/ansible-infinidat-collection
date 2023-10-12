@@ -19,7 +19,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
-      failed_when: 
+      failed_when:
         - "'Cannot create a' not in metadata_out.msg"
         - "'without providing a value' not in metadata_out.msg"
 

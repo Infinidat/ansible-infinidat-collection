@@ -257,3 +257,67 @@ def get_user(module, system):
     except ObjectNotFound:
         pass
     return user
+
+def check_snapshot_lock_options(module):
+    """
+    Check if specified options are feasible for a snapshot.
+
+    Prevent very long lock times.
+    max_delta_minutes limits locks to 30 days (43200 minutes).
+
+    This functionality is broken out from manage_snapshot_locks() to allow
+    it to be called by create_snapshot() before the snapshot is actually
+    created.
+    """
+    snapshot_lock_expires_at = module.params["snapshot_lock_expires_at"]
+
+    if snapshot_lock_expires_at:  # Then user has specified wish to lock snap
+        lock_expires_at = arrow.get(snapshot_lock_expires_at)
+
+        # Check for lock in the past
+        now = arrow.utcnow()
+        if lock_expires_at <= now:
+            msg = "Cannot lock snapshot with a snapshot_lock_expires_at "
+            msg += "of '{0}' from the past".format(snapshot_lock_expires_at)
+            module.fail_json(msg=msg)
+
+        # Check for lock later than max lock, i.e. too far in future.
+        max_delta_minutes = 43200  # 30 days in minutes
+        max_lock_expires_at = now.shift(minutes=max_delta_minutes)
+        if lock_expires_at >= max_lock_expires_at:
+            msg = "snapshot_lock_expires_at exceeds {0} days in the future".format(
+                max_delta_minutes // 24 // 60
+            )
+            module.fail_json(msg=msg)
+
+def manage_snapshot_locks(module, snapshot):
+    """
+    Manage the locking of a snapshot. Check for bad lock times.
+    See check_snapshot_lock_options() which has additional checks.
+    """
+    name = module.params["name"]
+    snapshot_lock_expires_at = module.params["snapshot_lock_expires_at"]
+    snap_is_locked = snapshot.get_lock_state() == "LOCKED"
+    current_lock_expires_at = snapshot.get_lock_expires_at()
+    changed = False
+
+    check_snapshot_lock_options(module)
+
+    if snapshot_lock_expires_at:  # Then user has specified wish to lock snap
+        lock_expires_at = arrow.get(snapshot_lock_expires_at)
+        if snap_is_locked and lock_expires_at < current_lock_expires_at:
+            # Lock earlier than current lock
+            msg = "snapshot_lock_expires_at '{0}' preceeds the current lock time of '{1}'".format(
+                lock_expires_at, current_lock_expires_at
+            )
+            module.fail_json(msg=msg)
+        elif snap_is_locked and lock_expires_at == current_lock_expires_at:
+            # Lock already set to correct time
+            pass
+        else:
+            # Set lock
+            if not module.check_mode:
+                snapshot.update_lock_expires_at(lock_expires_at)
+            changed = True
+    return changed
+
