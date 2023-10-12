@@ -130,7 +130,7 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     check_snapshot_lock_options,
     get_pool,
     get_system,
-    get_vol_sn,
+    get_vol_by_sn,
     get_volume,
     infinibox_argument_spec,
     manage_snapshot_locks,
@@ -336,7 +336,7 @@ def get_sys_pool_vol_parname(module):
     if module.params["name"]:
         volume = get_volume(module, system)
     else:
-        volume = get_vol_sn(module, system)
+        volume = get_vol_by_sn(module, system)
     parname = module.params["parent_volume_name"]
     return (system, pool, volume, parname)
 
@@ -344,7 +344,7 @@ def get_sys_pool_vol_parname(module):
 def handle_stat(module):
     system, pool, volume, parname = get_sys_pool_vol_parname(module)
     if not volume:
-        msg = f"Volume {module.params["name"]} not found. Cannot stat."
+        msg = f"Volume {module.params['name']} not found. Cannot stat."
         module.fail_json(msg=msg)
     fields = volume.get_fields()  # from_cache=True, raw_value=True)
 
@@ -444,7 +444,7 @@ def handle_absent(module):
 
 
 def execute_state(module):
-    # Handle different write_protected defaults depending on volume_type.
+    """Handle different write_protected defaults depending on volume_type."""
     if module.params["volume_type"] == "snapshot":
         if module.params["write_protected"] in ["True", "true", "Default"]:
             module.params["write_protected"] = True
@@ -478,11 +478,22 @@ def execute_state(module):
 
 def check_options(module):
     """Verify module options are sane"""
+    name = module.params["name"]
+    serial = module.params["serial"]
     state = module.params["state"]
     size = module.params["size"]
     pool = module.params["pool"]
     volume_type = module.params["volume_type"]
     parent_volume_name = module.params["parent_volume_name"]
+
+    if state == "stat":
+        if not name and not serial:
+            msg = "Name or serial parameter must be provided"
+            module.fail_json(msg=msg)
+    if state in ["present", "absent"]:
+        if not name:
+            msg = "Name parameter must be provided"
+            module.fail_json(msg=msg)
 
     if state == "present":
         if volume_type == "master":
@@ -506,7 +517,7 @@ def check_options(module):
         else:
             msg = "A programming error has occurred"
             module.fail_json(msg=msg)
-        if not pool:
+        if not pool and volume_type == "master":
             msg = "For state 'present', pool is required"
             module.fail_json(msg=msg)
 
@@ -515,17 +526,18 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            name=dict(required=True),
+            name=dict(required=False, default=None),
             parent_volume_name=dict(default=None, required=False, type=str),
             pool=dict(required=False),
             restore_volume_from_snapshot=dict(default=False, type=bool),
-            size=dict(),
+            serial=dict(required=False, default=None),
+            size=dict(required=False, default=None),
             snapshot_lock_expires_at=dict(),
             snapshot_lock_only=dict(type="bool", default=False),
             state=dict(default="present", choices=["stat", "present", "absent"]),
             thin_provision=dict(type="bool", default=True),
             volume_type=dict(default="master", choices=["master", "snapshot"]),
-            write_protected=dict( default="Default", choices=["Default", "True", "False"]),
+            write_protected=dict(default="Default", choices=["Default", "True", "False"]),
         )
     )
 

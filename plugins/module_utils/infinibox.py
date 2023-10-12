@@ -22,6 +22,14 @@ else:
     HAS_INFINISDK = True
     INFINISDK_IMPORT_ERROR = None
 
+HAS_ARROW = True
+try:
+    import arrow
+except ImportError:
+    HAS_ARROW = False
+except Exception:
+    HAS_INFINISDK = False
+
 from functools import wraps
 from os import environ
 from os import path
@@ -192,16 +200,23 @@ def get_net_space(module, system):
 
 
 @api_wrapper
-def get_vol_sn(module, system):
-    """Return Volume or None"""
+def get_vol_by_sn(module, system):
+    """Return volume that matches the serial or None"""
     try:
-        try:
-            volume = system.volumes.get(serial=module.params['serial'])
-        except KeyError:
-            return None
-        return volume
+        volume = system.volumes.get(serial=module.params['serial'])
     except Exception:
         return None
+    return volume
+
+
+@api_wrapper
+def get_fs_by_sn(module, system):
+    """Return filesystem that matches the serial or None"""
+    try:
+        filesystem = system.filesystems.get(serial=module.params['serial'])
+    except Exception:
+        return None
+    return filesystem
 
 
 @api_wrapper

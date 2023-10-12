@@ -113,6 +113,127 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      register: output
+    - ansible.builtin.debug:
+        var: output
+
+    - name: POSITIVE test -> Stat file system that matches serial number {{ output.serial }}
+      infini_fs:
+        serial: "{{ output.serial }}"
+        pool: "{{ auto_prefix }}pool"
+        state: stat
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: stat_out
+    - ansible.builtin.debug:
+        var: stat_out
+
+    - name: POSITIVE test -> Create file system snapshot named {{ auto_prefix }}fs_snap from file system {{ auto_prefix }}fs
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap"
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        fs_type: snapshot
+        parent_fs_name: "{{ auto_prefix }}fs"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: DEBUG test -> Find the current date-time (WARNING - Time marks when the playbook gathered facts)
+      ansible.builtin.debug:
+        var=ansible_date_time.iso8601_micro
+
+    # Note: For collection filters, Ansible does not honor the
+    # collections list at the top of this file.
+    # One must use a FQCN for filters such as
+    # infinidat.infinibox.delta_time.
+    - name: POSITIVE test -> Create and lock for 2 minutes file system snapshot {{ auto_prefix }}fs_snap_locked from file system {{ auto_prefix }}fs
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap_locked"
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        fs_type: snapshot
+        parent_fs_name: "{{ auto_prefix }}fs"
+        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=2) }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      vars:
+        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
+
+    - name: POSITIVE test -> Extend lock to 3 minutes for {{ auto_prefix }}fs_snap_locked without refresh
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap_locked"
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        fs_type: snapshot
+        parent_fs_name: "{{ auto_prefix }}fs"
+        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=3) }}"
+        snapshot_lock_only: true
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      vars:
+        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
+
+    - name: NEGATIVE test -> Attempt to extend file system lock without refresh on a file system snapshot that does not exist.
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap_locked_missing"
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        fs_type: snapshot
+        parent_fs_name: "{{ auto_prefix }}fs"
+        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=3) }}"
+        snapshot_lock_only: true
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: result
+      failed_when: "not result.msg | regex_search('Snapshot does not exist. Cannot comply')"
+      vars:
+        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
+
+    - name: NEGATIVE test -> Attempt to create file system snapshot locked for 31 days, 31 days exceeds 30 day maximum lock time enforced by infini_fs module (not api)
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap_locked_too_long"
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        fs_type: snapshot
+        parent_fs_name: "{{ auto_prefix }}fs"
+        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(days=31) }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: result
+      failed_when: "not result.msg | regex_search('snapshot_lock_expires_at exceeds.*days in the future')"
+      vars:
+        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
+
+    - name: NEGATIVE test -> Attempt to remove locked file system snapshot {{ auto_prefix }}fs_snap_locked
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap_locked"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: result
+      failed_when: "'Cannot delete snapshot. Locked' not in result.msg"
+
+    - name: POSITIVE test -> Wait for lock on {{ auto_prefix }}fs_snap_locked to expire
+      ansible.builtin.pause:
+        seconds: 181
+        prompt: Waiting for {{ auto_prefix }}fs_snap_locked to expire
+
+    - name: POSITIVE test -> Remove file system snapshot {{ auto_prefix }}fs_snap_locked with expired lock
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap_locked"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 
     - name: POSITIVE test -> Export file system {{ auto_prefix }}fs
       infini_export:
@@ -214,7 +335,6 @@
         system: "{{ system }}"
 
     - name: POSITIVE test -> Stat volume {{ auto_prefix }}vol under pool {{ auto_prefix }}pool
-      register: output
       infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
@@ -222,6 +342,7 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      register: output
 
     - name: POSITIVE test -> Stat vol serial number
       infini_vol:
@@ -230,6 +351,10 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      register: stat_out
+    - ansible.builtin.debug:
+        var: stat_out
+
 
     - name: POSITIVE test -> Create snapshot {{ auto_prefix }}vol_snap from volume {{ auto_prefix }}vol
       infini_vol:
@@ -249,26 +374,26 @@
     # collections list at the top of this file.
     # One must use a FQCN for filters such as
     # infinidat.infinibox.delta_time.
-    - name: POSITIVE test -> Create and lock for 2 minutes snapshot {{ auto_prefix }}vol_snap_locked from volume {{ auto_prefix }}vol
+    - name: POSITIVE test -> Create and lock for 5 minutes snapshot {{ auto_prefix }}vol_snap_locked from volume {{ auto_prefix }}vol
       infini_vol:
         name: "{{ auto_prefix }}vol_snap_locked"
         state: present
         volume_type: snapshot
         parent_volume_name: "{{ auto_prefix }}vol"
-        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=2) }}"
+        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=5) }}"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       vars:
         fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    - name: POSITIVE test -> Extend lock to 3 minutes for {{ auto_prefix }}vol_snap_locked without refresh
+    - name: POSITIVE test -> Extend lock to 6 minutes for {{ auto_prefix }}vol_snap_locked without refresh
       infini_vol:
         name: "{{ auto_prefix }}vol_snap_locked"
         state: present
         volume_type: snapshot
         parent_volume_name: "{{ auto_prefix }}vol"
-        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=3) }}"
+        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=6) }}"
         snapshot_lock_only: true
         user: "{{ user }}"
         password: "{{ password }}"
@@ -282,7 +407,7 @@
         state: present
         volume_type: snapshot
         parent_volume_name: "{{ auto_prefix }}vol"
-        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=3) }}"
+        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=6) }}"
         snapshot_lock_only: true
         user: "{{ user }}"
         password: "{{ password }}"

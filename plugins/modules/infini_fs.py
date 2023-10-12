@@ -43,6 +43,11 @@ options:
       - State must be set to present and fs_type must be 'snapshot'.
     required: false
     default: false
+  serial:
+    description:
+      - Serial number matching an existing file system.
+    required: false
+    type: str
   size:
     description:
       - File system size in MB, GB or TB units. See examples.
@@ -135,6 +140,7 @@ try:
         api_wrapper,
         check_snapshot_lock_options,
         get_filesystem,
+        get_fs_by_sn,
         get_pool,
         get_system,
         infinibox_argument_spec,
@@ -301,15 +307,19 @@ def update_fs_snapshot(module, snapshot):
     return refresh_changed or lock_changed
 
 
-def get_sys_pool_fs(module):
+def get_sys_pool_fs_parname(module):
     system = get_system(module)
     pool = get_pool(module, system)
-    filesystem = get_filesystem(module, system)
-    return (system, pool, filesystem)
+    if module.params["name"]:
+        filesystem = get_filesystem(module, system)
+    else:
+        filesystem = get_fs_by_sn(module, system)
+    parname = module.params["parent_fs_name"]
+    return (system, pool, filesystem, parname)
 
 
 def handle_stat(module):
-    system, pool, filesystem = get_sys_pool_fs(module)
+    system, pool, filesystem, parname = get_sys_pool_fs_parname(module)
     fs_type = module.params["fs_type"]
 
     if fs_type == "master":
@@ -329,8 +339,7 @@ def handle_stat(module):
     name = fields.get("name", None)
     parent_id = fields.get("parent_id", None)
     provisioning = fields.get("provisioning", None)
-    # serial = str(filesystem.get_serial())
-    serial = "foo"
+    serial = fields.get("serial", None)
     size = str(filesystem.get_size())
     updated_at = str(fields.get("updated_at", None))
     used = str(fields.get("used_size", None))
@@ -361,7 +370,7 @@ def handle_stat(module):
 
 
 def handle_present(module):
-    system, pool, filesystem = get_sys_pool_fs(module)
+    system, pool, filesystem, _ = get_sys_pool_fs_parname(module)
     fs_type = module.params["fs_type"]
     is_restoring = module.params["restore_fs_from_snapshot"]
     if fs_type == "master":
@@ -389,7 +398,7 @@ def handle_present(module):
 
 
 def handle_absent(module):
-    system, pool, filesystem = get_sys_pool_fs(module)
+    system, pool, filesystem, _ = get_sys_pool_fs_parname(module)
     fs_type = module.params["fs_type"]
 
     if filesystem and filesystem.get_lock_state() == "LOCKED":
@@ -430,11 +439,22 @@ def execute_state(module):
 
 def check_options(module):
     """Verify module options are sane"""
+    name = module.params["name"]
+    serial = module.params["serial"]
     state = module.params["state"]
     size = module.params["size"]
     pool = module.params["pool"]
     fs_type = module.params["fs_type"]
     parent_fs_name = module.params["parent_fs_name"]
+
+    if state == "stat":
+        if not name and not serial:
+            msg = "Name or serial parameter must be provided"
+            module.fail_json(msg=msg)
+    if state in ["present", "absent"]:
+        if not name:
+            msg = "Name parameter must be provided"
+            module.fail_json(msg=msg)
 
     if state == "present":
         if fs_type == "master":
@@ -467,10 +487,11 @@ def main():
     argument_spec.update(
         dict(
             fs_type=dict(choices=["master", "snapshot"], default="master"),
-            name=dict(required=False),
+            name=dict(required=False, default=None),
             parent_fs_name=dict(default=None, required=False, type=str),
             pool=dict(required=True),
             restore_fs_from_snapshot=dict(default=False, type=bool),
+            serial=dict(required=False, default=None),
             size=dict(),
             snapshot_lock_expires_at=dict(),
             snapshot_lock_only=dict(type="bool", default=False),
