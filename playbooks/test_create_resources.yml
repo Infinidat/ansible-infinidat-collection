@@ -177,7 +177,7 @@
       vars:
         fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    - name: NEGATIVE test -> Attempt to extend file system lock without refresh on a file system snapshot that does not exist.
+    - name: NEGATIVE test -> Attempt to extend file system snapshot lock without refresh on a file system snapshot that does not exist.
       infini_fs:
         name: "{{ auto_prefix }}fs_snap_locked_missing"
         pool: "{{ auto_prefix }}pool"

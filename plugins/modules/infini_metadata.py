@@ -281,7 +281,11 @@ def get_metadata_volsnap(module, disable_fail):
 
 @api_wrapper
 def get_metadata(module, disable_fail=False):
-    """Find and return metadata"""
+    """
+    Find and return metadata
+    Use disable_fail when we are looking for metadata
+    and it may or may not exist and neither case is an error.
+    """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -298,8 +302,8 @@ def get_metadata(module, disable_fail=False):
         metadata = get_metadata_host(module, disable_fail)
     elif object_type == "cluster":
         metadata = get_metadata_cluster(module, disable_fail)
-    # elif object_type == "fs-snap":   # See psdev-1121
-    #     metadata = get_fssnap(module, disable_fail)
+    elif object_type == "fs-snap":
+        metadata = get_metadata_fs(module, disable_fail)
     elif object_type == "pool":
         metadata = get_metadata_pool(module, disable_fail)
     elif object_type == "vol-snap":
@@ -315,8 +319,11 @@ def get_metadata(module, disable_fail=False):
             msg = f"Metadata for {object_type} with key {key} not found. Cannot stat."
             module.fail_json(msg=msg)
         return result
-    else:
+    elif disable_fail:
         return None
+
+    msg = f"Metadata for {object_type} named {object_name} not found. Cannot stat."
+    module.fail_json(msg=msg)
 
 
 @api_wrapper
@@ -360,14 +367,13 @@ def put_metadata(module):
             msg = f"Cluster {object_name} not found. Cannot add metadata key {key}."
             module.fail_json(msg=msg)
         path = f"metadata/{cluster.id}"
-    # See psdev-1121
-    # elif object_type == "fs-snap":
-    #     fssnap = get_filesystem(module, system)
-    #     if not fssnap:
-    #         object_name = module.params["object_name"]
-    #         msg = f"File system snapshot {object_name} not found. Cannot add metadata key {key}."
-    #         module.fail_json(msg=msg)
-    #     path = f"metadata/{fssnap.id}"
+    elif object_type == "fs-snap":
+        fssnap = get_filesystem(module, system)
+        if not fssnap:
+            object_name = module.params["object_name"]
+            msg = f"File system snapshot {object_name} not found. Cannot add metadata key {key}."
+            module.fail_json(msg=msg)
+        path = f"metadata/{fssnap.id}"
     elif object_type == "pool":
         pool = get_pool(module, system)
         if not pool:

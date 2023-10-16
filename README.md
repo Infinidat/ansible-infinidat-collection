@@ -20,6 +20,8 @@ All Infindat InfiniBoxes are supported.
 - infini_fs: Creates, deletes or modifies filesystems.
 - infini_host: Creates, deletes or modifies hosts.
 - infini_map: Creates or deletes mappings of volumes to hosts.
+- infini_metadata: Creates or deletes metadata for various Infinidat objects.
+- infini_network_space: Creates or deletes network spaces.
 - infini_pool: Creates, deletes or modifies pools.
 - infini_port: Adds or deletes fiber channel or iSCSI ports to hosts.
 - infini_user: Creates, deletes or modifies an InfiniBox user.

@@ -539,62 +539,75 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-# fs-snap support not implemented. See psdev-1121
-#    # Test fs-snap object_type
-#
-#    - name: SETUP test -> Delete fs snapshot {{ auto_prefix }}fssnap in pool {{ auto_prefix }}pool to clear any metadata
-#      infini_fs:
-#        name: "{{ auto_prefix }}fs"
-#        pool: "{{ auto_prefix }}pool"
-#        state: absent
-#        user: "{{ user }}"
-#        password: "{{ password }}"
-#        system: "{{ system }}"
-#
-#    - name: SETUP test -> Create fs snapshot {{ auto_prefix }}fsnap of {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
-#      infini_fs:
-#        name: "{{ auto_prefix }}fssnap"
-#        pool: "{{ auto_prefix }}pool"
-#        parent_volume_name: "{{ auto_prefix }}fs"
-#        state: present
-#        user: "{{ user }}"
-#        password: "{{ password }}"
-#        system: "{{ system }}"
-#
-#    - name: NEGATIVE test -> Get fs snapshot named {{ auto_prefix }}fssnap's nonexistent metadata key named fssnapfoo
-#      infini_metadata:
-#        object_type: "fs-snap"
-#        object_name: "{{ auto_prefix }}fssnap"
-#        key: "fssnapfoo"
-#        state: "stat"
-#        user: "{{ user }}"
-#        password: "{{ password }}"
-#        system: "{{ system }}"
-#      register: metadata_out
-#      failed_when:
-#        - "'Cannot find fs snapshot metadata key' not in metadata_out.msg"
-#
-#    - name: POSITIVE test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar
-#      infini_metadata:
-#        object_type: "fs-snap"
-#        object_name: "{{ auto_prefix }}fssnap"
-#        key: "fssnapfoo"
-#        value: "fssnapbar"
-#        state: "present"
-#        user: "{{ user }}"
-#        password: "{{ password }}"
-#        system: "{{ system }}"
-#
-#    - name: IDEMPOTENT test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar again
-#      infini_metadata:
-#        object_type: "fs-snap"
-#        object_name: "{{ auto_prefix }}fssnap"
-#        key: "fssnapfoo"
-#        value: "fssnapbar"
-#        state: "present"
-#        user: "{{ user }}"
-#        password: "{{ password }}"
-#        system: "{{ system }}"
+    # Test fs-snap object_type
+
+    - name: SETUP test -> Delete fs snapshot {{ auto_prefix }}fssnap in pool {{ auto_prefix }}pool to clear any metadata
+      infini_fs:
+        name: "{{ auto_prefix }}fssnap"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Create fs snapshot {{ auto_prefix }}fsnap of {{ auto_prefix }}fs in pool {{ auto_prefix }}pool but use default fs_type, master, with a parent_fs_name
+      infini_fs:
+        name: "{{ auto_prefix }}fssnap"
+        pool: "{{ auto_prefix }}pool"
+        parent_fs_name: "{{ auto_prefix }}fs"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'parent_fs_name should not be specified if fs_type is' not in metadata_out.msg"
+
+    - name: SETUP test -> Create fs snapshot {{ auto_prefix }}fsnap of {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
+      infini_fs:
+        name: "{{ auto_prefix }}fssnap"
+        pool: "{{ auto_prefix }}pool"
+        fs_type: "snapshot"
+        parent_fs_name: "{{ auto_prefix }}fs"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Get fs snapshot named {{ auto_prefix }}fssnap's nonexistent metadata key named fssnapfoo
+      infini_metadata:
+        object_type: "fs-snap"
+        object_name: "{{ auto_prefix }}fssnap"
+        key: "fssnapfoo"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot find fs-snap metadata key' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar
+      infini_metadata:
+        object_type: "fs-snap"
+        object_name: "{{ auto_prefix }}fssnap"
+        key: "fssnapfoo"
+        value: "fssnapbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: IDEMPOTENT test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar again
+      infini_metadata:
+        object_type: "fs-snap"
+        object_name: "{{ auto_prefix }}fssnap"
+        key: "fssnapfoo"
+        value: "fssnapbar"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 
     # Test cluster object_type
 
