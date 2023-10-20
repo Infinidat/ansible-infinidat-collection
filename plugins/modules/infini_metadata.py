@@ -90,6 +90,8 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
 )
 from infinisdk.core.exceptions import APICommandFailed
 
+import json
+
 HAS_ARROW = True
 try:
     import arrow
@@ -510,6 +512,7 @@ def handle_present(module):
 def handle_absent(module):
     """Make metadata absent"""
     msg = "Metadata unchanged"
+    changed = False
     if not module.check_mode:
         changed = delete_metadata(module)
         if changed:
@@ -596,10 +599,12 @@ def check_options(module):
                 "ui-feedback-dialog",
                 "ui-feedback-form",
             ]:
-                if not isinstance(value, int):
+                try:
+                    module.params["value"] = json.loads(value.lower())
+                except json.decoder.JSONDecodeError:
                     module.fail_json(
                         f"Cannot create {object_type} metadata for key {key}. "
-                        f"Value must be of type bool. Invalid value: {value}."
+                        f"Value must be able to be decoded as a boolean. Invalid value: {value}."
                     )
             if key in ["ui-bulk-volume-zero-padding", "ui-table-export-limit"]:
                 if not isinstance(value, int):
