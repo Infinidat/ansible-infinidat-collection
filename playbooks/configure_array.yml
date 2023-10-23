@@ -10,11 +10,11 @@
     #   David: metadata module
     #   Wei: config module
 
-    - name: Configure Infinibox - Set default compression to enabled
+    - name: TODO by Wei - Configure Infinibox - Set default compression to enabled
       # Ref: http://{{ibox2}}/api/rest/metadata
       # Add key: /metadata/system
       # Data: {"ui-dataset-default-provisioning": "THIN"}
-      infini_metadata:
+      infini_config:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
         state: "stat"
@@ -23,81 +23,86 @@
         system: "{{ system }}"
       register: metadata_out
 
-    - name: Show metadata stat output
-      ansible.builtin.debug:
+    - name: TODO by Wei - Show metadata stat output
+      infini_config:
         var: metadata_out
 
-    - name: Configure Infinibox - Set default provisioning to thin
+    - name: Done by David Configure Infinibox - Set default provisioning to thin
       # Ref: http://{{ibox2}}/api/rest/metadata
       # ui-dataset-default-provisioning
-      ansible.builtin.debug:
+      infini_metadata:
         msg: (1) Enable thin provisioning
 
-    - name: Configure Infinibox - Set capacity units to base 2, e.g. GiB, TiB
+    - name: TODO by Wei - Configure Infinibox - Set capacity units to base 2, e.g. GiB, TiB
       # Ref: http://{{ibox2}}/api/rest/metadata
       # ui-dataset-base2-units
-      ansible.builtin.debug:
+      infini_config:
         msg: (1) Set capacity units
 
-    - name: Configure Infinibox - Set maximum export rows to 3000
+    - name: Done by David - Configure Infinibox - Set maximum export rows to 3000
       # Ref: http://{{ibox2}}/api/rest/metadata
       # Add key: {"ui-dataset-default-provisioning": {"ui-table-export-limit": 3000}}
-      ansible.builtin.debug:
+      infini_metadata:
         msg: (1) Set export rows 
 
-    - name: Configure Infinibox - Setup LDAP
+    - name: TODO by David - Configure Infinibox - Setup LDAP
       # Ref: http://{{ibox2}}/api/rest/config/ldap
       ansible.builtin.debug:
         msg: (2) Setup LDAP type to AD, name to CN, domain name, bind username and bind password
 
-    - name: Configure Infinibox - Setup LDAP groups
+    - name: TODO by David - Configure Infinibox - Setup LDAP groups
       # Ref: http://{{ibox2}}/api/rest/config/ldap
       ansible.builtin.debug:
         msg: (3) Add LDAP groups for READ_ONLY and ADMIN roles
 
-    - name: Test Infinibox - Test LDAP
+    - name: TODO by David - Test Infinibox - Test LDAP
       ansible.builtin.debug:
         msg: (4) Test LDAP
 
-    - name: Test Infinibox - Test LDAP roles
+    - name: TODO by David - Test Infinibox - Test LDAP roles
       ansible.builtin.debug:
         msg: (4) Test LDAP roles
 
-    - name: Configure Infinibox - Change admin password
+    - name: DONE using users module, TODO TEST - Configure Infinibox - Change admin password
       # Ref: Existing user module
-      ansible.builtin.debug:
+      infini_user:
         msg: (5) Change admin password
 
-    - name: Configure Infinibox - Temporarily setup alerting email
+    - name: TODO by Wei - Configure Infinibox - Temporarily setup alerting email
       # Ref: http://{{ibox2}}/api/rest/notification/targets
       ansible.builtin.debug:
         msg: (6) Create event rule to send email to TEO-Engineering-Alerts@jackhenry.com
 
-    - name: Test Infinibox - Test temporarily  alerting
+    - name: TODO by Wei - Test Infinibox - Test temporarily  alerting
       ansible.builtin.debug:
         msg: (6) Create test event
 
-    - name: Configure Infinibox - Define syslog from list
+    - name: TODO by Wei - Configure Infinibox - Define syslog from list
       # Ref: http://{{ibox2}}/api/rest/notification/targets
       ansible.builtin.debug:
         msg: (7) Configure syslogs
 
-    - name: Configure Infinibox - Create syslogs
+    - name: TODO by Wei - Configure Infinibox - Create syslogs
       ansible.builtin.debug:
         msg: (7) Create syslogs
 
-    - name: Configure Infinibox - Create network space
-      ansible.builtin.debug:
+    - name: Done - Configure Infinibox - Create network space
+      infini_network_space:
         msg: (8) Create network space
 
-    - name: Configure Infinimentrics - Add Infinibox
+    - name: TODO by David - Configure Infinimentrics - Add Infinibox
       ansible.builtin.debug:
         msg: (9) Add Infinibox to Infinimetrics
 
-    - name: Configure Infinibox - Create pools
+    - name: Done - Configure Infinibox - Create pools
       # Ref: Existing pools module
-      ansible.builtin.debug:
+      infini_pool:
         msg: (10) Create pools
+
+
+
+
+
 
     - name: Configure Infinibox - Label fibre channel switches
       # Ref: http://{{ibox2}}/api/rest/fc/switches/{ID}
