@@ -594,6 +594,8 @@ def check_options(module):
                         f"Cannot create {object_type} metadata for key {key}. "
                         f"Value must be one of {values}. Invalid value: {value}."
                     )
+
+            # Convert bool string to bool
             if key in [
                 "ui-dataset-base2-units",
                 "ui-feedback-dialog",
@@ -606,8 +608,15 @@ def check_options(module):
                         f"Cannot create {object_type} metadata for key {key}. "
                         f"Value must be able to be decoded as a boolean. Invalid value: {value}."
                     )
-            if key in ["ui-bulk-volume-zero-padding", "ui-table-export-limit"]:
-                if not isinstance(value, int):
+
+            # Convert integer string to int
+            if key in [
+                "ui-bulk-volume-zero-padding",
+                "ui-table-export-limit"
+            ]:
+                try:
+                    module.params["value"] = json.loads(value.lower())
+                except json.decoder.JSONDecodeError:
                     module.fail_json(
                         f"Cannot create {object_type} metadata for key {key}. "
                         f"Value must be of type integer. Invalid value: {value}."

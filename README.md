@@ -25,6 +25,7 @@ All Infindat InfiniBoxes are supported.
 - infini_pool: Creates, deletes or modifies pools.
 - infini_port: Adds or deletes fiber channel or iSCSI ports to hosts.
 - infini_user: Creates, deletes or modifies an InfiniBox user.
+- infini_users_repositories: Creates, deletes, or modifies LDAP and AD Infinibox configurations.
 - infini_vol: Creates, deletes or modifies a volume.
 
 Most modules also implement a "stat" state.  This is used to gather information, aka status, for the resource without making any changes to it.

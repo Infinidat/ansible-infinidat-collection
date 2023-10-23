@@ -379,26 +379,6 @@
       failed_when:
         - "'Cannot find vol-snap metadata key' not in metadata_out.msg"
 
-    # - name: SETUP test -> Delete volume snapshot {{ auto_prefix }}volsnap in pool {{ auto_prefix }}pool
-    #   infini_vol:
-    #     name: "{{ auto_prefix }}volsnap"
-    #     pool: "{{ auto_prefix }}pool"
-    #     volume_type: "snapshot"
-    #     state: absent
-    #     user: "{{ user }}"
-    #     password: "{{ password }}"
-    #     system: "{{ system }}"
-
-    # - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
-    #   infini_vol:
-    #     name: "{{ auto_prefix }}vol"
-    #     pool: "{{ auto_prefix }}pool"
-    #     volume_type: "master"
-    #     state: absent
-    #     user: "{{ user }}"
-    #     password: "{{ password }}"
-    #     system: "{{ system }}"
-
     # Test system object_type
 
     - name: NEGATIVE test -> Attempt to set system metadata key ui-dataset-base2-units to something other than an boolean
@@ -412,7 +392,7 @@
         system: "{{ system }}"
       register: metadata_out
       failed_when:
-        - "'Value must be of type bool' not in metadata_out.msg"
+        - "'Value must be able to be decoded as a boolean' not in metadata_out.msg"
 
     - name: POSITIVE test -> Delete metadata system key named sysfoo to clear any metadata
       infini_metadata:
@@ -482,6 +462,88 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+
+    - name: POSITIVE test -> Stat metadata system key named ui-dataset-default-provisioning
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-default-provisioning"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Create metadata system key named ui-dataset-default-provisioning with value THICK
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-default-provisioning"
+        value: "THICK"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Stat metadata system key named ui-dataset-default-provisioning
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-default-provisioning"
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'THICK' != metadata_out['value']"
+
+    - name: out
+      ansible.builtin.debug:
+        var: metadata_out
+
+    - name: POSITIVE test -> Create metadata system key named ui-dataset-default-provisioning with value THIN
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-default-provisioning"
+        value: "THIN"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Negative test -> Attempt to create metadata system key named ui-dataset-default-provisioning with value invalid_value
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-default-provisioning"
+        value: "invalid_value"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot create system metadata' not in metadata_out.msg"
+
+    - name: POSITIVE test -> Create metadata system key named ui-table-export-limit with value 2000
+      infini_metadata:
+        object_type: "system"
+        key: "ui-table-export-limit"
+        value: 2000
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE test -> Attempt to create metadata system key named ui-table-export-limit with value invalid_value
+      infini_metadata:
+        object_type: "system"
+        key: "ui-table-export-limit"
+        value: "invalid_value"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Value must be of type integer' not in metadata_out.msg"
+
 
     # Test fs object_type
 
