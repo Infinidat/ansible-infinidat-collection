@@ -144,7 +144,7 @@ _test_playbook:
 		ansible-playbook \
 			$$ask_become_pass \
 			--inventory "inventory" \
-			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
+			--extra-vars "@../ibox_vars/ibox100029.yaml" \
 			--vault-password-file ../vault_password.txt \
 			"$$playbook_name"; \
 	cd -
@@ -208,6 +208,12 @@ test-create-metadata:  ## Run metadata creation tests.
 test-remove-metadata:  ## Run metadata removal tests.
 	@echo -e $(_begin)
 	ask_become_pass="" playbook_name=test_remove_metadata.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
+test-config:  ## Run config test
+	@echo -e $(_begin)
+	ansible-galaxy collection install --force "$${PWD}"
+	ask_become_pass="" playbook_name=test_config_array.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
 ##@ Solution Examples
