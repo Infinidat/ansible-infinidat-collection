@@ -26,14 +26,23 @@ options:
     required: false
     choices: [True, False]
     default: True
-  bind_username:
-    description:
-      - The bind username
-    required: true
   bind_password:
     description:
       - The bind user password
     required: true
+  bind_username:
+    description:
+      - The bind username
+    required: true
+  domain_name:
+    description:
+      - The domain name
+    required: false
+  ldap_servers:
+    description:
+      - A list of LDAP servers. For an empty list, use [].
+    required: false
+    type: list
   name:
     description:
       - Name of repository
@@ -48,14 +57,19 @@ options:
       - The type of repository
     choices: ["AD", "LDAP"]
     required: true
-  schema_group_attribute:
+  schema_group_memberof_attribute:
     description:
-      - Schema group attributes
+      - Schema group memberof attribute
+    required: false
+    default: memberof
+  schema_group_name_attribute:
+    description:
+      - Schema group name attribute
     required: false
     default: cn
-  schema_group_basedn:
+  schema_groups_basedn:
     description:
-      - Schema group base DN
+      - Schema groups base DN
     required: false
     default: None
   schema_group_class:
@@ -63,12 +77,7 @@ options:
       - Schema group class
     required: false
     default: groupOfNames
-  schema_member_attribute:
-    description:
-      - Schema member attributes
-    required: false
-    default: memberof
-  schema_user_basedn:
+  schema_users_basedn:
     description:
       - Schema user base DN
     required: false
@@ -178,6 +187,44 @@ def get_users_repository(module, disable_fail=False):
     module.fail_json(msg=msg)
 
 
+
+@api_wrapper
+def post_users_repository_ldap(module):
+    """Create or update users LDAP repo. The changed variable is found elsewhere."""
+    system = get_system(module)
+    name = module.params["name"]
+    schema_definition = {
+        "group_class":               module.params["schema_group_class"],
+        "group_memberof_attribute":  module.params["schema_group_memberof_attribute"],
+        "group_name_attribute":      module.params["schema_group_name_attribute"],
+        "groups_basedn":             module.params["schema_groups_basedn"],
+        "user_class":                module.params["schema_user_class"],
+        "username_attribute":        module.params["schema_username_attribute"],
+        "users_basedn":              module.params["schema_users_basedn"],
+    }
+
+    # Create json data
+    data = {
+        "bind_password": module.params["bind_password"],
+        "bind_username": module.params["bind_username"],
+        "domain_name": module.params["domain_name"],
+        "name": name,
+        "schema_definition": schema_definition,
+        "servers": module.params["ldap_servers"],
+    }
+
+    path = "config/ldap"
+    # Put
+    system.api.post(path=path, data=data)
+    # Variable 'changed' not returned by design
+
+
+@api_wrapper
+def post_users_repository_ad(module):
+    """Create or update AD repo. The changed variable is found elsewhere."""
+    pass
+
+
 def handle_stat(module):
     """Return users repository stat"""
     name = module.params['name']
@@ -196,15 +243,30 @@ def handle_stat(module):
 def handle_present(module):
     """Make users repository present"""
     name = module.params['name']
+    repo_type = module.params['repository_type']
     changed = False
     msg = f"Users repository {name} unchanged"
     if not module.check_mode:
-        old_users_repository = get_users_repository(module, disable_fail=True)
-        put_users_repository(module)
-        new_users_repository = get_users_repository(module)
-        changed = new_users_repository != old_users_repository
+        old_users_repo = get_users_repository(module, disable_fail=True)
+        if old_users_repo:
+            old_users_repo_type = old_users_repo["repository_type"]
+            if old_users_repo_type != repo_type:
+                msg = f"Cannot create a new users repository named {name} of type {repo_type} " \
+                    f"when a repository with that name already exists of type {old_users_repo_type}"
+                module.fail_json(msg=msg)
+        assert repo_type in ["LDAP", "AD"]
+        if repo_type == "LDAP":
+            post_users_repository_ldap(module)
+        else:  # repo_type == "AD":
+            post_users_repository_ad(module)
+
+        new_users_repo = get_users_repository(module)
+        changed = new_users_repo != old_users_repo
         if changed:
-            msg = f"Users repository {name} changed"
+            if old_users_repo:
+                msg = f"Users repository {name} updated"
+            else:
+                msg = f"Users repository {name} created"
         else:
             msg = f"Users repository {name} unchanged since the value is the same as the existing users repository"
     module.exit_json(changed=changed, msg=msg)
@@ -243,28 +305,56 @@ def execute_state(module):
 
 def check_options(module):
     """Verify module options are sane"""
-    bind_username = module.params["bind_username"]
-    bind_password = module.params["bind_password"]
     ad_domain_name = module.params["ad_domain_name"]
+    bind_password = module.params["bind_password"]
+    bind_username = module.params["bind_username"]
+    domain_name = module.params["domain_name"]
+    ldap_servers = module.params["ldap_servers"]
     name = module.params["name"]
     port = module.params["port"]
     repository_type = module.params["repository_type"]
-    schema_group_attribute = module.params["schema_group_attribute"]
-    schema_group_basedn = module.params["schema_group_basedn"]
-    schema_member_attribute = module.params["schema_member_attribute"]
-    schema_user_basedn = module.params["schema_user_basedn"]
+    schema_group_memberof_attribute = module.params["schema_group_memberof_attribute"]
+    schema_group_name_attribute = module.params["schema_group_name_attribute"]
+    schema_groups_basedn = module.params["schema_groups_basedn"]
     schema_user_class = module.params["schema_user_class"]
     schema_username_attribute = module.params["schema_username_attribute"]
+    schema_users_basedn = module.params["schema_users_basedn"]
     state = module.params["state"]
 
     if state == "stat":
         pass
     elif state == "present":
-        pass
+        if repository_type:
+            assert repository_type == "LDAP"
+            if repository_type == "LDAP":  # Creating an LDAP
+                req_params = ["bind_password", "bind_username", "domain_name",
+                "schema_group_class", "schema_group_memberof_attribute", "schema_group_name_attribute", "schema_groups_basedn",
+                "schema_user_class", "schema_username_attribute", "schema_users_basedn"]
+                missing_params = [param for param in req_params if not is_set_in_params(module, param)]
+                if missing_params:
+                    msg = f"Cannot create a new LDAP repository named {name} without providing: {missing_params}"
+                    module.fail_json(msg=msg)
+            else: # Creating an AD
+                pass
+        else:
+            msg = f"Cannot create a new users repository without providing a repository_type"
+            module.fail_json(msg=msg)
     elif state == "absent":
         pass
     else:
         module.fail_json(f"Invalid state '{state}' provided")
+
+
+def is_set_in_params(module, key):
+    """A utility function to test if a module param key is set to a truthy value.
+    Useful in list comprehensions."""
+    is_set = False
+    try:
+        if module.params[key]:
+            is_set = True
+    except KeyError:
+        pass
+    return is_set
 
 
 def main():
@@ -277,16 +367,18 @@ def main():
             "ad_auto_discover_servers": {"required": False, "choices": [True, False], "default": True},
             "bind_password": {"required": False, "default": None, "no_log": True},
             "bind_username": {"required": False, "default": None},
+            "domain_name": {"required": False, "default": None},
+            "ldap_servers": {"required": False, "default": [], "type": "list", "elements": "str"},
             "name": {"required": True},
             "port": {"required": False, "type": int, "default": 636},
-            "repository_type": {"required": False, "choices": ["LDAP", "AD"], "default": "LDAP"},
-            "schema_group_attribute": {"required": False, "default": "cn"},
-            "schema_group_basedn": {"required": False, "default": None},
-            "schema_member_attribute": {"required": False, "default": "memberof"},
-            "schema_group_class": {"required": False, "default": "groupOfNames"},
-            "schema_user_basedn": {"required": False, "default": None},
-            "schema_user_class": {"required": False, "default": "posixAccount"},
-            "schema_username_attribute": {"required": False, "default": "uid"},
+            "repository_type": {"required": False, "choices": ["LDAP", "AD"], "default": None},
+            "schema_group_class": {"required": False, "default": None},
+            "schema_group_memberof_attribute": {"required": False, "default": None},
+            "schema_group_name_attribute": {"required": False, "default": None},
+            "schema_groups_basedn": {"required": False, "default": None},
+            "schema_user_class": {"required": False, "default": None},
+            "schema_username_attribute": {"required": False, "default": None},
+            "schema_users_basedn": {"required": False, "default": None},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
             "use_ldaps": {"required": False, "choices": [True, False], "default": True},
         }
