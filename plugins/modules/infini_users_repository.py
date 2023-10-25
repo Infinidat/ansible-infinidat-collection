@@ -34,10 +34,6 @@ options:
     description:
       - The bind username
     required: true
-  domain_name:
-    description:
-      - The domain name
-    required: false
   ldap_servers:
     description:
       - A list of LDAP servers. For an empty list, use [].
@@ -187,12 +183,15 @@ def get_users_repository(module, disable_fail=False):
     module.fail_json(msg=msg)
 
 
-
 @api_wrapper
-def post_users_repository_ldap(module):
-    """Create or update users LDAP repo. The changed variable is found elsewhere."""
+def post_users_repository(module):
+    """
+    Create or update users LDAP or AD repo. The changed variable is found elsewhere.
+    Variable 'changed' not returned by design
+    """
     system = get_system(module)
     name = module.params["name"]
+    repo_type = module.params["repository_type"]
     schema_definition = {
         "group_class":               module.params["schema_group_class"],
         "group_memberof_attribute":  module.params["schema_group_memberof_attribute"],
@@ -205,24 +204,24 @@ def post_users_repository_ldap(module):
 
     # Create json data
     data = {
+
         "bind_password": module.params["bind_password"],
         "bind_username": module.params["bind_username"],
-        "domain_name": module.params["domain_name"],
         "name": name,
         "schema_definition": schema_definition,
-        "servers": module.params["ldap_servers"],
+        #"domain_name": module.params["ad_domain_name"]
     }
 
-    path = "config/ldap"
+    # Add type specific fields to data dict
+    if repo_type == "ActiveDirectory":
+        # data["auto_discover_servers"] = module.params["ad_auto_discover_servers"]
+        data["domain_name"] =  module.params["ad_domain_name"]
+    else:  # LDAP
+        data["servers"] = module.params["ldap_servers"]
+
     # Put
+    path = "config/ldap"
     system.api.post(path=path, data=data)
-    # Variable 'changed' not returned by design
-
-
-@api_wrapper
-def post_users_repository_ad(module):
-    """Create or update AD repo. The changed variable is found elsewhere."""
-    pass
 
 
 def handle_stat(module):
@@ -244,6 +243,7 @@ def handle_present(module):
     """Make users repository present"""
     name = module.params['name']
     repo_type = module.params['repository_type']
+    assert repo_type in ["LDAP", "ActiveDirectory"]
     changed = False
     msg = f"Users repository {name} unchanged"
     if not module.check_mode:
@@ -254,11 +254,7 @@ def handle_present(module):
                 msg = f"Cannot create a new users repository named {name} of type {repo_type} " \
                     f"when a repository with that name already exists of type {old_users_repo_type}"
                 module.fail_json(msg=msg)
-        assert repo_type in ["LDAP", "AD"]
-        if repo_type == "LDAP":
-            post_users_repository_ldap(module)
-        else:  # repo_type == "AD":
-            post_users_repository_ad(module)
+        post_users_repository(module)
 
         new_users_repo = get_users_repository(module)
         changed = new_users_repo != old_users_repo
@@ -308,7 +304,7 @@ def check_options(module):
     ad_domain_name = module.params["ad_domain_name"]
     bind_password = module.params["bind_password"]
     bind_username = module.params["bind_username"]
-    domain_name = module.params["domain_name"]
+    ad_domain_name = module.params["ad_domain_name"]
     ldap_servers = module.params["ldap_servers"]
     name = module.params["name"]
     port = module.params["port"]
@@ -325,17 +321,34 @@ def check_options(module):
         pass
     elif state == "present":
         if repository_type:
-            assert repository_type == "LDAP"
+            common_params = ["bind_password", "bind_username", "schema_group_class",
+                             "schema_group_memberof_attribute", "schema_group_name_attribute",
+                             "schema_user_class", "schema_username_attribute",]
             if repository_type == "LDAP":  # Creating an LDAP
-                req_params = ["bind_password", "bind_username", "domain_name",
-                "schema_group_class", "schema_group_memberof_attribute", "schema_group_name_attribute", "schema_groups_basedn",
-                "schema_user_class", "schema_username_attribute", "schema_users_basedn"]
+                req_params = common_params
                 missing_params = [param for param in req_params if not is_set_in_params(module, param)]
                 if missing_params:
-                    msg = f"Cannot create a new LDAP repository named {name} without providing: {missing_params}"
+                    msg = f"Cannot create a new LDAP repository named {name} without providing required parameters: {missing_params}"
+                    module.fail_json(msg=msg)
+
+                disallowed_params = ["ad_domain_name", "ad_auto_discover_servers"]
+                error_params = [param for param in disallowed_params if is_set_in_params(module, param)]
+                if error_params:
+                    msg = f"Cannot create a new LDAP repository named {name} when providing disallowed parameters: {error_params}"
                     module.fail_json(msg=msg)
             else: # Creating an AD
-                pass
+                assert repository_type == "ActiveDirectory"
+                req_params = common_params
+                missing_params = [param for param in req_params if not is_set_in_params(module, param)]
+                if missing_params:
+                    msg = f"Cannot create a new LDAP repository named {name} without providing required parameters: {missing_params}"
+                    module.fail_json(msg=msg)
+
+                disallowed_params = ["ldap_servers"]
+                error_params = [param for param in disallowed_params if is_set_in_params(module, param)]
+                if error_params:
+                    msg = f"Cannot create a new LDAP repository named {name} when providing disallowed parameters: {error_params}"
+                    module.fail_json(msg=msg)
         else:
             msg = f"Cannot create a new users repository without providing a repository_type"
             module.fail_json(msg=msg)
@@ -363,15 +376,14 @@ def main():
 
     argument_spec.update(
         {
-            "ad_domain_name": {"required": False, "default": None},
             "ad_auto_discover_servers": {"required": False, "choices": [True, False], "default": True},
+            "ad_domain_name": {"required": False, "default": None},
             "bind_password": {"required": False, "default": None, "no_log": True},
             "bind_username": {"required": False, "default": None},
-            "domain_name": {"required": False, "default": None},
             "ldap_servers": {"required": False, "default": [], "type": "list", "elements": "str"},
             "name": {"required": True},
             "port": {"required": False, "type": int, "default": 636},
-            "repository_type": {"required": False, "choices": ["LDAP", "AD"], "default": None},
+            "repository_type": {"required": False, "choices": ["LDAP", "ActiveDirectory"], "default": None},
             "schema_group_class": {"required": False, "default": None},
             "schema_group_memberof_attribute": {"required": False, "default": None},
             "schema_group_name_attribute": {"required": False, "default": None},

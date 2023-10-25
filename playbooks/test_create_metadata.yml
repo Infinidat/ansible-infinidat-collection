@@ -494,10 +494,6 @@
       failed_when:
         - "'THICK' != metadata_out['value']"
 
-    - name: out
-      ansible.builtin.debug:
-        var: metadata_out
-
     - name: POSITIVE test -> Create metadata system key named ui-dataset-default-provisioning with value THIN
       infini_metadata:
         object_type: "system"
