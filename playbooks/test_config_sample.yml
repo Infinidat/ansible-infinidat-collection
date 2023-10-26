@@ -1,0 +1,23 @@
+---
+# PSDEV-1108: Playbook for testing creation of metadata resources.
+- hosts: localhost
+  gather_facts: false  # Required for ansible_date_time
+  collections:
+    - infinidat.infinibox
+  tasks:
+
+    # Test any object_type
+
+    - name: Check current compression setting
+      infini_config:
+        config_group: "mgmt"
+        key: "pool.compression_enabled_default"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+      failed_when:
+        - "'Cannot create a' not in metadata_out.msg"
+        - "'without providing a value' not in metadata_out.msg"
+
