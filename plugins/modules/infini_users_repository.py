@@ -224,6 +224,39 @@ def post_users_repository(module):
     system.api.post(path=path, data=data)
 
 
+    """Return users repository or None"""
+    system = get_system(module)
+    try:
+        try:
+            repo = system.volumes.get(name=module.params['name'])
+        except KeyError:
+            try:
+                volume = system.volumes.get(name=module.params['volume'])
+            except KeyError:
+                volume = system.volumes.get(name=module.params['object_name']) # Used by metadata module
+        return volume
+    except Exception:
+        return None
+
+
+@api_wrapper
+def delete_users_repository(module, name):
+    """Delete repo."""
+    system = get_system(module)
+    changed = False
+    if not module.check_mode:
+        repo = get_users_repository(module, disable_fail=True)
+        if repo and len(repo) == 1:
+            path = f"config/ldap/{repo[0]['id']}"
+            try:
+                system.api.delete(path=path)
+                changed = True
+            except APICommandFailed as err:
+                if err.status_code != 404:
+                    raise
+    return changed
+
+
 def handle_stat(module):
     """Return users repository stat"""
     name = module.params['name']
@@ -247,13 +280,18 @@ def handle_present(module):
     changed = False
     msg = f"Users repository {name} unchanged"
     if not module.check_mode:
-        old_users_repo = get_users_repository(module, disable_fail=True)
-        if old_users_repo:
+        old_users_repo_result = get_users_repository(module, disable_fail=True)
+        assert not old_users_repo_result or len(old_users_repo_result) == 1
+        if old_users_repo_result:
+            old_users_repo = old_users_repo_result[0]
             old_users_repo_type = old_users_repo["repository_type"]
             if old_users_repo_type != repo_type:
                 msg = f"Cannot create a new users repository named {name} of type {repo_type} " \
                     f"when a repository with that name already exists of type {old_users_repo_type}"
                 module.fail_json(msg=msg)
+        else:
+            old_users_repo = None
+            old_users_repo_type = None
         post_users_repository(module)
 
         new_users_repo = get_users_repository(module)
@@ -274,11 +312,11 @@ def handle_absent(module):
     msg = f"Users repository {name} unchanged"
     changed = False
     if not module.check_mode:
-        changed = delete_users_repository(module)
+        changed = delete_users_repository(module, name)
         if changed:
             msg = f"Users repository {name} removed"
         else:
-            msg = f"Users repository {name} did not exist so no removal was necessary"
+            msg = f"Users repository {name} did not exist so removal was unnecessary"
     module.exit_json(changed=changed, msg=msg)
 
 

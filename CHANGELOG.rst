@@ -15,6 +15,7 @@ Bug Fixes
 ^^^^^^^^^^^^^^^^^^^^
 Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
+* Add new infini_users_repository module. Use this module to configure Active Directory and LDAP resournces on an Infinibox.
 * Add new infini_metadata module. This module will set, get and remove metadata (keys and values) to and from objects of these types: ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap"].
 * Add snapshot support to the infini_fs module. File system snapshot locks, regular and immutable are supported.
 

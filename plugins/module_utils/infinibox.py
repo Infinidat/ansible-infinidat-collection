@@ -273,6 +273,7 @@ def get_user(module, system):
         pass
     return user
 
+
 def check_snapshot_lock_options(module):
     """
     Check if specified options are feasible for a snapshot.
@@ -304,6 +305,7 @@ def check_snapshot_lock_options(module):
                 max_delta_minutes // 24 // 60
             )
             module.fail_json(msg=msg)
+
 
 def manage_snapshot_locks(module, snapshot):
     """
