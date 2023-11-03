@@ -91,6 +91,8 @@ options:
   state:
     description:
       - Creates/Modifies users repositories when present or removes when absent.
+      - When getting the stats for a users repository, the module will test
+        connectivity to the repository and report the result in 'test_ok' as true or false.
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
@@ -184,6 +186,23 @@ def get_users_repository(module, disable_fail=False):
 
 
 @api_wrapper
+def test_users_repository(module, repository_id, disable_fail=False):
+    """
+    Find and return users repository information
+    Use disable_fail when we are looking for an user repository
+    and it may or may not exist and neither case is an error.
+    """
+    system = get_system(module)
+    name = module.params["name"]
+
+    path = f"config/ldap/{repository_id}/test"
+    result = system.api.post(path=path)
+    if result.response.status_code in [200]:
+        return True
+    return False
+
+
+@api_wrapper
 def post_users_repository(module):
     """
     Create or update users LDAP or AD repo. The changed variable is found elsewhere.
@@ -266,8 +285,12 @@ def handle_stat(module):
     except AssertionError:
         msg = f"Users repository {name} not found in repository list {repos}. Cannot stat."
         module.fail_json(msg=msg)
+
     result = repos[0]
-    result["repository_id"] = result.pop("id")  # Rename id to repository_id
+    repository_id = result.pop("id")
+    result["msg"] = f"Stats for user repository {name}"
+    result["repository_id"] = repository_id  # Rename id to repository_id
+    result["test_ok"] = test_users_repository(module, repository_id=repository_id, disable_fail=True)
     result["changed"] = False
     module.exit_json(**result)
 
