@@ -67,10 +67,16 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
- -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 import traceback
+
+HAS_ARROW = True
+try:
+    import arrow
+except ImportError:
+    HAS_ARROW = False
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
@@ -106,8 +112,9 @@ def get_config(module, disable_fail=False):
 
     if api_response:
         result = api_response.get_result()
-        if not disable_fail and not result:
-            msg = f"Config for {config_group} with key {key} not found. Cannot stat."
+        good_status = api_response.response.status_code == 200
+        if not disable_fail and not good_status:
+            msg = f"Config for {config_group} with key {key} disable_fail {status} {path} {result} not found. Cannot stat."
             module.fail_json(msg=msg)
         return result
     elif disable_fail:
@@ -132,6 +139,54 @@ def handle_stat(module):
     }
     module.exit_json(**result)
 
+@api_wrapper
+def set_config(module, disable_fail=False):
+    """
+    Find and return config setting value
+    Use disable_fail when we are looking for config
+    and it may or may not exist and neither case is an error.
+    """
+    system = get_system(module)
+    config_group = module.params["config_group"]
+    key = module.params["key"]
+    value = module.params["value"]
+
+
+    path = f"config/{config_group}/{key}"
+
+    if value.lower() == "true":
+        data = True
+    elif value.lower() == "false":
+        data = False
+    else:
+        data = data
+
+
+    system.api.put(path=path, data=data)
+    # Variable 'changed' not returned by design
+
+
+def handle_present(module):
+    """Make config present"""
+    changed = False
+    msg = "Config unchanged"
+    if not module.check_mode:
+        old_config = get_config(module, disable_fail=True)
+        set_config(module)
+        new_config = get_config(module)
+        changed = new_config != old_config
+        if changed:
+            msg = "Config changed"
+        else:
+            msg = "Config unchanged since the value is the same as the existing config"
+    module.exit_json(changed=changed, msg=msg)
+
+
+
+
+def handle_absent(module):
+    pass
+
 
 def execute_state(module):
     """Determine which state function to execute and do so"""
@@ -153,7 +208,9 @@ def check_options(module):
     """Verify module options are sane"""
     state = module.params["state"]
     config_group = module.params["config_group"]
-    #key = module.params["key"]
+    key = module.params["key"]
+    value = module.params["value"]
+    vtype = type(value)
 
     groups = [
         "core",
@@ -167,14 +224,17 @@ def check_options(module):
         "ssh",
     ]
 
+    if state == "present" and key == "pool.compression_enabled_default":
+        values = ["true", "false"]
+        if not isinstance(value,type(str())): # isvalue.lower() not in values:
+            module.fail_json(
+                f"Value must be of type {type(str())}. Invalid value: {value} of {vtype}."
+            )
     if config_group not in groups:
         module.fail_json(
             f"Config_group must be one of {groups}"
         )
 
-
-def check_options(module):
-    if
 
 
 def main():
@@ -185,7 +245,7 @@ def main():
         {
             "config_group": {"required": True},
             "key": {"required": True, "default": None},
-            "value": {"required": True, "default": None},
+            "value": {"required": False, "default": None},
             "state": {"default": "present", "choices": ["stat", "present"]},
         }
     )
@@ -198,6 +258,9 @@ def main():
     if not HAS_ARROW:
         module.fail_json(msg=missing_required_lib("arrow"))
 
-    #TODO:
-    #check_options(module)
+    check_options(module)
     execute_state(module)
+
+
+if __name__ == '__main__':
+     main()
