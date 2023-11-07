@@ -34,3 +34,31 @@
     - name: debug
       debug:
         var: metadata_out
+
+
+    - name: Check 2 base
+      infini_config:
+        config_group: "mgmt"
+        key: "mgmt.is_decimal_capacity_converter" # True for Base 10, False for Base 2
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+    - name: debug
+      debug:
+        var: metadata_out
+
+    - name: Set Dataset capacity unit to Base 2
+      infini_config:
+        config_group: "mgmt"
+        key: "mgmt.is_decimal_capacity_converter" # True for Base 10, False for Base 2
+        value: False
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+    - name: debug
+      debug:
+        var: metadata_out
