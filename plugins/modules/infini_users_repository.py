@@ -22,10 +22,6 @@ options:
   ad_domain_name:
     required: false
     default: None
-  ad_auto_discover_servers:
-    required: false
-    choices: [True, False]
-    default: True
   bind_password:
     description:
       - The bind user password
@@ -223,17 +219,14 @@ def post_users_repository(module):
 
     # Create json data
     data = {
-
         "bind_password": module.params["bind_password"],
         "bind_username": module.params["bind_username"],
         "name": name,
         "schema_definition": schema_definition,
-        #"domain_name": module.params["ad_domain_name"]
     }
 
     # Add type specific fields to data dict
     if repo_type == "ActiveDirectory":
-        # data["auto_discover_servers"] = module.params["ad_auto_discover_servers"]
         data["domain_name"] =  module.params["ad_domain_name"]
     else:  # LDAP
         data["servers"] = module.params["ldap_servers"]
@@ -241,7 +234,6 @@ def post_users_repository(module):
     # Put
     path = "config/ldap"
     system.api.post(path=path, data=data)
-
 
     """Return users repository or None"""
     system = get_system(module)
