@@ -1,0 +1,34 @@
+---
+# PSDEV-1108: Playbook for testing creation of metadata resources.
+- hosts: localhost
+  gather_facts: false  # Required for ansible_date_time
+  collections:
+    - infinidat.infinibox
+  tasks:
+
+    # Test any object_type
+
+    - name: Create a new notification rule
+      infini_notification_rule:
+        name: "testw2"
+        target_id: "3" #
+        event_level:
+          - ERROR
+          - CRITICAL
+        include_events:
+          - ACTIVATION_PAUSED
+        exclude_events:
+          - ACTIVE_DIRECTORY_ALL_DOMAIN_CONTROLLERS_DOWN
+        target_parameters:
+          recipients:
+            - wwang@infinidat.com
+            - wei.w.wang@gmail.com
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+    - name: debug
+      debug:
+        var: metadata_out
+
