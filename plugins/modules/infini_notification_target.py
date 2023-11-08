@@ -12,16 +12,16 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 ---
-module: infini_notification_rule
+module: infini_notification_target
 version_added: '2.13.12'
-short_description:  Config notification rules
+short_description:  Config notification target
 description:
-    - This module config notification rules on Infinibox
+    - This module config notification targets on Infinibox
 author: Wei Wang
 options:
   name:
     description:
-      - Name of the rule
+      - Name of the target
     required: true
   event_level:
     description:
@@ -118,32 +118,15 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     merge_two_dicts,
 )
 
-
 try:
     from infi.dtypes.iqn import make_iscsi_name
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
 
-@api_wrapper
-def find_target_id(module, system):
-    """
-    Find the ID of the target by name
-    """
-    target = module.params["target"]
-    path = "notifications/targets?name={0}&fields=id".format(target)
-    api_result = system.api.get(
-        path=path
-    )
-    if len(api_result.get_json()['result']) > 0:
-        result = api_result.get_json()['result'][0]
-        target_id = result['id']
-    else:
-        target_id=None
-    return target_id
 
 @api_wrapper
-def get_rule(module, disable_fail=False):
+def get_target(module, disable_fail=False):
     """
     Find and return config setting value
     Use disable_fail when we are looking for config
@@ -154,143 +137,122 @@ def get_rule(module, disable_fail=False):
 def handle_stat(module):
     """Return config stat"""
 
-    pass
+    system = get_system(module)
+    name = module.params["name"]
+    changed = False
+    if not module.check_mode:
+        targets = get_targets(module,system)
+        update_target(module)
+        msg = "Targets recived".format(name)
+    module.exit_json(changed=False, msg=msg)
 
-    # config_group = module.params["config_group"]
-    # key = module.params["key"]
-    # value = get_config(module)
 
-    # result = {
-    #     "changed": False,
-    #     "object_type": config_group,
-    #     "key": key,
-    #     "value": value,
-    # }
-    # module.exit_json(**result)
 
 @api_wrapper
-def get_rules(module, disable_fail=False):
+def get_targets(module, disable_fail=False):
     """
-    Get all rules
+    Get all targets
     """
 
     system = get_system(module)
-    path = f"notifications/rules"
-    rules = system.api.get(path=path)
+    path = f"notifications/targets"
+    targets = system.api.get(path=path)
 
 
 
 @api_wrapper
-def find_rule_id(module, system):
+def find_target_id(module, system):
     """
-    Find the ID of the rule by name
+    Find the ID of the target by name
     """
-    rule_name = module.params["name"]
-    path = "notifications/rules?name={0}&fields=id".format(rule_name)
+    target_name = module.params["name"]
+    path = "notifications/targets?name={0}&fields=id".format(target_name)
     api_result = system.api.get(
         path=path
     )
     if len(api_result.get_json()['result']) > 0:
         result = api_result.get_json()['result'][0]
-        rule_id = result['id']
+        target_id = result['id']
     else:
-        rule_id=None
-    return rule_id
+        target_id=None
+    return target_id
 
 
 @api_wrapper
-def delete_rule(module, disable_fail=False):
+def delete_target(module, disable_fail=False):
     """
-    Delete a notification rule
+    Delete a notification target
     """
 
     system = get_system(module)
     name = module.params["name"]
-    rule_id = find_rule_id(module,system)
+    target_id = find_target_id(module,system)
 
 
-    path = f"notifications/rules/{rule_id}?approved=true"
+    path = f"notifications/targets/{target_id}?approved=true"
     system.api.delete(path=path)
 
 @api_wrapper
-def create_rule(module, disable_fail=False):
+def create_target(module, disable_fail=False):
     """
-    Create a new notifition rule
+    Create a new notifition target
     """
+
     system = get_system(module)
     name = module.params["name"]
-    event_level = module.params["event_level"]
-    #target_id= module.params["target_id"] #if using email, target id is 3, if not find id by name, if
-    include_events = module.params["include_events"]
-    exclude_events = module.params["exclude_events"]
-    recipients = module.params["recipients"]
-    target = module.params["target"]
+    protocol = module.params["protocol"]
+    host = module.params["host"]
+    port = module.params["port"]
+    facility = module.params["facility"]
+    transport = module.params["transport"]
+    visibility = module.params["visibility"]
 
 
-    path = f"notifications/rules"
+    path = f"notifications/targets"
 
     json_data = {
         "name": name,
-        "event_level": event_level,
-        "include_events": include_events,
-        "exclude_events": exclude_events,
+        "protocol":  protocol,
+        "host": host,
+        "port": port,
+        "facility": facility,
+        "transport": transport,
+        "visibility": visibility
     }
-
-    if not len(recipients)==0:
-        target_parameters = {
-            "recipients": recipients
-        }
-        target_id = 3
-        json_data["target_parameters"] = target_parameters
-
-    if target:
-        target_id=find_target_id(module, system)
-        #json_data["target"] = target
-
-    json_data["target_id"] = target_id
 
     system.api.post(path=path, data=json_data)
 
 @api_wrapper
-def update_rule(module, disable_fail=False):
+def update_target(module, disable_fail=False):
     """
-    Update an existing rule.
+    Update an existing target.
+    Note: due to the target update api do not support more than one
+          field at one time, deleting the existing target is too dangerous.
+          we are not going to support this function
     """
-    system = get_system(module)
-    name = module.params["name"]
-    event_level = module.params["event_level"]
-    include_events = module.params["include_events"]
-    exclude_events = module.params["exclude_events"]
-    recipients = module.params["recipients"]
-    target = module.params["target"]
 
+    pass
 
-    json_data = {
-        "name": name,
-        "event_level": event_level,
-        "include_events": include_events,
-        "exclude_events": exclude_events,
-    }
-
-    if not len(recipients)==0:
-        target_parameters = {
-            "recipients": recipients
-        }
-        target_id = 3
-        json_data["target_parameters"] = target_parameters
-
-    if target:
-        target_id=find_target_id(module, system)
-        #json_data["target"] = target
-
-    json_data["target_id"] = target_id
-
-    rule_id = find_rule_id(module,system)
-
-    path = f"notifications/rules/{rule_id}"
-
-
-    system.api.put(path=path, data=json_data)
+    # system = get_system(module)
+    # name = module.params["name"]
+    # protocol = module.params["protocol"]
+    # host = module.params["host"]
+    # port = module.params["port"]
+    # facility = module.params["facility"]
+    # transport = module.params["transport"]
+    # visibility = module.params["visibility"]
+    # target_id = find_target_id(module,system)
+    # path = f"notifications/targets/{target_id}"
+    # json_data = {
+    #     "name": name,
+    #     "protocol":  protocol,
+    #     "host": host,
+    #     "port": port,
+    #     "facility": facility,
+    #     "transport": transport,
+    #     "visibility": visibility
+    # }
+    # system.api.put(path=path, data=json_data)
 
 
 
@@ -301,17 +263,15 @@ def handle_present(module):
     name = module.params["name"]
     changed = False
     if not module.check_mode:
-        rule_id = find_rule_id(module,system)
-        if not rule_id:
-            create_rule(module)
+        target_id = find_target_id(module,system)
+        if not target_id:
+            create_target(module)
             changed=True
-            msg = "Rule {} created".format(name)
+            msg = "Target {} created".format(name)
+            module.exit_json(changed=changed, msg=msg)
         else:
-            update_rule(module)
-            msg = "Rule {} updated".format(name)
-            changed=True
-
-    module.exit_json(changed=changed, msg=msg)
+            msg = "Target {} already exist".format(name)
+            module.fail_json(msg=msg)
 
 
 
@@ -321,16 +281,16 @@ def handle_absent(module):
     changed = False
     name = module.params["name"]
     system = get_system(module)
+    target_id = find_target_id(module,system)
 
-    rule_id = find_rule_id(module,system)
-    if not rule_id:
-        msg="Rule of {0} does not exist, deletion operation skipped.".format(name)
+    if not target_id:
+        msg="Target of {0} does not exist, deletion operation skipped.".format(name)
         changed = False
     else:
-        msg="Rule {0} has been deleted".format(name)
+        msg="Target {0} has been deleted".format(name)
         changed = True
         if not module.check_mode:
-            delete_rule(module)
+            delete_target(module)
 
     module.exit_json(changed=changed, msg=msg)
 
@@ -353,9 +313,9 @@ def execute_state(module):
 
 
 
+
 def check_options(module):
     """Verify module options are sane"""
-
     pass
 
 
@@ -365,12 +325,13 @@ def main():
 
     argument_spec.update(
         {
-            "name": {"required": True},
-            "event_level": {"required": False, "default": {}, "type": list},
-            "include_events": {"required": False, "default": {}, "type": list},
-            "exclude_events": {"required": False, "default": {}, "type": list},
-            "recipients": {"required": False, "default": {}, "type": list},
-            "target": {"required": False, "type": str},
+            "name": {"required": False},
+            "host": {"required": False, "type": str},
+            "port": {"required": False, "type": int},
+            "transport": {"required": False, "type": str},
+            "protocol": {"required": False, "default": "SYSLOG", "type": str},
+            "facility": {"required": False, "default": "LOCAL7", "type": str},
+            "visibility": {"required": False, "default": "CUSTOMER", "type": str},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
         }
     )
