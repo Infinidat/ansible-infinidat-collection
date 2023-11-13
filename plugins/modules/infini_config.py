@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-"""This module creates, deletes or modifies metadata on Infinibox."""
+"""This module Modifies config on Infinibox."""
 
 # Copyright: (c) 2023, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -9,7 +9,6 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-
 DOCUMENTATION = r"""
 ---
 module: infini_config
@@ -40,7 +39,7 @@ options:
     required: true
   value:
     description:
-      - Value of the metadata key
+      - Value of the config key
     required: false
   state:
     description:
@@ -54,15 +53,15 @@ extends_documentation_fragment:
 """
 
 EXAMPLES = r"""
-- name: Create new metadata key foo with value bar
-  infini_metadata:
-    config_group: mgmt
-    key: pool.compression_enabled_default
-    state: present
-    value: true
-    user: admin
-    password: secret
-    system: ibox001
+- name: Set compression setting to true
+  infini_config:
+    config_group: "mgmt"
+    key: "pool.compression_enabled_default"
+    value: false
+    state: "present"
+    user: "{{ user }}"
+    password: "{{ password }}"
+    system: "{{ system }}"
 """
 
 # RETURN = r''' # '''
@@ -120,7 +119,6 @@ def get_config(module, disable_fail=False):
     elif disable_fail:
         return None
 
-    #msg = f"Metadata for {object_type} named {object_name} not found. Cannot stat."
     #module.fail_json(msg=msg)
 
 
