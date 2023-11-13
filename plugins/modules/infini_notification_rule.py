@@ -41,56 +41,45 @@ options:
     required: false
   recipients:
     description:
-    required: true
-  state: "present"
-    description:
-    required: true
-
-  config_group:
-    description:
-      - Config group
-    required: true
-    choices: = [
-        "core",
-        "ip_config",
-        "iscsi",
-        "limits",
-        "mgmt",
-        "ndoe_interfaces",
-        "overriders",
-        "security",
-        "ssh",
-    ]
-  key:
-    description:
-      - Name of the config
-    required: true
-  value:
-    description:
-      - Value of the metadata key
+      - Email list of the recipients
+      - Recipients and target are exclusive to each other, i.e. only recipients or target
+        should be used, don't use both at the same time.
     required: false
-
+  target:
+    description:
+      - Notification target
+      - Recipients and target are exclusive to each other, i.e. only recipients or target
+        should be used, don't use both at the same time.
   state:
     description:
-      - Query or modifies config when.
+      - Query or modifies config.
     required: false
     default: present
-    choices: [ "stat", "present" ]
+    choices: [ "stat", "present", "absent" ]
 
 extends_documentation_fragment:
     - infinibox
 """
 
 EXAMPLES = r"""
-- name: Create new metadata key foo with value bar
-  infini_metadata:
-    config_group: mgmt
-    key: pool.compression_enabled_default
-    state: present
-    value: true
-    user: admin
-    password: secret
-    system: ibox001
+- name: Create a new notification rule to a target
+  infini_notification_rule:
+    name: "test-rule-to-target" # this need to be uniq
+    event_level:
+      - ERROR
+      - CRITICAL
+    include_events:
+      - ACTIVATION_PAUSED
+    exclude_events:
+      - ACTIVE_DIRECTORY_ALL_DOMAIN_CONTROLLERS_DOWN
+      - ACTIVE_DIRECTORY_LEFT
+    target: testgraylog1
+    user: "{{ user }}"
+    password: "{{ password }}"
+    state: "present"
+    user: "{{ user }}"
+    password: "{{ password }}"
+    system: "{{ system }}"
 """
 
 # RETURN = r''' # '''

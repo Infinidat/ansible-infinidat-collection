@@ -6,6 +6,19 @@
     - infinidat.infinibox
   tasks:
 
+    - name: Delete a notification rule
+      infini_notification_rule:
+        name: "test-rule-to-target" # this need to be uniq
+        user: "{{ user }}"
+        password: "{{ password }}"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: metadata_out
+    - name: debug
+      debug:
+        var: metadata_out
 
     - name: Delete notification targets
       infini_notification_target:

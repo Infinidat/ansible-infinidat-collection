@@ -54,15 +54,15 @@ extends_documentation_fragment:
 """
 
 EXAMPLES = r"""
-- name: Create new metadata key foo with value bar
-  infini_metadata:
-    config_group: mgmt
-    key: pool.compression_enabled_default
-    state: present
-    value: true
-    user: admin
-    password: secret
-    system: ibox001
+- name: Set compression setting to true
+  infini_config:
+    config_group: "mgmt"
+    key: "pool.compression_enabled_default"
+    value: false
+    state: "present"
+    user: "{{ user }}"
+    password: "{{ password }}"
+    system: "{{ system }}"
 """
 
 # RETURN = r''' # '''

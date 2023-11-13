@@ -23,74 +23,77 @@ options:
     description:
       - Name of the target
     required: true
-  event_level:
+  host:
     description:
-      - Event levels
+      - Host name or IP address of the target
     required: false
-  include_events:
+  port:
     description:
-      - Included events
+      - Port of the target
     required: false
-  exclude_events:
+  transport:
     description:
-      - Exclued events
+      -  TCP or UDP
     required: false
-  target_parameters:
+  protocol:
     description:
-      -
+      - Protocol used for this target
     required: false
-  recipients:
+  facility:
     description:
-    required: true
-  state: "present"
-    description:
-    required: true
-
-  config_group:
-    description:
-      - Config group
-    required: true
-    choices: = [
-        "core",
-        "ip_config",
-        "iscsi",
-        "limits",
-        "mgmt",
-        "ndoe_interfaces",
-        "overriders",
-        "security",
-        "ssh",
-    ]
-  key:
-    description:
-      - Name of the config
-    required: true
-  value:
-    description:
-      - Value of the metadata key
+      - Facility
     required: false
-
+  visibility:
+    description:
+      - Visibility
+    required: false
+  post_test:
+    descrption:
+      - Run a test after new target being created
+    required: false
   state:
     description:
-      - Query or modifies config when.
-    required: false
-    default: present
-    choices: [ "stat", "present" ]
+      - Query or modifies config
+    required: true
+    choices: [ "stat", "present", "absent" ]
 
 extends_documentation_fragment:
     - infinibox
 """
 
 EXAMPLES = r"""
-- name: Create new metadata key foo with value bar
-  infini_metadata:
-    config_group: mgmt
-    key: pool.compression_enabled_default
+- name: Create notification targets
+  infini_notification_target:
     state: present
-    value: true
-    user: admin
-    password: secret
-    system: ibox001
+    name: testgraylog1
+    protocol: SYSLOG
+    host: 172.31.77.214
+    port: 8067
+    facility: LOCAL7
+    transport: TCP
+    visibility: CUSTOMER
+    post_test: True
+    user: "{{ user }}"
+    password: "{{ password }}"
+    system: "{{ system }}"
+- name: Create a new notification rule to a target
+  infini_notification_rule:
+    name: "test-rule-to-target" # this need to be uniq
+    event_level:
+      - ERROR
+      - CRITICAL
+    include_events:
+      - ACTIVATION_PAUSED
+    exclude_events:
+      - ACTIVE_DIRECTORY_ALL_DOMAIN_CONTROLLERS_DOWN
+      - ACTIVE_DIRECTORY_LEFT
+    target: testgraylog1
+    user: "{{ user }}"
+    password: "{{ password }}"
+    state: "present"
+    user: "{{ user }}"
+    password: "{{ password }}"
+    system: "{{ system }}"
 """
 
 # RETURN = r''' # '''
