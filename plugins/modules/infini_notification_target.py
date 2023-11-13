@@ -192,6 +192,7 @@ def delete_target(module, disable_fail=False):
     path = f"notifications/targets/{target_id}?approved=true"
     system.api.delete(path=path)
 
+
 @api_wrapper
 def create_target(module, disable_fail=False):
     """
@@ -205,6 +206,7 @@ def create_target(module, disable_fail=False):
     port = module.params["port"]
     facility = module.params["facility"]
     transport = module.params["transport"]
+    post_test = module.params["post_test"]
     visibility = module.params["visibility"]
 
 
@@ -221,6 +223,13 @@ def create_target(module, disable_fail=False):
     }
 
     system.api.post(path=path, data=json_data)
+
+    if post_test:
+        target_id = find_target_id(module, system)
+        path = "notifications/targets/{}/test".format(target_id)
+        json_data = {}
+        system.api.post(path=path, data=json_data)
+
 
 @api_wrapper
 def update_target(module, disable_fail=False):
@@ -332,6 +341,7 @@ def main():
             "protocol": {"required": False, "default": "SYSLOG", "type": str},
             "facility": {"required": False, "default": "LOCAL7", "type": str},
             "visibility": {"required": False, "default": "CUSTOMER", "type": str},
+            "post_test": {"required": False, "default": True, "type": bool},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
         }
     )
