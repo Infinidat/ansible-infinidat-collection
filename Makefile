@@ -144,7 +144,7 @@ _test_playbook:
 		ansible-playbook \
 			$$ask_become_pass \
 			--inventory "inventory" \
-			--extra-vars "@../ibox_vars/ibox100029.yaml" \
+			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
 			--vault-password-file ../vault_password.txt \
 			"$$playbook_name"; \
 	cd -
@@ -210,10 +210,16 @@ test-remove-metadata:  ## Run metadata removal tests.
 	ask_become_pass="" playbook_name=test_remove_metadata.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
-test-config:  ## Run config test
+test-config:  ## Run config tests
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
-	ask_become_pass="" playbook_name=test_config_array.yml $(_make) _test_playbook
+	ask_become_pass="" playbook_name=test_config_sample.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
+test-notification-rules:  ## Run notification rule tests
+	@echo -e $(_begin)
+	ansible-galaxy collection install --force "$${PWD}"
+	ask_become_pass="" playbook_name=test_notification_rules_sample.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
 ##@ Solution Examples
@@ -243,7 +249,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 ##@ Hacking
 #_module_under_test = infini_users_repository
 #_module_under_test = infini_fs
-_module_under_test = infini_metadata
+_module_under_test = infini_config
 #_module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
