@@ -38,7 +38,8 @@ _requirements-dev-file  = requirements-dev.txt
 _user               	= psus-gitlab-cicd
 _password_file      	= vault_password
 _password           	= $$(cat vault_password.txt)
-_ibox_url           	= ibox1521
+_ibox_url              ?= ibox1521
+_extra_vars            ?= @../ibox_vars/iboxCICD.yaml
 _infinishell_creds  	= --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               	= /bin/bash
 _ansible_clone      	= /home/$$USER/workspace/ansible
@@ -144,7 +145,7 @@ _test_playbook:
 		ansible-playbook \
 			$$ask_become_pass \
 			--inventory "inventory" \
-			--extra-vars "@../ibox_vars/iboxCICD.yaml" \
+			--extra-vars "$(_extra_vars)" \
 			--vault-password-file ../vault_password.txt \
 			"$$playbook_name"; \
 	cd -

@@ -30,7 +30,7 @@ options:
     description:
       - The bind username
     required: true
-  ldap_servers:
+  servers:
     description:
       - A list of LDAP servers. For an empty list, use [].
     required: false
@@ -39,7 +39,7 @@ options:
     description:
       - Name of repository
     required: true
-  port:
+  ldap_port:
     description:
       - LDAP or AD port to use
     required: false
@@ -174,7 +174,8 @@ def get_users_repository(module, disable_fail=False):
             msg = f"Users repository {name} not found. Cannot stat."
             module.fail_json(msg=msg)
         return result
-    elif disable_fail:
+
+    if disable_fail:
         return None
 
     msg = f"Users repository {name} not found. Cannot stat."
@@ -198,15 +199,12 @@ def test_users_repository(module, repository_id, disable_fail=False):
     return False
 
 
-@api_wrapper
-def post_users_repository(module):
-    """
-    Create or update users LDAP or AD repo. The changed variable is found elsewhere.
-    Variable 'changed' not returned by design
-    """
+def create_post_data(module):
+    """Create data dict for post rest calls"""
     system = get_system(module)
     name = module.params["name"]
     repo_type = module.params["repository_type"]
+    # search_order
     schema_definition = {
         "group_class":               module.params["schema_group_class"],
         "group_memberof_attribute":  module.params["schema_group_memberof_attribute"],
@@ -221,33 +219,45 @@ def post_users_repository(module):
     data = {
         "bind_password": module.params["bind_password"],
         "bind_username": module.params["bind_username"],
+        "ldap_port": module.params["ldap_port"],
         "name": name,
+        "repository_type": repo_type,
         "schema_definition": schema_definition,
+        "use_ldaps": module.params["use_ldaps"],
     }
 
     # Add type specific fields to data dict
     if repo_type == "ActiveDirectory":
         data["domain_name"] =  module.params["ad_domain_name"]
+        data["servers"] = []
     else:  # LDAP
+        data["domain_name"]: None
         data["servers"] = module.params["ldap_servers"]
+    return data
 
-    # Put
-    path = "config/ldap"
-    system.api.post(path=path, data=data)
 
-    """Return users repository or None"""
+@api_wrapper
+def post_users_repository(module):
+    """
+    Create or update users LDAP or AD repo. The changed variable is found elsewhere.
+    Variable 'changed' not returned by design
+    """
     system = get_system(module)
+    name = module.params["name"]
+    data = create_post_data(module)
+    path = "config/ldap"
     try:
-        try:
-            repo = system.volumes.get(name=module.params['name'])
-        except KeyError:
-            try:
-                volume = system.volumes.get(name=module.params['volume'])
-            except KeyError:
-                volume = system.volumes.get(name=module.params['object_name']) # Used by metadata module
-        return volume
-    except Exception:
-        return None
+        system.api.post(path=path, data=data)
+    except APICommandFailed as err:
+        if err.error_code == "LDAP_NAME_CONFLICT":
+            msg = f"Users repository {name} conflicts."
+            module.fail_json(msg=msg)
+        elif err.error_code == "LDAP_BAD_CREDENTIALS":
+            msg = f"Cannot create users repository {name} due to incorrect LDAP credentials: {err}"
+            module.fail_json(msg=msg)
+        else:
+            msg = f"Cannot create users repository {name}: {err}"
+            module.fail_json(msg=msg)
 
 
 @api_wrapper
@@ -287,37 +297,58 @@ def handle_stat(module):
     module.exit_json(**result)
 
 
+@api_wrapper
+def is_existing_users_repo_equal_to_desired(module):
+    newdata = create_post_data(module)
+    olddata = get_users_repository(module, disable_fail=True)[0]
+    if not olddata:
+        return False
+    if olddata['bind_username']     != newdata['bind_username']: return False
+    if olddata['repository_type']   != newdata['repository_type']: return False
+    if olddata['domain_name']       != newdata['domain_name']: return False
+    if olddata['ldap_port']         != newdata['ldap_port']: return False
+    if olddata['name']              != newdata['name']: return False
+    if olddata['schema_definition'] != newdata['schema_definition']: return False
+    # if olddata['search_order']      != newdata['search_order']: return False
+    if olddata['servers']           != newdata['servers']: return False
+    if olddata['use_ldaps']         != newdata['use_ldaps']: return False
+    return True
+
+
 def handle_present(module):
     """Make users repository present"""
     name = module.params['name']
     repo_type = module.params['repository_type']
-    assert repo_type in ["LDAP", "ActiveDirectory"]
     changed = False
-    msg = f"Users repository {name} unchanged"
+    msg = ""
     if not module.check_mode:
+        old_users_repo = None
         old_users_repo_result = get_users_repository(module, disable_fail=True)
         assert not old_users_repo_result or len(old_users_repo_result) == 1
         if old_users_repo_result:
             old_users_repo = old_users_repo_result[0]
-            old_users_repo_type = old_users_repo["repository_type"]
-            if old_users_repo_type != repo_type:
-                msg = f"Cannot create a new users repository named {name} of type {repo_type} " \
-                    f"when a repository with that name already exists of type {old_users_repo_type}"
-                module.fail_json(msg=msg)
-        else:
-            old_users_repo = None
-            old_users_repo_type = None
+            if is_existing_users_repo_equal_to_desired(module):
+                msg = f"Users repository {name} already exists. No changes required."
+                module.exit_json(changed=changed, msg=msg)
+            else:
+                msg = f"Users repository {name} is being recreated with new settings. "
+                delete_users_repository(module, name)
+                old_users_repo = None
+                changed = True
+
         post_users_repository(module)
 
         new_users_repo = get_users_repository(module)
         changed = new_users_repo != old_users_repo
         if changed:
             if old_users_repo:
-                msg = f"Users repository {name} updated"
+                msg = f"{msg}Users repository {name} updated"
             else:
-                msg = f"Users repository {name} created"
+                msg = f"{msg}Users repository {name} created"
         else:
             msg = f"Users repository {name} unchanged since the value is the same as the existing users repository"
+    else:
+        msg = f"Users repository {name} unchanged due to check_mode"
     module.exit_json(changed=changed, msg=msg)
 
 
@@ -360,7 +391,7 @@ def check_options(module):
     ad_domain_name = module.params["ad_domain_name"]
     ldap_servers = module.params["ldap_servers"]
     name = module.params["name"]
-    port = module.params["port"]
+    ldap_port = module.params["ldap_port"]
     repository_type = module.params["repository_type"]
     schema_group_memberof_attribute = module.params["schema_group_memberof_attribute"]
     schema_group_name_attribute = module.params["schema_group_name_attribute"]
@@ -435,7 +466,7 @@ def main():
             "bind_username": {"required": False, "default": None},
             "ldap_servers": {"required": False, "default": [], "type": "list", "elements": "str"},
             "name": {"required": True},
-            "port": {"required": False, "type": int, "default": 636},
+            "ldap_port": {"required": False, "type": int, "default": 636},
             "repository_type": {"required": False, "choices": ["LDAP", "ActiveDirectory"], "default": None},
             "schema_group_class": {"required": False, "default": None},
             "schema_group_memberof_attribute": {"required": False, "default": None},
@@ -444,6 +475,7 @@ def main():
             "schema_user_class": {"required": False, "default": None},
             "schema_username_attribute": {"required": False, "default": None},
             "schema_users_basedn": {"required": False, "default": None},
+            "servers": {"required": False, "default": [], "type": list},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
             "use_ldaps": {"required": False, "choices": [True, False], "default": True},
         }
