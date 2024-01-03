@@ -5,141 +5,167 @@
   gather_facts: true  # Required for ansible_date_time
   collections:
     - infinidat.infinibox
+  vars:
+    - dataset_default_provisioning: THICK
+    - table_export_limit: 3000
   tasks:
     # TODO:
     #   David: metadata module
     #   Wei: config module
 
-    - name: TODO by Wei - Configure Infinibox - Set default compression to enabled
-      # Ref: http://{{ibox2}}/api/rest/metadata
-      # Add key: /metadata/system
-      # Data: {"ui-dataset-default-provisioning": "THIN"}
-      infini_config:
+    #- name: TODO by Wei - Configure Infinibox - Set default compression to enabled
+    #  # Ref: http://{{ibox2}}/api/rest/metadata
+    #  # Add key: /metadata/system
+    #  # Data: {"ui-dataset-default-provisioning": "THIN"}
+    #  infini_config:
+    #    object_type: "system"
+    #    key: "ui-dataset-default-provisioning"
+    #    state: "stat"
+    #    user: "{{ user }}"
+    #    password: "{{ password }}"
+    #    system: "{{ system }}"
+    #  register: metadata_out
+
+    #- name: TODO by Wei - Show metadata stat output
+    #  infini_config:
+    #    var: metadata_out
+
+    - name: Show system information
+      ansible.builtin.debug:
+        msg:
+          - "Provisioning Infinibox {{ system }} using user {{ user }}"
+
+    - name: Configure Infinibox - Set default provisioning to {{ dataset_default_provisioning }}
+      infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
-        state: "stat"
+        value: "{{ dataset_default_provisioning }}"
+        state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-      register: metadata_out
 
-    - name: TODO by Wei - Show metadata stat output
-      infini_config:
-        var: metadata_out
+#    - name: TODO by Wei - Configure Infinibox - Set capacity units to base 2, e.g. GiB, TiB
+#      # Ref: http://{{ibox2}}/api/rest/metadata
+#      # ui-dataset-base2-units
+#      infini_config:
+#        msg: (1) Set capacity units
 
-    - name: Done by David Configure Infinibox - Set default provisioning to thin
-      # Ref: http://{{ibox2}}/api/rest/metadata
-      # ui-dataset-default-provisioning
+    - name: Configure Infinibox - Set maximum export rows to {{ table_export_limit }}
       infini_metadata:
-        msg: (1) Enable thin provisioning
+        object_type: "system"
+        key: "ui-table-export-limit"
+        value: "{{ table_export_limit }}"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 
-    - name: TODO by Wei - Configure Infinibox - Set capacity units to base 2, e.g. GiB, TiB
-      # Ref: http://{{ibox2}}/api/rest/metadata
-      # ui-dataset-base2-units
-      infini_config:
-        msg: (1) Set capacity units
+    - name: Configure Infinibox - Setup Active Directory
+      infini_users_repository:
+        name: "PSUS_ANSIBLE_ad"
+        bind_password: "tuFrAxahuYe4"
+        bind_username: "conldap"
+        ad_domain_name: "infinidat.com"
+        repository_type: "ActiveDirectory"
+        schema_group_class: "group"
+        schema_group_memberof_attribute: "memberof"
+        schema_group_name_attribute: "cn"
+        schema_groups_basedn: ""
+        schema_user_class: "user"
+        schema_username_attribute: "sAMAccountName"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 
-    - name: Done by David - Configure Infinibox - Set maximum export rows to 3000
-      # Ref: http://{{ibox2}}/api/rest/metadata
-      # Add key: {"ui-dataset-default-provisioning": {"ui-table-export-limit": 3000}}
-      infini_metadata:
-        msg: (1) Set export rows 
-
-    - name: TODO by David - Configure Infinibox - Setup LDAP
-      # Ref: http://{{ibox2}}/api/rest/config/ldap
-      ansible.builtin.debug:
-        msg: (2) Setup LDAP type to AD, name to CN, domain name, bind username and bind password
-
-    - name: TODO by David - Configure Infinibox - Setup LDAP groups
-      # Ref: http://{{ibox2}}/api/rest/config/ldap
-      ansible.builtin.debug:
-        msg: (3) Add LDAP groups for READ_ONLY and ADMIN roles
-
-    - name: TODO by David - Test Infinibox - Test LDAP
-      ansible.builtin.debug:
-        msg: (4) Test LDAP
-
-    - name: TODO by David - Test Infinibox - Test LDAP roles
-      ansible.builtin.debug:
-        msg: (4) Test LDAP roles
-
-    - name: DONE using users module, TODO TEST - Configure Infinibox - Change admin password
-      # Ref: Existing user module
-      infini_user:
-        msg: (5) Change admin password
-
-    - name: TODO by Wei - Configure Infinibox - Temporarily setup alerting email
-      # Ref: http://{{ibox2}}/api/rest/notification/targets
-      ansible.builtin.debug:
-        msg: (6) Create event rule to send email to TEO-Engineering-Alerts@jackhenry.com
-
-    - name: TODO by Wei - Test Infinibox - Test temporarily  alerting
-      ansible.builtin.debug:
-        msg: (6) Create test event
-
-    - name: TODO by Wei - Configure Infinibox - Define syslog from list
-      # Ref: http://{{ibox2}}/api/rest/notification/targets
-      ansible.builtin.debug:
-        msg: (7) Configure syslogs
-
-    - name: TODO by Wei - Configure Infinibox - Create syslogs
-      ansible.builtin.debug:
-        msg: (7) Create syslogs
-
-    - name: Done - Configure Infinibox - Create network space
-      infini_network_space:
-        msg: (8) Create network space
-
-    - name: TODO by David - Configure Infinimentrics - Add Infinibox
-      ansible.builtin.debug:
-        msg: (9) Add Infinibox to Infinimetrics
-
-    - name: Done - Configure Infinibox - Create pools
-      # Ref: Existing pools module
-      infini_pool:
-        msg: (10) Create pools
-
-
-
-
-
-
-    - name: Configure Infinibox - Label fibre channel switches
-      # Ref: http://{{ibox2}}/api/rest/fc/switches/{ID}
-      ansible.builtin.debug:
-        msg: (11) Rename fibre channel switches using names listed in file 
-
-    - name: Test Infinibox - Test labels fibre channel switches
-      ansible.builtin.debug:
-        msg: (11) Test renamed fibre channel switches. Validate WWN in BNA
-
-    # Ensure that JHA CA Certificate is installed by remote support 
-    - name: Configure Infinibox - Update management SSL certificate
-      # Ref: https://wiki.infinidat.com/display/TWDRAFTS/.Config+System+SSL+Certificate+commands+vPUBLISHED
-      # Ref: http://{{ibox2}}/api/rest/system/certificates
-      ansible.builtin.debug:
-        msg: (12) Update management SSL certificate
-
-    - name: Configure Infinibox - Update SA SSL certificate
-      ansible.builtin.debug:
-        msg: (12) Update SA SSL certificate
-
-    - name: Configure Infinibox - Setup alerting production email
-      ansible.builtin.debug:
-        msg: (13) Create event rule to send email to Alerts-CorpSystemsStorage@jackhenry.com
-
-    - name: Configure Infinibox - Remove temporarily alerting email
-      ansible.builtin.debug:
-        msg: (13) Remove event rule to send email to TEO-Engineering-Alerts@jackhenry.com
-
-    - name: Test Infinibox - Test production alerting
-      ansible.builtin.debug:
-        msg: (13) Create test event
-
-    - name: Configure Infinibox - Notify TS-Storage that system is complete and ready for use
-      ansible.builtin.debug:
-        msg: (14) Send event - System is complete and ready for use
-
-
-
-
+#
+#    - name: TODO by David - Configure Infinibox - Setup LDAP groups
+#      # Ref: http://{{ibox2}}/api/rest/config/ldap
+#      ansible.builtin.debug:
+#        msg: (3) Add LDAP groups for READ_ONLY and ADMIN roles
+#
+#    - name: TODO by David - Test Infinibox - Test LDAP
+#      ansible.builtin.debug:
+#        msg: (4) Test LDAP
+#
+#    - name: TODO by David - Test Infinibox - Test LDAP roles
+#      ansible.builtin.debug:
+#        msg: (4) Test LDAP roles
+#
+#    - name: DONE using users module, TODO TEST - Configure Infinibox - Change admin password
+#      # Ref: Existing user module
+#      infini_user:
+#        msg: (5) Change admin password
+#
+#    - name: TODO by Wei - Configure Infinibox - Temporarily setup alerting email
+#      # Ref: http://{{ibox2}}/api/rest/notification/targets
+#      ansible.builtin.debug:
+#        msg: (6) Create event rule to send email to TEO-Engineering-Alerts@jackhenry.com
+#
+#    - name: TODO by Wei - Test Infinibox - Test temporarily  alerting
+#      ansible.builtin.debug:
+#        msg: (6) Create test event
+#
+#    - name: TODO by Wei - Configure Infinibox - Define syslog from list
+#      # Ref: http://{{ibox2}}/api/rest/notification/targets
+#      ansible.builtin.debug:
+#        msg: (7) Configure syslogs
+#
+#    - name: TODO by Wei - Configure Infinibox - Create syslogs
+#      ansible.builtin.debug:
+#        msg: (7) Create syslogs
+#
+#    - name: Done - Configure Infinibox - Create network space
+#      infini_network_space:
+#        msg: (8) Create network space
+#
+#    - name: TODO by David - Configure Infinimentrics - Add Infinibox
+#      ansible.builtin.debug:
+#        msg: (9) Add Infinibox to Infinimetrics
+#
+#    - name: Done - Configure Infinibox - Create pools
+#      # Ref: Existing pools module
+#      infini_pool:
+#        msg: (10) Create pools
+#
+#
+#
+#
+#
+#
+#    - name: Configure Infinibox - Label fibre channel switches
+#      # Ref: http://{{ibox2}}/api/rest/fc/switches/{ID}
+#      ansible.builtin.debug:
+#        msg: (11) Rename fibre channel switches using names listed in file 
+#
+#    - name: Test Infinibox - Test labels fibre channel switches
+#      ansible.builtin.debug:
+#        msg: (11) Test renamed fibre channel switches. Validate WWN in BNA
+#
+#    # Ensure that JHA CA Certificate is installed by remote support 
+#    - name: Configure Infinibox - Update management SSL certificate
+#      # Ref: https://wiki.infinidat.com/display/TWDRAFTS/.Config+System+SSL+Certificate+commands+vPUBLISHED
+#      # Ref: http://{{ibox2}}/api/rest/system/certificates
+#      ansible.builtin.debug:
+#        msg: (12) Update management SSL certificate
+#
+#    - name: Configure Infinibox - Update SA SSL certificate
+#      ansible.builtin.debug:
+#        msg: (12) Update SA SSL certificate
+#
+#    - name: Configure Infinibox - Setup alerting production email
+#      ansible.builtin.debug:
+#        msg: (13) Create event rule to send email to Alerts-CorpSystemsStorage@jackhenry.com
+#
+#    - name: Configure Infinibox - Remove temporarily alerting email
+#      ansible.builtin.debug:
+#        msg: (13) Remove event rule to send email to TEO-Engineering-Alerts@jackhenry.com
+#
+#    - name: Test Infinibox - Test production alerting
+#      ansible.builtin.debug:
+#        msg: (13) Create test event
+#
+#    - name: Configure Infinibox - Notify TS-Storage that system is complete and ready for use
+#      ansible.builtin.debug:
+#        msg: (14) Send event - System is complete and ready for use

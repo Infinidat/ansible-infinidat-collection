@@ -50,6 +50,7 @@ _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py
 setup: ## Setup Python requirements.
 	@# Install pbr early to prevent errors with flux and gossip install.
 	@# e.g. distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('pbr>=3.0')
+	$(_python) -m ensurepip && \
 	$(_python) -m pip install --user --upgrade pip && \
 	$(_python) -m pip install --user --upgrade ansible ansible-lint pbr && \
 	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file) && \
@@ -224,11 +225,17 @@ test-notification-rules:  ## Run notification rule tests
 	@echo -e $(_finish)
 
 ##@ Solution Examples
-configure-ibox:  ## Configure customer Infinibox.
+configure-ibox:  ## Configure an Infinibox.
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
 	ask_become_pass="" playbook_name=configure_array.yml $(_make) _test_playbook
 	@echo -e $(_finish)
+
+# deconfigure-ibox:  ## Remove some Infinibox configureations set by the ibox-configure recipe.
+# 	@echo -e $(_begin)
+# 	ansible-galaxy collection install --force "$${PWD}"
+# 	ask_become_pass="" playbook_name=deconfigure_array.yml $(_make) _test_playbook
+# 	@echo -e $(_finish)
 
 ##@ Infinisafe Demo
 
@@ -248,9 +255,10 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_users
+_module_under_test = infini_user
+#_module_under_test = infini_users_repository
 #_module_under_test = infini_fs
-# _module_under_test = infini_conig
+#_module_under_test = infini_conig
 #_module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
@@ -271,6 +279,7 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$$utils_path/infinibox.py"
 
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
+	@echo "_module_under_test: $(_module_under_test)"
 	cwd=$$(pwd) && \
 	cd $(_ansible_clone) && \
 		JSON_IN="$$cwd/tests/hacking/$(_module_under_test)_$${state}.json" && \

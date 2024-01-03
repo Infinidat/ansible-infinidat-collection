@@ -188,7 +188,7 @@ def find_vol_id(module, system, vol_name):
 
     result = vol.get_json()["result"]
     if len(result) != 1:
-        module.fail_json(f"Cannot find a volume with name '{vol_name}'")
+        fail(module, f"Cannot find a volume with name '{vol_name}'")
 
     vol_id = result[0]["id"]
     return vol_id
@@ -209,12 +209,14 @@ def restore_volume_from_snapshot(module, system):
     if not is_restoring:
         raise AssertionError("A programming error occurred. is_restoring is not True")
     if volume_type != "snapshot":
-        module.fail_json(
+        fail(
+            module,
             msg="Cannot restore a parent volume from snapshot unless the volume "
             "type is 'snapshot'"
         )
     if not parent_volume_name:
-        module.fail_json(
+        fail(
+            module,
             msg="Cannot restore a parent volume from snapshot unless the parent "
             "volume name is specified"
         )
@@ -279,14 +281,14 @@ def create_snapshot(module, system):
         parent_volume = system.volumes.get(name=parent_volume_name)
     except ObjectNotFound as err:
         msg = f"Cannot create snapshot {snapshot_name}. Parent volume {parent_volume_name} not found"
-        module.fail_json(msg=msg)
+        fail(module, msg=msg)
     if not parent_volume:
         msg = f"Cannot find new snapshot's parent volume named {parent_volume_name}"
-        module.fail_json(msg=msg)
+        fail(module, msg=msg)
     if not module.check_mode:
         if module.params["snapshot_lock_only"]:
             msg = "Snapshot does not exist. Cannot comply with 'snapshot_lock_only: true'."
-            module.fail_json(msg=msg)
+            fail(module, msg=msg)
         check_snapshot_lock_options(module)
         snapshot = parent_volume.create_snapshot(name=snapshot_name)
 
@@ -315,7 +317,7 @@ def update_snapshot(module, snapshot):
             refresh_changed = True
         else:
             msg = "Snapshot is locked and may not be refreshed"
-            module.fail_json(msg=msg)
+            fail(module, msg=msg)
 
     check_snapshot_lock_options(module)
     lock_changed = manage_snapshot_locks(module, snapshot)
@@ -345,7 +347,7 @@ def handle_stat(module):
     system, pool, volume, parname = get_sys_pool_vol_parname(module)
     if not volume:
         msg = f"Volume {module.params['name']} not found. Cannot stat."
-        module.fail_json(msg=msg)
+        fail(module, msg=msg)
     fields = volume.get_fields()  # from_cache=True, raw_value=True)
 
     created_at = str(fields.get("created_at", None))
@@ -400,7 +402,11 @@ def handle_present(module):
             module.exit_json(changed=changed, msg="Volume created")
         else:
             changed = update_volume(module, volume)
-            module.exit_json(changed=changed, msg="Volume updated")
+            if changed:
+                msg = "Volume updated"
+            else:
+                msg = "Volume present. No changes were required"
+            module.exit_json(changed=changed, msg=msg)
     elif volume_type == "snapshot":
         snapshot = volume
         if is_restoring:
@@ -415,7 +421,7 @@ def handle_present(module):
                 changed = update_snapshot(module, snapshot)
                 module.exit_json(changed=changed, msg="Snapshot updated")
     else:
-        module.fail_json(msg="A programming error has occurred")
+        fail(module, msg="A programming error has occurred")
 
 
 def handle_absent(module):
@@ -424,23 +430,35 @@ def handle_absent(module):
 
     if volume and volume.get_lock_state() == "LOCKED":
         msg = "Cannot delete snapshot. Locked."
-        module.fail_json(msg=msg)
+        fail(module, msg=msg)
 
     if volume_type == "master":
         if not volume:
-            module.exit_json(changed=False, msg="Volume already absent")
+            success(module, changed=False, msg="Volume already absent")
         else:
             changed = delete_volume(module, volume)
-            module.exit_json(changed=changed, msg="Volume removed")
+            success(module, changed=changed, msg="Volume removed")
     elif volume_type == "snapshot":
         snapshot = volume
         if not snapshot:
-            module.exit_json(changed=False, msg="Snapshot already absent")
+            success(module, changed=False, msg="Snapshot already absent")
         else:
             changed = delete_volume(module, snapshot)
-            module.exit_json(changed=changed, msg="Snapshot removed")
+            success(module, changed=changed, msg="Snapshot removed")
     else:
-        module.fail_json(msg="A programming error has occured")
+        fail(module, msg="A programming error has occured")
+
+
+def fail(module, msg):
+    system = get_system(module)
+    system.logout()
+    module.fail_json(msg=msg)
+
+
+def success(module, changed, msg):
+    system = get_system(module)
+    system.logout()
+    module.exit_json(msg=msg)
 
 
 def execute_state(module):
@@ -457,7 +475,7 @@ def execute_state(module):
             module.params["write_protected"] = True
     else:
         msg = f"An error has occurred handling volume_type '{module.params['volume_type']}' or write_protected '{module.params['write_protected']}' values"
-        module.fail_json(msg=msg)
+        fail(module, msg)
 
     state = module.params["state"]
     try:
@@ -468,9 +486,7 @@ def execute_state(module):
         elif state == "absent":
             handle_absent(module)
         else:
-            module.fail_json(
-                msg=f"Internal handler error. Invalid state: {state}"
-            )
+            fail(module, msg=f"Internal handler error. Invalid state: {state}")
     finally:
         system = get_system(module)
         system.logout()
@@ -489,37 +505,37 @@ def check_options(module):
     if state == "stat":
         if not name and not serial:
             msg = "Name or serial parameter must be provided"
-            module.fail_json(msg=msg)
+            fail(module, msg)
     if state in ["present", "absent"]:
         if not name:
             msg = "Name parameter must be provided"
-            module.fail_json(msg=msg)
+            fail(module, msg=msg)
 
     if state == "present":
         if volume_type == "master":
             if parent_volume_name:
                 msg = "parent_volume_name should not be specified "
                 msg += "if volume_type is 'master'. Used for snapshots only."
-                module.fail_json(msg=msg)
+                fail(module, msg=msg)
             if not size:
                 msg = "Size is required to create a volume"
-                module.fail_json(msg=msg)
+                fail(module, msg=msg)
         elif volume_type == "snapshot":
             if size or pool:
                 msg = "Neither pool nor size should not be specified "
                 msg += "for volume_type snapshot"
-                module.fail_json(msg=msg)
+                fail(module, msg=msg)
             if state == "present":
                 if not parent_volume_name:
                     msg = "For state 'present' and volume_type 'snapshot', "
                     msg += "parent_volume_name is required"
-                    module.fail_json(msg=msg)
+                    fail(module, msg=msg)
         else:
             msg = "A programming error has occurred"
-            module.fail_json(msg=msg)
+            fail(module, msg=msg)
         if not pool and volume_type == "master":
             msg = "For state 'present', pool is required"
-            module.fail_json(msg=msg)
+            fail(module, msg=msg)
 
 
 def main():
@@ -544,18 +560,16 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"))
+        fail(module, msg=missing_required_lib("infinisdk"))
 
     if not HAS_ARROW:
-        module.fail_json(msg=missing_required_lib("arrow"))
+        fail(module, msg=missing_required_lib("arrow"))
 
     if module.params["size"]:
         try:
             Capacity(module.params["size"])
         except Exception:
-            module.fail_json(
-                msg="size (Physical Capacity) should be defined in MB, GB, TB or PB units"
-            )
+            fail(module, msg="size (Physical Capacity) should be defined in MB, GB, TB or PB units")
 
     check_options(module)
     execute_state(module)
