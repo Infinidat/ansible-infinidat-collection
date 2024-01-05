@@ -46,7 +46,7 @@ _ansible_clone      	= /home/$$USER/workspace/ansible
 _network_space_ips  	= 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
 _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py" "infini_network_space.py" "infini_port.py" "infini_vol.py" "infini_export_client.py" "infini_fs.py" "infini_map.py" "infini_pool.py" "infini_user.py"
 
-# Include, but do not fail if not found.
+# Include, but do not fail if not found. Ignored by git. Use to temporarily set vars.
 -include Makefile-vars
 
 ##@ General

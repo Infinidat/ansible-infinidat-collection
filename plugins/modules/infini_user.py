@@ -4,8 +4,13 @@
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+""" Manage Infinibox users """
+
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
 from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
+
+__metaclass__ = type # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -21,7 +26,7 @@ options:
       - The new user's Name. Once a user is created, the user_name may not be
         changed from this module. It may be changed from the UI or from
         infinishell.
-    required: true
+    required: false
     type: str
   user_email:
     description:
@@ -58,6 +63,26 @@ options:
     choices: [ "stat", "reset_password", "present", "absent" ]
     type: str
 
+  user_ldap_group_name:
+    description:
+      - Name of the LDAP user group
+    required: false
+    type: str
+  user_ldap_group_dn:
+    description:
+      - DN of the LDAP user group
+    required: false
+    type: str
+  user_ldap_group_ldap:
+    description:
+      - Name of the LDAP
+    required: false
+    type: str
+  user_ldap_group_role:
+    description:
+      - Role for the LDAP user group
+    required: false
+    type: str
 extends_documentation_fragment:
     - infinibox
 '''
@@ -81,27 +106,51 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
     infinibox_argument_spec,
     get_system,
     get_user,
-    get_pool,
-    unixMillisecondsToDate,
     merge_two_dicts,
 )
+from infinisdk.core.exceptions import APICommandFailed
 
-try:
-    from infi.dtypes.iqn import make_iscsi_name
-except ImportError:
-    pass  # Handled by HAS_INFINISDK from module_utils
+@api_wrapper
+def find_user_ldap_group_id(module):
+    """
+    Find the ID of the LDAP user group by name
+    """
+    ldap_id = None
+    ldap_name = module.params["user_ldap_group_name"]
+    path = f"users?name={ldap_name}&type=eq%3ALdap"
+    system = get_system(module)
+    api_result = system.api.get(path=path)
+    if len(api_result.get_json()['result']) > 0:
+        result = api_result.get_json()['result'][0]
+        ldap_id = result['id']
+    return ldap_id
+
+
+@api_wrapper
+def find_ldap_id(module):
+    """
+    Find the ID of the LDAP by name
+    """
+    ldap_id = None
+    ldap_name = module.params["user_ldap_group_ldap"]
+    path = f"config/ldap?name={ldap_name}&fields=id"
+    system = get_system(module)
+    api_result = system.api.get(path=path)
+    if len(api_result.get_json()['result']) > 0:
+        result = api_result.get_json()['result'][0]
+        ldap_id = result['id']
+    return ldap_id
 
 
 @api_wrapper
 def create_user(module, system):
+    """ Create user """
     if not module.check_mode:
         user = system.users.create(name=module.params['user_name'],
                                    password=module.params['user_password'],
@@ -116,6 +165,34 @@ def create_user(module, system):
             # Add the user to the pool's owners
             pool = system.pools.get(name=module.params['user_pool'])
             add_user_to_pool_owners(user, pool)
+    changed = True
+    return changed
+
+
+@api_wrapper
+def create_ldap_user_group(module):
+    """ Create ldap user group """
+    ldap_group_name = module.params['user_ldap_group_name']
+    ldap_name = module.params['user_ldap_group_ldap']
+    ldap_id = find_ldap_id(module)
+    if not ldap_id:
+        msg = f'Cannot create LDAP group {ldap_group_name}. Cannot find ID for LDAP name {ldap_name}'
+        module.fail_json(msg=msg)
+    path = "users"
+    system = get_system(module)
+    data = {
+        "name": ldap_group_name,
+        "dn": module.params['user_ldap_group_dn'],
+        "ldap_id": ldap_id,
+        "role": module.params['user_ldap_group_role'],
+        'type': "Ldap",
+    }
+    try:
+        system.api.post(path=path, data=data)
+    except APICommandFailed as err:
+        if err.status_code in [409]:
+            msg = f'user_ldap_group_name {ldap_name} already exists'
+            module.fail_json(msg)
     changed = True
     return changed
 
@@ -148,6 +225,7 @@ def add_user_to_pool_owners(user, pool):
 
 
 def remove_user_from_pool_owners(user, pool):
+    """ Remove user from pool owners """
     changed = False
     pool_fields = pool.get_fields(from_cache=True, raw_value=True)
     pool_owners = pool_fields.get('owners', [])
@@ -162,9 +240,9 @@ def remove_user_from_pool_owners(user, pool):
 
 @api_wrapper
 def update_user(module, system, user):
-    # print("update_user()")
+    """ Update user """
     if user is None:
-        raise AssertionError("Cannot update user {0}. User not found.".format(module.params["user_name"]))
+        raise AssertionError(f"Cannot update user {module.params['user_name']}. User not found.")
 
     changed = False
     fields = user.get_fields(from_cache=True, raw_value=True)
@@ -183,22 +261,47 @@ def update_user(module, system, user):
             pool_name = module.params['user_pool']
             pool = system.pools.get(name=pool_name)
         except Exception as err:
-            module.fail_json(msg='Cannot find pool {0}: {1}'.format(pool_name, err))
+            module.fail_json(msg=f'Cannot find pool {pool_name}: {err}')
         if add_user_to_pool_owners(user, pool):
             changed = True
     return changed
 
 
+def update_ldap_user_group(module, ldap_user):
+    """ Update ldap user group """
+    changed = False
+    user_ldap_group_name = module.params['user_ldap_group_name']
+    if not user_ldap_group_name:
+        module.fail_json('Cannot update ldap user group without a name')
+
+    user_ldap_group_role = module.params['user_ldap_group_role']
+    user_ldap_group_dn = module.params['user_ldap_group_dn']
+    user_ldap_group_id = find_user_ldap_group_id(module)
+
+    if \
+            user_ldap_group_name == ldap_user['name'] and \
+            user_ldap_group_id == ldap_user['id'] and \
+            user_ldap_group_dn == ldap_user['dn'] and \
+            user_ldap_group_role.upper() in ldap_user['roles']: # then same
+        changed = False
+    else: # then different
+        delete_ldap_user_group(module)
+        create_ldap_user_group(module)
+        changed = True
+    return changed
+
+
 @api_wrapper
-def reset_user_password(module, system, user):
-    # print("update_user()")
+def reset_user_password(module, user):
+    """ Reset user's password """
     if user is None:
-        raise AssertionError("Cannot change user {0} password. User not found.".format(module.params["user_name"]))
+        module.fail_json(msg=f'Cannot change user {module.params["user_name"]} password. User not found.')
     user.update_password(module.params['user_password'])
 
 
 @api_wrapper
 def delete_user(module, user):
+    """ Delete a user """
     if not user:
         return False
 
@@ -209,82 +312,144 @@ def delete_user(module, user):
     return changed
 
 
+@api_wrapper
+def delete_ldap_user_group(module):
+    """ Delete a ldap user group """
+    changed = False
+    ldap_group_name = module.params['user_ldap_group_name']
+    ldap_group_id = find_user_ldap_group_id(module)
+    if not ldap_group_id:
+        module.fail_json(msg='Cannot delete LDAP user {ldap_group_name}. Cannot find ID for LDAP group.')
+    path = f"users/{ldap_group_id}?approved=yes"
+    system = get_system(module)
+    try:
+        system.api.delete(path=path)
+        changed = True
+    except APICommandFailed as err:
+        if err.status_code in [404]:
+            changed = False
+        else:
+            msg = f'An error occurred deleting user_ldap_group_name {ldap_group_name}: {err}'
+            module.fail_json(msg)
+    return changed
+
+
+def get_user_ldap_group(module):
+    """
+    Find the LDAP user group by name
+    """
+    result = None
+    ldap_name = module.params["user_ldap_group_name"]
+    path = f"users?name={ldap_name}&type=eq%3ALdap"
+    system = get_system(module)
+    api_result = system.api.get(path=path)
+    if len(api_result.get_json()['result']) > 0:
+        result = api_result.get_json()['result'][0]
+    return result
+
+
 def get_sys_user(module):
+    """ Get system and user information """
     system = get_system(module)
     user = get_user(module, system)
-    # print("get_sys_user(): user:", user)
     return (system, user)
 
 
 def get_user_fields(user):
+    """ Get user's fields """
     pools = user.get_owned_pools()
     pool_names = [pool.get_field('name') for pool in pools]
 
     fields = user.get_fields(from_cache=True, raw_value=True)
-    field_dict = dict(
-        id=user.id,
-        enabled=fields.get('enabled', None),
-        role=fields.get('role', None),
-        email=fields.get('email', None),
-        pools=pool_names,
-    )
+    field_dict = {
+        "id":      user.id,
+        "enabled": fields.get('enabled', None),
+        "role":    fields.get('role', None),
+        "email":   fields.get('email', None),
+        "pools":   pool_names,
+    }
     return field_dict
 
 
 def handle_stat(module):
-    system, user = get_sys_user(module)
+    """ Handle stat for user """
+    _, user = get_sys_user(module)
     user_name = module.params["user_name"]
     if not user:
-        module.fail_json(msg='User {0} not found'.format(user_name))
+        module.fail_json(msg=f'User {user_name} not found')
     field_dict = get_user_fields(user)
-    result = dict(
-        changed=False,
-        msg='User stat found'
-    )
+    result = {
+        "changed": False,
+        "msg": 'User stat found'
+    }
     result = merge_two_dicts(result, field_dict)
     module.exit_json(**result)
 
 
 def handle_present(module):
-    system, user = get_sys_user(module)
+    """ Handle making user present """
     user_name = module.params["user_name"]
-    if not user:
-        changed = create_user(module, system)
-        msg = 'User {0} created'.format(user_name)
-    else:
-        changed = update_user(module, system, user)
-        if changed:
-            msg = 'User {0} updated'.format(user_name)
+    user_ldap_group_name = module.params["user_ldap_group_name"]
+    changed = False
+    msg = 'Message not set'
+
+    if user_name:
+        system, user = get_sys_user(module)
+        if not user:
+            changed = create_user(module, system)
+            msg = f'User {user_name} created'
         else:
-            msg = 'User {0} update required no changes'.format(user_name)
+            changed = update_user(module, system, user)
+            if changed:
+                msg = f'User {user_name} updated'
+            else:
+                msg = f'User {user_name} update required no changes'
+    elif user_ldap_group_name:
+        ldap_user = get_user_ldap_group(module)
+        if not ldap_user:
+            changed = create_ldap_user_group(module)
+            msg = f'LDAP user group {user_ldap_group_name} created'
+        else:
+            changed = update_ldap_user_group(module, ldap_user)
+            if changed:
+                msg = f'LDAP user group {user_ldap_group_name} updated by deleting and recreating with updated parameters'
+            else:
+                msg = f'LDAP user group {user_ldap_group_name} update not required - no changes'
+    else:
+        msg = 'Neither user_name nor user_ldap_group_name were provided'
+        module.fail_json(msg)
+
     module.exit_json(changed=changed, msg=msg)
 
 
 def handle_absent(module):
-    system, user = get_sys_user(module)
+    """ Handle making user absent """
+    _, user = get_sys_user(module)
     user_name = module.params["user_name"]
     if not user:
         changed = False
-        msg = "User {0} already absent".format(user_name)
+        msg = f"User {user_name} already absent"
     else:
         changed = delete_user(module, user)
-        msg = "User {0} removed".format(user_name)
+        msg = f"User {user_name} removed"
     module.exit_json(changed=changed, msg=msg)
 
 
 def handle_reset_password(module):
-    system, user = get_sys_user(module)
+    """ Reset user password """
+    _, user = get_sys_user(module)
     user_name = module.params["user_name"]
     if not user:
-        msg = 'Cannot change password. User {0} not found'.format(user_name)
+        msg = f'Cannot change password. User {user_name} not found'
         module.fail_json(msg=msg)
     else:
-        reset_user_password(module, system, user)
-        msg = 'User {0} password changed'.format(user_name)
+        reset_user_password(module, user)
+        msg = f'User {user_name} password changed'
         module.exit_json(changed=True, msg=msg)
 
 
 def execute_state(module):
+    """ Find state and handle it """
     state = module.params['state']
     try:
         if state == 'stat':
@@ -296,45 +461,75 @@ def execute_state(module):
         elif state == 'reset_password':
             handle_reset_password(module)
         else:
-            module.fail_json(msg='Internal handler error. Invalid state: {0}'.format(state))
+            module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
     finally:
         system = get_system(module)
         system.logout()
 
 
-def check_options(module):
+def check_options(module): # pylint: disable=too-many-branches
+    """ Check option logic """
     state = module.params['state']
-    user_role = module.params['user_role']
-    user_pool = module.params['user_pool']
+    user_name =             module.params['user_name']
+    user_role =             module.params['user_role']
+    user_pool =             module.params['user_pool']
+    user_ldap_group_name =  module.params['user_ldap_group_name']
     if state == 'present':
         if user_role == 'pool_admin' and not user_pool:
             module.fail_json(msg='user_role "pool_admin" requires a user_pool to be provided')
         if user_role != 'pool_admin' and user_pool:
             module.fail_json(msg='Only user_role "pool_admin" should have a user_pool provided')
 
-        valid_keys = ['user_email', 'user_password', 'user_role', 'user_enabled']
-        for valid_key in valid_keys:
-            # Check required keys provided
-            try:
-                not_used = module.params[valid_key]
-            except KeyError:
-                msg = 'For state "present", options {0} are required'.format(", ".join(valid_keys))
-                module.fail_json(msg=msg)
+        if not user_name and not user_ldap_group_name:
+            msg = 'For state "present", option user_name or user_ldap_group_name is required'
+            module.fail_json(msg=msg)
+
+        if user_name and user_ldap_group_name:
+            msg = 'For state "present", option user_name and user_ldap_group_name cannot both be provided'
+            module.fail_json(msg=msg)
+
+        if user_name:
+            required_user_params = [
+                'user_email', 'user_password', 'user_role', 'user_enabled',
+            ]
+            for required_param in required_user_params:
+                param = module.params[required_param]
+                if not param:
+                    msg = f'For state "present", option {required_param} is required with option user_name'
+                    module.fail_json(msg=msg)
+
+        if user_ldap_group_name:
+            required_user_ldap_params = [
+                'user_ldap_group_dn', 'user_ldap_group_ldap', 'user_ldap_group_role',
+            ]
+            for required_param in required_user_ldap_params:
+                param = module.params[required_param]
+                if not param:
+                    msg = f'For state "present", option {required_param} is required with option user_ldap_group_name'
+                    module.fail_json(msg=msg)
+
+
+
     elif state == 'reset_password':
         if not module.params['user_password']:
             msg = 'For state "reset_password", user_password is required'
 
 
 def main():
+    """ main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            user_name=dict(required=True),
+            user_name=dict(required=False),
             user_email=dict(required=False),
             user_password=dict(required=False, no_log=True),
             user_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only']),
             user_enabled=dict(required=False, type='bool', default=True),
             user_pool=dict(required=False),
+            user_ldap_group_name=dict(required=False),
+            user_ldap_group_dn=dict(required=False),
+            user_ldap_group_ldap=dict(required=False),
+            user_ldap_group_role=dict(required=False),
             state=dict(default='present', choices=['stat', 'reset_password', 'present', 'absent']),
         )
     )
