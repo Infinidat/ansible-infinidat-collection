@@ -46,13 +46,16 @@ _ansible_clone      	= /home/$$USER/workspace/ansible
 _network_space_ips  	= 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
 _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py" "infini_network_space.py" "infini_port.py" "infini_vol.py" "infini_export_client.py" "infini_fs.py" "infini_map.py" "infini_pool.py" "infini_user.py"
 
+# Include, but do not fail if not found.
+-include Makefile-vars
+
 ##@ General
 setup: ## Setup Python requirements.
 	@# Install pbr early to prevent errors with flux and gossip install.
 	@# e.g. distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('pbr>=3.0')
 	$(_python) -m ensurepip && \
 	$(_python) -m pip install --user --upgrade pip && \
-	$(_python) -m pip install --user --upgrade ansible ansible-lint pbr && \
+	$(_python) -m pip install --user --upgrade ansible ansible-lint pbr pdbpp && \
 	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file) && \
 	$(_python) -m pip install --user --upgrade --requirement $(_requirements-dev-file) && \
 	curl -s https://repo.infinidat.com/setup/main-stable | sudo sh - && \

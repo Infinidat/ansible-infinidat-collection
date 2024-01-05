@@ -1,4 +1,5 @@
 vault_password.txt
+Makefile-vars
 # build products...
 *.py[co]
 build
