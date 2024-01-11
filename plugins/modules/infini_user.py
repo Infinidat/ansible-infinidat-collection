@@ -274,7 +274,9 @@ def update_user(module, system, user):
 
 def update_ldap_user_group(module):
     """ Update ldap user group by deleting and creating the LDAP user"""
-    delete_ldap_user_group(module)
+    changed = delete_ldap_user_group(module)
+    if not changed:
+        module.fail_json(msg='Cannot delete LDAP user {ldap_group_name}. Cannot find ID for LDAP group.')
     create_ldap_user_group(module)
     changed = True
     return changed
@@ -308,7 +310,8 @@ def delete_ldap_user_group(module):
     ldap_group_name = module.params['user_ldap_group_name']
     ldap_group_id = find_user_ldap_group_id(module)
     if not ldap_group_id:
-        module.fail_json(msg='Cannot delete LDAP user {ldap_group_name}. Cannot find ID for LDAP group.')
+        changed = False
+        return changed
     path = f"users/{ldap_group_id}?approved=yes"
     system = get_system(module)
     try:
@@ -432,16 +435,28 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Handle making user absent """
-    _, user = get_sys_user(module)
-    user_name = module.params["user_name"]
-    if not user:
-        changed = False
-        msg = f"User {user_name} already absent"
+    user_name = module.params['user_name']
+    user_ldap_group_name = module.params['user_ldap_group_name']
+    if user_name:
+        _, user = get_sys_user(module)
+        user_name = module.params["user_name"]
+        if not user:
+            changed = False
+            msg = f"User {user_name} already absent"
+        else:
+            changed = delete_user(module, user)
+            msg = f"User {user_name} removed"
+        module.exit_json(changed=changed, msg=msg)
+    elif user_ldap_group_name:
+        changed = delete_ldap_user_group(module)
+        if changed:
+            msg = f"LDAP group user {user_ldap_group_name} removed"
+        else:
+            msg = f"LDAP group user {user_ldap_group_name} already absent"
+        module.exit_json(changed=changed, msg=msg)
     else:
-        changed = delete_user(module, user)
-        msg = f"User {user_name} removed"
-    module.exit_json(changed=changed, msg=msg)
-
+        msg = 'Neither user_name nor user_ldap_group_name were provided for state absent'
+        module.fail_json(msg)
 
 def handle_reset_password(module):
     """ Reset user password """
