@@ -263,10 +263,13 @@ def get_cluster(module, system):
 
 
 @api_wrapper
-def get_user(module, system):
+def get_user(module, system, user_name_to_find=None):
     """Find a user by the user_name specified in the module"""
     user = None
-    user_name = module.params['user_name']
+    if not user_name_to_find:
+        user_name = module.params['user_name']
+    else:
+        user_name = user_name_to_find
     try:
         user = system.users.get(name=user_name)
     except ObjectNotFound:

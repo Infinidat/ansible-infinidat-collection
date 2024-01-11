@@ -81,8 +81,14 @@ options:
   user_ldap_group_role:
     description:
       - Role for the LDAP user group
+    choices: [ "admin", "pool_admin", "read_only" ]
     required: false
     type: str
+  user_ldap_group_pools:
+    description:
+      - A list of existing pools managed by the LDAP user group
+    required: false
+    type: list
 extends_documentation_fragment:
     - infinibox
 '''
@@ -175,6 +181,7 @@ def create_ldap_user_group(module):
     ldap_group_name = module.params['user_ldap_group_name']
     ldap_name = module.params['user_ldap_group_ldap']
     ldap_id = find_ldap_id(module)
+    ldap_pools = module.params['user_ldap_group_pools']
     if not ldap_id:
         msg = f'Cannot create LDAP group {ldap_group_name}. Cannot find ID for LDAP name {ldap_name}'
         module.fail_json(msg=msg)
@@ -185,7 +192,7 @@ def create_ldap_user_group(module):
         "dn": module.params['user_ldap_group_dn'],
         "ldap_id": ldap_id,
         "role": module.params['user_ldap_group_role'],
-        'type': "Ldap",
+        "type": "Ldap",
     }
     try:
         system.api.post(path=path, data=data)
@@ -194,6 +201,12 @@ def create_ldap_user_group(module):
             msg = f'user_ldap_group_name {ldap_name} already exists'
             module.fail_json(msg)
     changed = True
+
+    user = get_user(module, system, ldap_group_name)
+    for pool_name in ldap_pools:
+        pool = system.pools.get(name=pool_name)
+        add_user_to_pool_owners(user, pool)
+
     return changed
 
 
@@ -204,23 +217,15 @@ def add_user_to_pool_owners(user, pool):
     get owners, add user, then set owners.  Further, we need to know if the
     owners changed.  Use sets of owners to compare.
     """
-    # print("add_user_to_pool_owners(): start")
     changed = False
     pool_fields = pool.get_fields(from_cache=True, raw_value=True)
     pool_owners = pool_fields.get('owners', [])
-    # print('pool_owners:', pool_owners, 'pool_owners type:', type(pool_owners))
-    # print('user:', user)
-    # print('pool:', pool)
     pool_owners_set = set(pool_owners)
-    # print('pool_owners_set:', pool_owners_set)
     new_pool_owners_set = pool_owners_set.copy()
     new_pool_owners_set.add(user.id)
-    # print('new_pool_owners_set:', new_pool_owners_set)
     if pool_owners_set != new_pool_owners_set:
         pool.set_owners([user])
         changed = True
-    # print("changed:", changed)
-    # print("add_user_to_pool_owners(): end")
     return changed
 
 
@@ -267,27 +272,11 @@ def update_user(module, system, user):
     return changed
 
 
-def update_ldap_user_group(module, ldap_user):
-    """ Update ldap user group """
-    changed = False
-    user_ldap_group_name = module.params['user_ldap_group_name']
-    if not user_ldap_group_name:
-        module.fail_json('Cannot update ldap user group without a name')
-
-    user_ldap_group_role = module.params['user_ldap_group_role']
-    user_ldap_group_dn = module.params['user_ldap_group_dn']
-    user_ldap_group_id = find_user_ldap_group_id(module)
-
-    if \
-            user_ldap_group_name == ldap_user['name'] and \
-            user_ldap_group_id == ldap_user['id'] and \
-            user_ldap_group_dn == ldap_user['dn'] and \
-            user_ldap_group_role.upper() in ldap_user['roles']: # then same
-        changed = False
-    else: # then different
-        delete_ldap_user_group(module)
-        create_ldap_user_group(module)
-        changed = True
+def update_ldap_user_group(module):
+    """ Update ldap user group by deleting and creating the LDAP user"""
+    delete_ldap_user_group(module)
+    create_ldap_user_group(module)
+    changed = True
     return changed
 
 
@@ -410,7 +399,7 @@ def handle_present(module):
             changed = create_ldap_user_group(module)
             msg = f'LDAP user group {user_ldap_group_name} created'
         else:
-            changed = update_ldap_user_group(module, ldap_user)
+            changed = update_ldap_user_group(module)
             if changed:
                 msg = f'LDAP user group {user_ldap_group_name} updated by deleting and recreating with updated parameters'
             else:
@@ -470,10 +459,11 @@ def execute_state(module):
 def check_options(module): # pylint: disable=too-many-branches
     """ Check option logic """
     state = module.params['state']
-    user_name =             module.params['user_name']
-    user_role =             module.params['user_role']
-    user_pool =             module.params['user_pool']
-    user_ldap_group_name =  module.params['user_ldap_group_name']
+    user_name =            module.params['user_name']
+    user_role =            module.params['user_role']
+    user_pool =            module.params['user_pool']
+    user_ldap_group_name = module.params['user_ldap_group_name']
+    user_ldap_group_role = module.params['user_ldap_group_role']
     if state == 'present':
         if user_role == 'pool_admin' and not user_pool:
             module.fail_json(msg='user_role "pool_admin" requires a user_pool to be provided')
@@ -495,7 +485,7 @@ def check_options(module): # pylint: disable=too-many-branches
             for required_param in required_user_params:
                 param = module.params[required_param]
                 if not param:
-                    msg = f'For state "present", option {required_param} is required with option user_name'
+                    msg = f"For state 'present', option {required_param} is required with option user_name"
                     module.fail_json(msg=msg)
 
         if user_ldap_group_name:
@@ -507,7 +497,11 @@ def check_options(module): # pylint: disable=too-many-branches
                 if not param:
                     msg = f'For state "present", option {required_param} is required with option user_ldap_group_name'
                     module.fail_json(msg=msg)
-
+            if user_ldap_group_role == 'pool_admin':
+                user_ldap_group_pools = module.params['user_ldap_group_pools']
+                if not user_ldap_group_pools:
+                    msg = "For state 'present' and user_ldap_group_role 'pool_admin', user_ldap_group_pool must specify one or more pools"
+                    module.fail_json(msg=msg)
 
 
     elif state == 'reset_password':
@@ -529,7 +523,8 @@ def main():
             user_ldap_group_name=dict(required=False),
             user_ldap_group_dn=dict(required=False),
             user_ldap_group_ldap=dict(required=False),
-            user_ldap_group_role=dict(required=False),
+            user_ldap_group_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only']),
+            user_ldap_group_pools=dict(required=False, type='list', default=[]),
             state=dict(default='present', choices=['stat', 'reset_password', 'present', 'absent']),
         )
     )

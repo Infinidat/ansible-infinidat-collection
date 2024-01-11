@@ -40,7 +40,7 @@ _heading  = $(_yellow)
 # Use _make to execute make with consistent options
 _make = make --no-print-directory
 _watch = watch -n 1 --no-title
-_python = python3
+_python = python3.11
 
 # Other vars
 _LEADER =   "================ ["

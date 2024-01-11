@@ -32,7 +32,6 @@ _namespace          	= $(shell spruce json galaxy.yml | jq '.namespace' | sed 's
 _name               	= $(shell spruce json galaxy.yml | jq '.name'      | sed 's?"??g')
 _install_path       	= ~/.ansible/collections
 _install_path_local 	= $$HOME/.ansible/collections
-_python_version     	= python3.8
 _requirements-file  	= requirements.txt
 _requirements-dev-file  = requirements-dev.txt
 _user               	= psus-gitlab-cicd
@@ -275,9 +274,11 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 		ln --force --symbolic $$(pwd)/plugins/modules/$$m $(_ansible_clone)/lib/ansible/modules/infi/$$m; \
 	done
 	@echo "HACK - Creating hacking module_utils links $(_module_utilities)"
-	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$(_ansible_clone)/lib/ansible/module_utils/infinibox.py" && \
+	@ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$(_ansible_clone)/lib/ansible/module_utils/infinibox.py" && \
+	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$${HOME}/.local/lib/$(_python)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils/infinibox.py" && \
 	echo "HACK - Linking module_utils to ansible site-packages to allow changes to be used for dev" && \
-	utils_path="$$HOME/.local/lib/$(_python_version)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils" && \
+	echo "HACK - Site packages: $$HOME/.local/lib/$(_python)/site-packages/ansible_collections/infinidat" && \
+	utils_path="$$HOME/.local/lib/$(_python)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils" && \
 	mv "$$utils_path/infinibox.py" "$$utils_path/infinibox_orig.py" && \
 	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$$utils_path/infinibox.py"
 
