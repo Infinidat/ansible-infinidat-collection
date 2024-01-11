@@ -351,25 +351,44 @@ def get_user_fields(user):
 
     fields = user.get_fields(from_cache=True, raw_value=True)
     field_dict = {
-        "id":      user.id,
-        "enabled": fields.get('enabled', None),
-        "role":    fields.get('role', None),
+        "dn":      fields.get('dn', None),
         "email":   fields.get('email', None),
+        "enabled": fields.get('enabled', None),
+        "id":      user.id,
+        "ldap_id": fields.get('ldap_id', None),
         "pools":   pool_names,
+        "role":    fields.get('role', None),
+        "roles":   fields.get('roles', []),
+        "type":    fields.get('type', None),
     }
     return field_dict
 
 
 def handle_stat(module):
-    """ Handle stat for user """
-    _, user = get_sys_user(module)
-    user_name = module.params["user_name"]
-    if not user:
-        module.fail_json(msg=f'User {user_name} not found')
-    field_dict = get_user_fields(user)
+    """ Handle stat for user or LDAP group user """
+    user_name = module.params['user_name']
+    user_ldap_group_name = module.params['user_ldap_group_name']
+    if user_name:
+        _, user = get_sys_user(module)
+        user_name = module.params["user_name"]
+        if not user:
+            module.fail_json(msg=f'User {user_name} not found')
+        field_dict = get_user_fields(user)
+        msg = 'User stat found'
+    elif user_ldap_group_name:
+        system = get_system(module)
+        user = get_user(module, system, user_name_to_find=user_ldap_group_name)
+        if not user:
+            module.fail_json(msg=f'user_ldap_group_name {user_ldap_group_name} not found')
+        field_dict = get_user_fields(user)
+        msg = 'User LDAP group stat found'
+    else:
+        msg = 'Neither user_name nor user_ldap_group_name were provided for state stat'
+        module.fail_json(msg)
+
     result = {
         "changed": False,
-        "msg": 'User stat found'
+        "msg": msg,
     }
     result = merge_two_dicts(result, field_dict)
     module.exit_json(**result)
