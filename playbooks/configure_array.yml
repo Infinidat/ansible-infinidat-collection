@@ -13,13 +13,38 @@
     - admin_user_email: dev.mgmt@infinidat.com
     - pool_admin_user_name: Commvault
     - pool_admin_user_password: 123456
-    - pool_admin_user_email: dev.mgmt@infinidat.com
+    - pool_admin_user_email: dohlemacher@infinidat.com
     - ldap_name: PSUS_ANSIBLE_ad
     - user_ldap_group_name: CO-ReadOnly
     - user_ldap_group_dn: CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com
     - user_ldap_group_role: read_only # Choices: [admin, pool_admin, read_only]
     - network_space_name: PSUS_ANSIBLE_rep
+    - setup_alerting_emails: [ "dohlemacher@infinidat.com" ]
+    - prod_alerting_emails: [ "dohlemacher@infinidat.com" ]
+    - alerting_event_levels: [ "INFO", "WARNING", "ERROR", "CRITICAL" ]
+    - alerting_includes: []
+    - alerting_excludes: [ "EVENT_FLOOD", "USER_LOGIN_SUCCESS", "USER_LOGGED_OUT" ]
   tasks:
+    - name: Create temporary setup email notification rule setup_email for addresses {{ setup_alerting_emails }}
+      infini_notification_rule:
+        name: "setup_email"
+        event_level: "{{ alerting_event_levels }}"
+        include_events: "{{ alerting_includes }}" 
+        exclude_events: "{{ alerting_excludes }}"
+        recipients: "{{ setup_alerting_emails }}"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Remove production email notification rule for {{ prod_alerting_emails }}
+      infini_notification_rule:
+        name: "production_email"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     # TODO:
     #   David: metadata module
     #   Wei: config module
@@ -233,6 +258,27 @@
 #    - name: Configure Infinibox - Setup alerting production email
 #      ansible.builtin.debug:
 #        msg: (13) Create event rule to send email to Alerts-CorpSystemsStorage@jackhenry.com
+
+    - name: Create production email notification rule production_email for addresses {{ prod_alerting_emails }}
+      infini_notification_rule:
+        name: "production_email"
+        event_level: "{{ alerting_event_levels }}"
+        include_events: "{{ alerting_includes }}" 
+        exclude_events: "{{ alerting_excludes }}"
+        recipients: "{{ prod_alerting_emails }}"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Remove setup email notification rule for {{ setup_alerting_emails }}
+      infini_notification_rule:
+        name: "setup_email"
+        state: "absent"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
 #
 #    - name: Configure Infinibox - Remove temporarily alerting email
 #      ansible.builtin.debug:

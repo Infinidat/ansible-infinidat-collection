@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
 """This module creates, deletes or modifies metadata on Infinibox."""
 
 # Copyright: (c) 2023, Infinidat <info@infinidat.com>
@@ -8,7 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -74,8 +76,6 @@ EXAMPLES = r"""
       - ACTIVE_DIRECTORY_ALL_DOMAIN_CONTROLLERS_DOWN
       - ACTIVE_DIRECTORY_LEFT
     target: testgraylog1
-    user: "{{ user }}"
-    password: "{{ password }}"
     state: "present"
     user: "{{ user }}"
     password: "{{ password }}"
@@ -87,40 +87,21 @@ EXAMPLES = r"""
 # -*- coding: utf-8 -*-
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import json
-import traceback
-
-HAS_ARROW = True
-try:
-    import arrow
-except ImportError:
-    HAS_ARROW = False
+HAS_ARROW = False
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
     infinibox_argument_spec,
     get_system,
-    get_user,
-    get_pool,
-    unixMillisecondsToDate,
-    merge_two_dicts,
 )
-
-
-try:
-    from infi.dtypes.iqn import make_iscsi_name
-except ImportError:
-    pass  # Handled by HAS_INFINISDK from module_utils
 
 
 @api_wrapper
 def find_target_id(module, system):
-    """
-    Find the ID of the target by name
-    """
+    """ Find the ID of the target by name """
     target = module.params["target"]
-    path = "notifications/targets?name={0}&fields=id".format(target)
+    path = f"notifications/targets?name={target}&fields=id"
     api_result = system.api.get(
         path=path
     )
@@ -131,51 +112,21 @@ def find_target_id(module, system):
         target_id=None
     return target_id
 
-@api_wrapper
-def get_rule(module, disable_fail=False):
-    """
-    Find and return config setting value
-    Use disable_fail when we are looking for config
-    and it may or may not exist and neither case is an error.
-    """
-    pass
-
-def handle_stat(module):
-    """Return config stat"""
-
-    pass
-
-    # config_group = module.params["config_group"]
-    # key = module.params["key"]
-    # value = get_config(module)
-
-    # result = {
-    #     "changed": False,
-    #     "object_type": config_group,
-    #     "key": key,
-    #     "value": value,
-    # }
-    # module.exit_json(**result)
 
 @api_wrapper
-def get_rules(module, disable_fail=False):
-    """
-    Get all rules
-    """
-
+def get_rules(module):
+    """ Get all rules """
     system = get_system(module)
-    path = f"notifications/rules"
+    path = "notifications/rules"
     rules = system.api.get(path=path)
-
+    return rules
 
 
 @api_wrapper
 def find_rule_id(module, system):
-    """
-    Find the ID of the rule by name
-    """
+    """ Find the ID of the rule by name """
     rule_name = module.params["name"]
-    path = "notifications/rules?name={0}&fields=id".format(rule_name)
+    path = f"notifications/rules?name={rule_name}&fields=id"
     api_result = system.api.get(
         path=path
     )
@@ -188,24 +139,17 @@ def find_rule_id(module, system):
 
 
 @api_wrapper
-def delete_rule(module, disable_fail=False):
-    """
-    Delete a notification rule
-    """
-
+def delete_rule(module):
+    """ Delete a notification rule """
     system = get_system(module)
-    name = module.params["name"]
     rule_id = find_rule_id(module,system)
-
-
     path = f"notifications/rules/{rule_id}?approved=true"
     system.api.delete(path=path)
 
+
 @api_wrapper
-def create_rule(module, disable_fail=False):
-    """
-    Create a new notifition rule
-    """
+def create_rule(module):
+    """ Create a new notifition rule """
     system = get_system(module)
     name = module.params["name"]
     event_level = module.params["event_level"]
@@ -216,7 +160,7 @@ def create_rule(module, disable_fail=False):
     target = module.params["target"]
 
 
-    path = f"notifications/rules"
+    path = "notifications/rules"
 
     json_data = {
         "name": name,
@@ -240,8 +184,9 @@ def create_rule(module, disable_fail=False):
 
     system.api.post(path=path, data=json_data)
 
+
 @api_wrapper
-def update_rule(module, disable_fail=False):
+def update_rule(module):
     """
     Update an existing rule.
     """
@@ -252,7 +197,6 @@ def update_rule(module, disable_fail=False):
     exclude_events = module.params["exclude_events"]
     recipients = module.params["recipients"]
     target = module.params["target"]
-
 
     json_data = {
         "name": name,
@@ -273,19 +217,13 @@ def update_rule(module, disable_fail=False):
         #json_data["target"] = target
 
     json_data["target_id"] = target_id
-
     rule_id = find_rule_id(module,system)
-
     path = f"notifications/rules/{rule_id}"
-
-
     system.api.put(path=path, data=json_data)
 
 
-
 def handle_present(module):
-    """Make config present"""
-
+    """Make notification rule present"""
     system = get_system(module)
     name = module.params["name"]
     changed = False
@@ -294,29 +232,45 @@ def handle_present(module):
         if not rule_id:
             create_rule(module)
             changed=True
-            msg = "Rule {} created".format(name)
+            msg = f"Rule {name} created"
         else:
             update_rule(module)
-            msg = "Rule {} updated".format(name)
+            msg = f"Rule {name} updated"
             changed=True
 
     module.exit_json(changed=changed, msg=msg)
 
 
+def handle_stat(module):
+    """ Return rule stat """
+    result = None
+    system = get_system(module)
+    name = module.params['name']
+    rule_id = find_rule_id(module, system)
+    if rule_id:
+        path = f"notifications/rules/{rule_id}"
+        api_result = system.api.get(path=path)
+        result = api_result.get_json()['result']
+        result["rule_id"] = result.pop("id") # Rename id to rule_id
+        result["msg"] = f"Stats for notification rule {name}"
+        result["changed"] = False
+        module.exit_json(**result)
+    msg = f"Notification rule {name} not found"
+    module.fail_json(msg=msg)
 
 
 def handle_absent(module):
-    """Make config present"""
+    """Make notification rule present"""
     changed = False
     name = module.params["name"]
     system = get_system(module)
 
     rule_id = find_rule_id(module,system)
     if not rule_id:
-        msg="Rule of {0} does not exist, deletion operation skipped.".format(name)
+        msg=f"Rule of {name} does not exist, deletion operation skipped"
         changed = False
     else:
-        msg="Rule {0} has been deleted".format(name)
+        msg=f"Rule {name} has been deleted"
         changed = True
         if not module.check_mode:
             delete_rule(module)
@@ -341,11 +295,17 @@ def execute_state(module):
         system.logout()
 
 
-
 def check_options(module):
     """Verify module options are sane"""
-
-    pass
+    recipients = module.params['recipients']
+    if recipients:
+        for recipient in recipients:
+            if len(recipient) == 1:
+                msg = f"{recipient} is an invalid email address. Recipients '{recipients}' must be provided as a list, e.g. '[ \"user@example.com\" ]'"
+                module.fail_json(msg=msg)
+            if '@' not in recipient:
+                msg = f"{recipient} is an invalid email address"
+                module.fail_json(msg=msg)
 
 
 def main():
@@ -369,12 +329,9 @@ def main():
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
 
-    if not HAS_ARROW:
-        module.fail_json(msg=missing_required_lib("arrow"))
-
     check_options(module)
     execute_state(module)
 
 
 if __name__ == '__main__':
-     main()
+    main()
