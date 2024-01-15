@@ -8,6 +8,17 @@
   vars:
     - dataset_default_provisioning: THICK
     - table_export_limit: 3000
+    - admin_user_name: admin
+    - admin_user_password: 123456
+    - admin_user_email: dev.mgmt@infinidat.com
+    - pool_admin_user_name: Commvault
+    - pool_admin_user_password: 123456
+    - pool_admin_user_email: dev.mgmt@infinidat.com
+    - ldap_name: PSUS_ANSIBLE_ad
+    - user_ldap_group_name: CO-ReadOnly
+    - user_ldap_group_dn: CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com
+    - user_ldap_group_role: read_only # Choices: [admin, pool_admin, read_only]
+    - network_space_name: PSUS_ANSIBLE_rep
   tasks:
     # TODO:
     #   David: metadata module
@@ -34,6 +45,8 @@
       ansible.builtin.debug:
         msg:
           - "Provisioning Infinibox {{ system }} using user {{ user }}"
+          - "  Dataset default provisioning - {{ dataset_default_provisioning }}"
+          - "  Table export limit - {{ table_export_limit }}"
 
     - name: Configure Infinibox - Set default provisioning to {{ dataset_default_provisioning }}
       infini_metadata:
@@ -63,7 +76,7 @@
 
     - name: Configure Infinibox - Setup Active Directory
       infini_users_repository:
-        name: "PSUS_ANSIBLE_ad"
+        name: "{{ ldap_name }}"
         bind_password: "tuFrAxahuYe4"
         bind_username: "conldap"
         ad_domain_name: "infinidat.com"
@@ -79,11 +92,17 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-#
-#    - name: TODO by David - Configure Infinibox - Setup LDAP groups
-#      # Ref: http://{{ibox2}}/api/rest/config/ldap
-#      ansible.builtin.debug:
-#        msg: (3) Add LDAP groups for READ_ONLY and ADMIN roles
+    - name: Configure 'CO-ReadOnly' user group
+      infini_user:
+        user_ldap_group_name: "{{ user_ldap_group_name }}"
+        user_ldap_group_dn: "{{ user_ldap_group_dn }}"
+        user_ldap_group_ldap: "{{ ldap_name }}"
+        user_ldap_group_role: "{{ user_ldap_group_role }}"
+        #user_group_pools: ""
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 #
 #    - name: TODO by David - Test Infinibox - Test LDAP
 #      ansible.builtin.debug:
@@ -93,11 +112,18 @@
 #      ansible.builtin.debug:
 #        msg: (4) Test LDAP roles
 #
-#    - name: DONE using users module, TODO TEST - Configure Infinibox - Change admin password
-#      # Ref: Existing user module
-#      infini_user:
-#        msg: (5) Change admin password
-#
+    - name: Set up an admin user
+      infini_user:
+        user_name: "{{ admin_user_name }}"
+        user_email: "{{ admin_user_email }}"
+        user_password: "{{ admin_user_password }}"
+        user_role: "admin"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+
 #    - name: TODO by Wei - Configure Infinibox - Temporarily setup alerting email
 #      # Ref: http://{{ibox2}}/api/rest/notification/targets
 #      ansible.builtin.debug:
@@ -119,15 +145,65 @@
 #    - name: Done - Configure Infinibox - Create network space
 #      infini_network_space:
 #        msg: (8) Create network space
+
+ #   - name: 8 -> Create {{ network_space_service }} network space named {{ network_space_name }}
+ #     infini_network_space:
+ #       name: "{{ network_space_name }}"
+ #       state: present
+ #       interfaces:
+ #         - PG1
+ #         - PG1
+ #         - PG1
+ #       service: "Replication"
+ #       netmask: 19
+ #       network: 172.31.32.0
+ #       default_gateway: 172.31.63.254
+ #       # rate_limit: 8
+ #       # mtu: 1280
+ #       ips:
+ #         - 172.31.32.145
+ #         - 172.31.32.146
+ #         - 172.31.32.147
+ #         - 172.31.32.148
+ #         - 172.31.32.149
+ #         - 172.31.32.150
+ #       user: "{{ user }}"
+ #       password: "{{ password }}"
+ #       system: "{{ system }}"
+
 #
 #    - name: TODO by David - Configure Infinimentrics - Add Infinibox
 #      ansible.builtin.debug:
 #        msg: (9) Add Infinibox to Infinimetrics
 #
-#    - name: Done - Configure Infinibox - Create pools
-#      # Ref: Existing pools module
-#      infini_pool:
-#        msg: (10) Create pools
+    - name: Create pools
+      infini_pool:
+        name: "{{ item }}"
+        size: 10GB
+        vsize: 10GB
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      loop:
+        - pool-a
+        - pool-b
+        - pool-c
+
+    - name: Set up pool admin user
+      infini_user:
+        user_name: "{{ pool_admin_user_name }}"
+        user_email: "{{ pool_admin_user_email }}"
+        user_password: "{{ pool_admin_user_password }}"
+        user_role: "pool_admin"
+        user_pool: "pool-a"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+
+
 #
 #
 #
