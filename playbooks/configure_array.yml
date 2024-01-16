@@ -45,6 +45,28 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: Enable compression
+      infini_config:
+        config_group: "mgmt"
+        key: "pool.compression_enabled_default"
+        value: true
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Set dataset default provisioning to THIN
+      infini_metadata:
+        object_type: "system"
+        key: "ui-dataset-default-provisioning"
+        value: "THIN"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+
+
     # TODO:
     #   David: metadata module
     #   Wei: config module
