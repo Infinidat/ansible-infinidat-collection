@@ -458,6 +458,7 @@ def handle_absent(module):
         msg = 'Neither user_name nor user_ldap_group_name were provided for state absent'
         module.fail_json(msg)
 
+
 def handle_reset_password(module):
     """ Reset user password """
     _, user = get_sys_user(module)
@@ -469,6 +470,29 @@ def handle_reset_password(module):
         reset_user_password(module, user)
         msg = f'User {user_name} password changed'
         module.exit_json(changed=True, msg=msg)
+
+
+def handle_login(module):
+    """ Test user credentials by logging in """
+    system = get_system(module)
+    user_name = module.params["user_name"]
+    user_password = module.params['user_password']
+    path = f"users/login"
+    data = {
+        "username": user_name,
+        "password": user_password,
+    }
+    try:
+        login = system.api.post(path=path, data=data)
+    except APICommandFailed:
+        msg = f'User {user_name} failed to login'
+        module.fail_json(msg=msg)
+    if login.status_code == 200:
+        msg = f'User {user_name} successfully logged in'
+        module.exit_json(changed=False, msg=msg)
+    else:
+        msg = f'User {user_name} failed to login with status code: {login.status_code}'
+        module.fail_json(msg=msg)
 
 
 def execute_state(module):
@@ -483,6 +507,8 @@ def execute_state(module):
             handle_absent(module)
         elif state == 'reset_password':
             handle_reset_password(module)
+        elif state == 'login':
+            handle_login(module)
         else:
             module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
     finally:
@@ -537,10 +563,10 @@ def check_options(module): # pylint: disable=too-many-branches
                     msg = "For state 'present' and user_ldap_group_role 'pool_admin', user_ldap_group_pool must specify one or more pools"
                     module.fail_json(msg=msg)
 
-
-    elif state == 'reset_password':
-        if not module.params['user_password']:
-            msg = 'For state "reset_password", user_password is required'
+    elif state == 'reset_password' or state == 'login':
+        if not module.params['user_name'] or not module.params['user_password']:
+            msg = f"For state '{state}', user_name and user_password are both required"
+            module.fail_json(msg=msg)
 
 
 def main():
@@ -559,7 +585,7 @@ def main():
             user_ldap_group_ldap=dict(required=False),
             user_ldap_group_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only']),
             user_ldap_group_pools=dict(required=False, type='list', default=[]),
-            state=dict(default='present', choices=['stat', 'reset_password', 'present', 'absent']),
+            state=dict(default='present', choices=['stat', 'reset_password', 'present', 'absent', 'login']),
         )
     )
 

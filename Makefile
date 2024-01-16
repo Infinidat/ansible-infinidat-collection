@@ -257,9 +257,9 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_notification_target
+# _module_under_test = infini_notification_target
 # _module_under_test = infini_notification_rule
-# _module_under_test = infini_user
+_module_under_test = infini_user
 # _module_under_test = infini_users_repository
 # _module_under_test = infini_fs
 # _module_under_test = infini_conig
@@ -323,6 +323,12 @@ dev-hack-module-absent:  ## Hack absent.
 
 dev-hack-module-absent-jq:  ## Hack absent with jq.
 	@state=absent $(_make) _dev-hack-module-jq
+
+dev-hack-module-login:  ## Hack login for infini_user module.
+	@state=login $(_make) _dev-hack-module
+
+dev-hack-module-login-jq:  ## Hack login for infini_user module with jq.
+	@state=login $(_make) _dev-hack-module-jq
 
 ##@ Test Module
 _module = infini_network_space.py

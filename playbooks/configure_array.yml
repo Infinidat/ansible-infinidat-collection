@@ -7,6 +7,7 @@
     - infinidat.infinibox
   vars:
     - dataset_default_provisioning: THICK
+    - use_base2_units: true
     - table_export_limit: 3000
     - admin_user_name: admin
     - admin_user_password: 123456
@@ -55,47 +56,17 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Set dataset default provisioning to THIN
+    - name: Set capacity units
       infini_metadata:
         object_type: "system"
-        key: "ui-dataset-default-provisioning"
-        value: "THIN"
+        key: "ui-dataset-base2-units"
+        value: "{{ use_base2_units }}"
         state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-
-
-    # TODO:
-    #   David: metadata module
-    #   Wei: config module
-
-    #- name: TODO by Wei - Configure Infinibox - Set default compression to enabled
-    #  # Ref: http://{{ibox2}}/api/rest/metadata
-    #  # Add key: /metadata/system
-    #  # Data: {"ui-dataset-default-provisioning": "THIN"}
-    #  infini_config:
-    #    object_type: "system"
-    #    key: "ui-dataset-default-provisioning"
-    #    state: "stat"
-    #    user: "{{ user }}"
-    #    password: "{{ password }}"
-    #    system: "{{ system }}"
-    #  register: metadata_out
-
-    #- name: TODO by Wei - Show metadata stat output
-    #  infini_config:
-    #    var: metadata_out
-
-    - name: Show system information
-      ansible.builtin.debug:
-        msg:
-          - "Provisioning Infinibox {{ system }} using user {{ user }}"
-          - "  Dataset default provisioning - {{ dataset_default_provisioning }}"
-          - "  Table export limit - {{ table_export_limit }}"
-
-    - name: Configure Infinibox - Set default provisioning to {{ dataset_default_provisioning }}
+    - name: Set dataset default provisioning to {{ dataset_default_provisioning }}
       infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
@@ -104,12 +75,6 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-
-#    - name: TODO by Wei - Configure Infinibox - Set capacity units to base 2, e.g. GiB, TiB
-#      # Ref: http://{{ibox2}}/api/rest/metadata
-#      # ui-dataset-base2-units
-#      infini_config:
-#        msg: (1) Set capacity units
 
     - name: Configure Infinibox - Set maximum export rows to {{ table_export_limit }}
       infini_metadata:
@@ -139,6 +104,15 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: Test user login using Active Directory credentials
+      infini_user:
+        user_name: "admin"  # Must be an AD account, not local
+        user_password: "123456"
+        state: "login"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: Configure 'CO-ReadOnly' user group
       infini_user:
         user_ldap_group_name: "{{ user_ldap_group_name }}"
@@ -150,6 +124,7 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+
 #
 #    - name: TODO by David - Test Infinibox - Test LDAP
 #      ansible.builtin.debug:
