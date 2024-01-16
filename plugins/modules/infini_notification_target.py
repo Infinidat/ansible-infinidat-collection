@@ -16,12 +16,12 @@ module: infini_notification_target
 version_added: '2.13.12'
 short_description:  Config notification target
 description:
-    - This module config notification targets on Infinibox
+    - This module configures syslog notification targets on an Infinibox
 author: Wei Wang
 options:
   name:
     description:
-      - Name of the target
+      - Name of the syslog target
     required: true
   host:
     description:
@@ -31,29 +31,49 @@ options:
     description:
       - Port of the target
     required: false
+    default: 514
   transport:
     description:
       -  TCP or UDP
     required: false
+    choices:
+      - UDP
+      - TCP
+    default: UDP
   protocol:
     description:
-      - Protocol used for this target
+      - Protocol used for this target. Currently, the only valid value is SYSLOG.
     required: false
+    choices:
+      - SYSLOG
   facility:
     description:
       - Facility
+    choices:
+      - LOCAL0
+      - LOCAL1
+      - LOCAL2
+      - LOCAL3
+      - LOCAL4
+      - LOCAL5
+      - LOCAL6
+      - LOCAL7
     required: false
+    default: LOCAL7
   visibility:
     description:
       - Visibility
+    choices:
+      - CUSTOMER
+      - INFINIDAT
     required: false
   post_test:
     descrption:
-      - Run a test after new target being created
+      - Run a test after new target is created
     required: false
   state:
     description:
-      - Query or modifies config
+      - Query or modifies target
     required: true
     choices: [ "stat", "present", "absent" ]
 
@@ -127,40 +147,37 @@ except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
 
-
 @api_wrapper
-def get_target(module, disable_fail=False):
+def get_target(module):
     """
     Find and return config setting value
     Use disable_fail when we are looking for config
     and it may or may not exist and neither case is an error.
     """
-    pass
+    name = module.params['name']
+    path = f"notifications/targets?name={name}"
+    system = get_system(module)
+    target = system.api.get(path=path)
+    if target:
+        result = target.get_result()
+        return result
+    msg = f"Users repository {name} not found. Cannot stat."
+    module.fail_json(msg=msg)
+
 
 def handle_stat(module):
     """Return config stat"""
-
-    system = get_system(module)
-    name = module.params["name"]
-    changed = False
-    if not module.check_mode:
-        targets = get_targets(module,system)
-        update_target(module)
-        msg = "Targets recived".format(name)
-    module.exit_json(changed=False, msg=msg)
-
-
-
-@api_wrapper
-def get_targets(module, disable_fail=False):
-    """
-    Get all targets
-    """
-
-    system = get_system(module)
-    path = f"notifications/targets"
-    targets = system.api.get(path=path)
-
+    name = module.params['name']
+    try:
+        result = get_target(module)[0]
+    except IndexError:
+        module.fail_json(f"Cannot stat notification target {name}. Target not found.")
+    result2 = {
+        "changed": False,
+        "msg": f"Found notification target {name}",
+    }
+    result = merge_two_dicts(result, result2)
+    module.exit_json(**result)
 
 
 @api_wrapper
@@ -238,34 +255,9 @@ def create_target(module, disable_fail=False):
 def update_target(module, disable_fail=False):
     """
     Update an existing target.
-    Note: due to the target update api do not support more than one
-          field at one time, deleting the existing target is too dangerous.
-          we are not going to support this function
     """
-
-    pass
-
-    # system = get_system(module)
-    # name = module.params["name"]
-    # protocol = module.params["protocol"]
-    # host = module.params["host"]
-    # port = module.params["port"]
-    # facility = module.params["facility"]
-    # transport = module.params["transport"]
-    # visibility = module.params["visibility"]
-    # target_id = find_target_id(module,system)
-    # path = f"notifications/targets/{target_id}"
-    # json_data = {
-    #     "name": name,
-    #     "protocol":  protocol,
-    #     "host": host,
-    #     "port": port,
-    #     "facility": facility,
-    #     "transport": transport,
-    #     "visibility": visibility
-    # }
-    # system.api.put(path=path, data=json_data)
-
+    delete_target(module)
+    create_target(module)
 
 
 def handle_present(module):
@@ -278,14 +270,12 @@ def handle_present(module):
         target_id = find_target_id(module,system)
         if not target_id:
             create_target(module)
-            changed=True
-            msg = "Target {} created".format(name)
-            module.exit_json(changed=changed, msg=msg)
+            msg = f"Target {name} created"
         else:
-            msg = "Target {} already exist".format(name)
-            module.fail_json(msg=msg)
-
-
+            update_target(module)
+            msg = f"Target {name} deleted and recreated"
+        changed=True
+        module.exit_json(changed=changed, msg=msg)
 
 
 def handle_absent(module):
@@ -324,11 +314,10 @@ def execute_state(module):
         system.logout()
 
 
-
-
 def check_options(module):
     """Verify module options are sane"""
-    pass
+    if module.params['protocol'] != "SYSLOG":
+        module.fail_json(msg="The only supported protocol is SYSLOG")
 
 
 def main():
@@ -337,13 +326,13 @@ def main():
 
     argument_spec.update(
         {
-            "name": {"required": False},
+            "name": {"required": True},
             "host": {"required": False, "type": str},
-            "port": {"required": False, "type": int},
-            "transport": {"required": False, "type": str},
-            "protocol": {"required": False, "default": "SYSLOG", "type": str},
-            "facility": {"required": False, "default": "LOCAL7", "type": str},
-            "visibility": {"required": False, "default": "CUSTOMER", "type": str},
+            "port": {"required": False, "type": int, "default": 514},
+            "transport": {"required": False, "default": "UDP", "choices": ["UDP", "TCP"]},
+            "protocol": {"required": False, "default": "SYSLOG", "choices": ["SYSLOG"]},
+            "facility": {"required": False, "default": "LOCAL7", "choices": ["LOCAL0", "LOCAL1", "LOCAL2", "LOCAL3", "LOCAL4", "LOCAL5", "LOCAL6", "LOCAL7"]},
+            "visibility": {"required": False, "default": "CUSTOMER", "choices": ["CUSTOMER", "INFINIDAT"]},
             "post_test": {"required": False, "default": True, "type": bool},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
         }
