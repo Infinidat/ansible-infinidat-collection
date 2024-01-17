@@ -198,7 +198,7 @@ def create_ldap_user_group(module):
         system.api.post(path=path, data=data)
     except APICommandFailed as err:
         if err.status_code in [409]:
-            msg = f'user_ldap_group_name {ldap_name} already exists'
+            msg = f'Cannot create user_ldap_group_name {ldap_group_name}: {err.message}'
             module.fail_json(msg)
     changed = True
 
