@@ -37,10 +37,6 @@ options:
     description:
       - Exclued events
     required: false
-  target_parameters:
-    description:
-      -
-    required: false
   recipients:
     description:
       - Email list of the recipients
@@ -298,6 +294,10 @@ def execute_state(module):
 def check_options(module):
     """Verify module options are sane"""
     recipients = module.params['recipients']
+    target = module.params['target']
+    if recipients and target:
+        msg = f"Cannot specify both recipients and target parameters"
+        module.fail_json(msg=msg)
     if recipients:
         for recipient in recipients:
             if len(recipient) == 1:

@@ -6,7 +6,7 @@
   collections:
     - infinidat.infinibox
   vars:
-    - dataset_default_provisioning: THICK
+    - dataset_default_provisioning: THIN
     - use_base2_units: true
     - table_export_limit: 3000
     - admin_user_name: admin
@@ -16,21 +16,27 @@
     - pool_admin_user_password: 123456
     - pool_admin_user_email: dohlemacher@infinidat.com
     - ldap_name: PSUS_ANSIBLE_ad
-    - user_ldap_group_name: CO-ReadOnly
-    - user_ldap_group_dn: CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com
-    - user_ldap_group_role: read_only # Choices: [admin, pool_admin, read_only]
     - network_space_name: PSUS_ANSIBLE_rep
     - setup_alerting_emails: [ "dohlemacher@infinidat.com" ]
     - prod_alerting_emails: [ "dohlemacher@infinidat.com" ]
     - alerting_event_levels: [ "INFO", "WARNING", "ERROR", "CRITICAL" ]
     - alerting_includes: []
     - alerting_excludes: [ "EVENT_FLOOD", "USER_LOGIN_SUCCESS", "USER_LOGGED_OUT" ]
+    - syslogs:
+        - name: syslog_target
+        - protocol: SYSLOG
+        - host: 172.31.88.158 
+        - port: 514
+        - facility: LOCAL7
+        - transport: UDP
+        - visability: CUSTOMER
+        - post_test: True
   tasks:
     - name: Create temporary setup email notification rule setup_email for addresses {{ setup_alerting_emails }}
       infini_notification_rule:
         name: "setup_email"
         event_level: "{{ alerting_event_levels }}"
-        include_events: "{{ alerting_includes }}" 
+        include_events: "{{ alerting_includes }}"
         exclude_events: "{{ alerting_excludes }}"
         recipients: "{{ setup_alerting_emails }}"
         state: "present"
@@ -38,7 +44,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Remove production email notification rule for {{ prod_alerting_emails }}
+    - name: Temporarily remove production email notification rule for {{ prod_alerting_emails }}
       infini_notification_rule:
         name: "production_email"
         state: "absent"
@@ -113,17 +119,39 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Configure 'CO-ReadOnly' user group
+    - name: Configure 'CO-ReadOnly' LDAP user group
       infini_user:
-        user_ldap_group_name: "{{ user_ldap_group_name }}"
-        user_ldap_group_dn: "{{ user_ldap_group_dn }}"
+        user_ldap_group_name: "CO-ReadOnly"
+        user_ldap_group_dn: "CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com"
         user_ldap_group_ldap: "{{ ldap_name }}"
-        user_ldap_group_role: "{{ user_ldap_group_role }}"
-        #user_group_pools: ""
+        user_ldap_group_role: "read_only"
         state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+
+    # - name: Configure 'CO-StorageAdmin' LDAP user group
+    #   infini_user:
+    #     user_ldap_group_name: "CO-StorageAdmin"
+    #     user_ldap_group_dn: "CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com"
+    #     user_ldap_group_ldap: "{{ ldap_name }}"
+    #     user_ldap_group_role: "admin"
+    #     state: "present"
+    #     user: "{{ user }}"
+    #     password: "{{ password }}"
+    #     system: "{{ system }}"
+
+    # - name: Configure 'ETS-CommVault' LDAP user group
+    #   infini_user:
+    #     user_ldap_group_name: "ETS-CommVault"
+    #     user_ldap_group_dn: "CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com"
+    #     user_ldap_group_ldap: "{{ ldap_name }}"
+    #     user_ldap_group_role: "pool_admin"
+    #     user_group_pools: [ "pool-a", "pool-b", "pool-c" ]
+    #     state: "present"
+    #     user: "{{ user }}"
+    #     password: "{{ password }}"
+    #     system: "{{ system }}"
 
 #
 #    - name: TODO by David - Test Infinibox - Test LDAP
@@ -159,6 +187,33 @@
 #      # Ref: http://{{ibox2}}/api/rest/notification/targets
 #      ansible.builtin.debug:
 #        msg: (7) Configure syslogs
+
+    - name: Create syslog notification target
+      infini_notification_target:
+        state: present
+        name: syslog_target
+        protocol: SYSLOG
+        host: 172.31.88.158
+        port: 514
+        facility: LOCAL7
+        transport: UDP
+        visibility: CUSTOMER
+        post_test: True # Force a dummy event for notification to be posted
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Create syslog notification rule
+      infini_notification_rule:
+        name: "syslog"
+        event_level: "{{ alerting_event_levels }}"
+        include_events: "{{ alerting_includes }}"
+        exclude_events: "{{ alerting_excludes }}"
+        target: syslog_target
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 #
 #    - name: TODO by Wei - Configure Infinibox - Create syslogs
 #      ansible.builtin.debug:
@@ -212,7 +267,7 @@
         - pool-b
         - pool-c
 
-    - name: Set up pool admin user
+    - name: Set up pool admin user {{ pool_admin_user_name }} for pool pool-a
       infini_user:
         user_name: "{{ pool_admin_user_name }}"
         user_email: "{{ pool_admin_user_email }}"
@@ -260,7 +315,7 @@
       infini_notification_rule:
         name: "production_email"
         event_level: "{{ alerting_event_levels }}"
-        include_events: "{{ alerting_includes }}" 
+        include_events: "{{ alerting_includes }}"
         exclude_events: "{{ alerting_excludes }}"
         recipients: "{{ prod_alerting_emails }}"
         state: "present"
