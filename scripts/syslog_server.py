@@ -6,17 +6,18 @@ Tiny Syslog Server in Python.
 This is a tiny syslog server that is able to receive UDP based syslog
 entries on a specified port and save them to a file.
 That's it... it does nothing else...
-There are a few configuration parameters.
+There are a few configuration parameters. These can be set via env vars.
 Usage: sudo ./syslog_server.py
 """
 
+import os
 import logging
 import socketserver
 
 # User Configuration variables:
-LOG_FILE = 'syslog.log'
-HOST = "0.0.0.0"
-PORT = 514
+LOG_FILE = os.environ.get('LOG_FILE', 'syslog.log')
+HOST = os.environ.get('HOST', "0.0.0.0")
+PORT = int(os.environ.get('PORT', 514))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,7 +40,7 @@ class SyslogUDPHandler(socketserver.BaseRequestHandler):
 if __name__ == "__main__":
     try:
         server = socketserver.UDPServer((HOST,PORT), SyslogUDPHandler)
-        print("Starting server...")
+        print(f"Starting server on host {HOST}:{PORT} using file {LOG_FILE}...")
         server.serve_forever(poll_interval=0.5)
     except PermissionError:
         print("Permission denied while trying to start the server. Try sudo.")
