@@ -204,7 +204,7 @@
 #      ansible.builtin.debug:
 #        msg: (7) Configure syslogs
 
-    - name: Remove existing syslog notification rule
+    - name: Remove existing syslog notification rules
       # Required since the target cannot be modified if there is a rule that uses the target
       infini_notification_rule:
         name: "{{ item.rule_name }}"
@@ -215,9 +215,9 @@
       loop:
         "{{ syslogs }}"
 
-    - name: Create syslog notification target
+    - name: Create syslog notification targets
       infini_notification_target:
-        state: present
+        state: "present"
         name: "{{ item.target_name }}"
         protocol: "{{ item.protocol }}"
         host: "{{ item.host }}"
@@ -231,7 +231,7 @@
       loop:
         "{{ syslogs }}"
 
-    - name: Create syslog notification rule
+    - name: Create syslog notification rules
       infini_notification_rule:
         name: "{{ item.rule_name }}"
         target: "{{ item.target_name }}"
@@ -353,23 +353,18 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Remove setup email notification rule for {{ setup_alerting_emails }}
+    - name: Configure Infinibox - Post event that Infinibox {{ system }} configuration is completed by user {{ user }}
+      infini_event:
+        description_template: Infinibox {{ system }} configuration is complete
+        level: INFO
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Remove temporary setup email notification rule for {{ setup_alerting_emails }}
       infini_notification_rule:
         name: "setup_email"
         state: "absent"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-
-#
-#    - name: Configure Infinibox - Remove temporarily alerting email
-#      ansible.builtin.debug:
-#        msg: (13) Remove event rule to send email to TEO-Engineering-Alerts@jackhenry.com
-#
-#    - name: Test Infinibox - Test production alerting
-#      ansible.builtin.debug:
-#        msg: (13) Create test event
-#
-#    - name: Configure Infinibox - Notify TS-Storage that system is complete and ready for use
-#      ansible.builtin.debug:
-#        msg: (14) Send event - System is complete and ready for use

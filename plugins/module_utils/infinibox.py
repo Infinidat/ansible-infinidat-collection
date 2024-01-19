@@ -63,6 +63,20 @@ def api_wrapper(func):
     return __wrapper
 
 
+def fail(module, msg):
+    """Logout of system before calling fail_json()"""
+    system = get_system(module)
+    system.logout()
+    module.fail_json(msg=msg)
+
+
+def success(module, changed, msg):
+    """Logout of system before calling exit_json()"""
+    system = get_system(module)
+    system.logout()
+    module.exit_json(msg=msg)
+
+
 def infinibox_argument_spec():
     """Return standard base dictionary used for the argument_spec argument in AnsibleModule"""
     return dict(

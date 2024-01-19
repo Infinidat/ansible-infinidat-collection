@@ -134,6 +134,8 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     get_volume,
     infinibox_argument_spec,
     manage_snapshot_locks,
+    fail,
+    success,
 )
 
 
@@ -447,18 +449,6 @@ def handle_absent(module):
             success(module, changed=changed, msg="Snapshot removed")
     else:
         fail(module, msg="A programming error has occured")
-
-
-def fail(module, msg):
-    system = get_system(module)
-    system.logout()
-    module.fail_json(msg=msg)
-
-
-def success(module, changed, msg):
-    system = get_system(module)
-    system.logout()
-    module.exit_json(msg=msg)
 
 
 def execute_state(module):
