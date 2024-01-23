@@ -69,7 +69,12 @@ options:
       - It does not affect sync-replication or active-active traffic.
     required: false
     type: int
-
+  async_only:
+    description:
+      - Run asynchronously only.
+    required: false
+    type: boolean
+    default: false
 extends_documentation_fragment:
     - infinibox
 '''
@@ -137,9 +142,7 @@ def create_empty_network_space(module, system):
     }
     interfaces = module.params["interfaces"]
 
-    # print("Creating network space {0}".format(network_space_name))
     product_id = system.api.get('system/product_id')
-    # print("api: {0}".format(product_id.get_result()))
 
     net_create_url = "network/spaces"
     net_create_data = {
@@ -157,7 +160,6 @@ def create_empty_network_space(module, system):
         path=net_create_url,
         data=net_create_data
     )
-    # print("net_create: {0}".format(net_create))
 
 
 @api_wrapper
@@ -172,7 +174,6 @@ def find_network_space_id(module, system):
     )
     result = net_id.get_json()['result'][0]
     space_id = result['id']
-    # print("Network space has ID {0}".format(space_id))
     return space_id
 
 
@@ -222,6 +223,12 @@ def update_network_space(module, system):
                 "default_gateway": module.params["default_gateway"],
                 "netmask": module.params["netmask"],
                 "network": module.params["network"],
+            }
+        },
+        {"rate_limit": module.params["rate_limit"]},
+        { "properties":
+            {
+                "is_async_only": module.params["async_only"],
             }
         },
     ]
@@ -302,7 +309,6 @@ def disable_and_delete_ip(module, network_space, ip):
             network_space.disable_ip_address(addr)
         except APICommandFailed as err:
             if err.error_code == "IP_ADDRESS_ALREADY_DISABLED":
-                print(f"Already disabled IP {addr}")
                 pass
             else:
                 module.fail_json(msg=f"Disabling of network space {network_space_name} IP {mgmt}{addr} API command failed")
@@ -386,6 +392,7 @@ def main():
             network_config=dict(default=dict(), required=False, type=dict),
             ips=dict(default=list(), required=False, type="list", elements="str"),
             rate_limit=dict(default=None, required=False, type=int),
+            async_only=dict(default=False, required=False, type=bool),
         )
     )
 
