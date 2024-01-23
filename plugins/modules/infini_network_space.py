@@ -313,6 +313,33 @@ def handle_present(module):
     module.exit_json(changed=changed, msg=msg)
 
 
+def disable_and_delete_ip(module, network_space, ip):
+    """
+    Disable and delete a network space IP
+    """
+    if not ip:
+        return  # Nothing to do
+    addr = ip['ip_address']
+    ip_type = ip['type']
+    mgmt = ""
+    if ip_type == "MANAGEMENT":
+        mgmt == "management " # Trailing space by design
+
+    try:
+        try:
+            network_space.disable_ip_address(addr)
+        except APICommandFailed as err:
+            if err.error_code == "IP_ADDRESS_ALREADY_DISABLED":
+                print(f"Already disabled IP {addr}")
+                pass
+            else:
+                module.fail_json(msg=f"Disabling of network space {network_space_name} IP {mgmt}{addr} API command failed")
+
+        network_space.remove_ip_address(addr)
+    except Exception as err:
+        module.fail_json(msg=f"Disabling or removal of network space {network_space_name} IP {mgmt}{addr} failed: {err}")
+
+
 def handle_absent(module):
     """
     Remove a namespace. First, may disable and remove the namespace's IPs.
@@ -329,43 +356,21 @@ def handle_absent(module):
 
         # Disable and delete IPs from space
         if not module.check_mode:
+            management_ip = None  # Must be disabled and deleted last
             for ip in ips:
-                addr = ip["ip_address"]
-
-                # print("Disabling IP {0}".format(addr))
-                try:
-                    network_space.disable_ip_address(addr)
-                except APICommandFailed as err:
-                    if err.error_code == "IP_ADDRESS_ALREADY_DISABLED":
-                        pass
-                        # print("Already disabled IP {0}".format(addr))
-                    else:
-                        # print("Failed to disable IP {0}".format(addr))
-                        module.fail_json(
-                            msg="Disabling of network space {0} IP {1} failed".format(
-                                network_space_name, addr
-                            )
-                        )
-
-                # print("Removing IP {0}".format(addr))
-                try:
-                    network_space.remove_ip_address(addr)
-                except Exception as err:
-                    module.fail_json(
-                        msg="Removal of network space {0} IP {1} failed: {2}".format(
-                            network_space_name, addr, err
-                        )
-                    )
+                if ip ['type'] == 'MANAGEMENT':
+                    management_ip = ip
+                    continue
+                disable_and_delete_ip(module, network_space, ip)
+            disable_and_delete_ip(module, network_space, management_ip)
 
             # Delete space
             network_space.delete()
             changed = True
-            msg = "Network space {0} removed".format(network_space_name)
+            msg = f"Network space {network_space_name} removed"
         else:
             changed = False
-            msg = "Network space {0} not altered due to checkmode".format(
-                network_space_name
-            )
+            msg = f"Network space {network_space_name} not altered due to checkmode"
 
     module.exit_json(changed=changed, msg=msg)
 
@@ -397,9 +402,9 @@ def main():
                 default="present", required=False, choices=["stat", "present", "absent"]
             ),
             service=dict(
-                default="replication",
+                default="RMR_SERVICE",
                 required=False,
-                choices=["replication", "NAS_SERVICE", "ISCSI_SERVICE"],
+                choices=["RMR_SERVICE", "NAS_SERVICE", "ISCSI_SERVICE"],
             ),
             mtu=dict(default=None, required=False, type=int),
             network=dict(default=None, required=False),

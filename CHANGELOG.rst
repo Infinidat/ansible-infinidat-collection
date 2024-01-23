@@ -2,6 +2,20 @@
 Change Log
 ==========
 
+-------------------
+v1.5.0 (2024-01-18)
+-------------------
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* psdev-1147: Fix an issue network space module where when removing a space the management interface was not removed last. This is required.
+
+^^^^^^^^^^^^^^^^^^^^
+Feature Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1045: Add infini_event module. Allow posting of custom events.
+* psdev-1108: Provide configure_array.yml playbook. This is an example playbook demonstrating detailed configuration of Infiniboxes. It is idempotent so may be run against new or existing Infiniboxes repeatedly.
 
 -------------------
 v1.4.0 (2023-11-01)

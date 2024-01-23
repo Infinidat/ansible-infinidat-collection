@@ -257,7 +257,8 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_event
+_module_under_test = infini_network_space
+# _module_under_test = infini_event
 # _module_under_test = infini_notification_target
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_user
