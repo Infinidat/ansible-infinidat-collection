@@ -166,7 +166,7 @@ def find_network_space_id(module, system):
     Find the ID of this network space
     """
     network_space_name = module.params["name"]
-    net_id_url = "network/spaces?name={0}&fields=id".format(network_space_name)
+    net_id_url = f"network/spaces?name={network_space_name}&fields=id"
     net_id = system.api.get(
         path=net_id_url
     )
@@ -178,20 +178,16 @@ def find_network_space_id(module, system):
 
 @api_wrapper
 def add_ips_to_network_space(module, system, space_id):
-    network_space_name = module.params["name"]
-    # print("Adding IPs to network space {0}".format(network_space_name))
-
+    """ Add IPs to space. Ignore address conflict errors. """
     ips = module.params["ips"]
     for ip in ips:
-        ip_url = "network/spaces/{0}/ips".format(space_id)
+        ip_url = f"network/spaces/{space_id}/ips"
         ip_data = ip
-        ip_add = system.api.post(
-            path=ip_url,
-            data=ip_data
-        )
-        # print("add_ips json: {0}".format(ip_add.get_json()))
-        result = ip_add.get_json()['result']
-        # print("add ip result: {0}".format(result))
+        try:
+            ip_add = system.api.post(path=ip_url, data=ip_data)
+        except APICommandFailed as err:
+            if err.error_code != "NET_SPACE_ADDRESS_CONFLICT":
+                raise
 
 
 @api_wrapper
@@ -214,51 +210,27 @@ def create_network_space(module, system):
 def update_network_space(module, system):
     """
     Update network space.
-    TODO - This is incomplete and will not update the space.
-    It will instead return changed=False and a message.
-    To implement this we will need to find the existing space.
-    For each field that we support updating, we need to compare existing
-    to new values and if different update.  We will need to iterate
-    over the settings or we will receive:
-        Status: 400
-        Code: NOT_SUPPORTED_MULTIPLE_UPDATE
+    Update fields individually. If grouped the API will generate
+    a NOT_SUPPORTED_MULTIPLE_UPDATE error.
     """
-    changed = False
-    msg = "Update is not supported yet"
-    module.exit_json(changed=changed, msg=msg)
-
-    # TODO Everything below is incomplete
-    # Update network space
-    network_space_name = module.params["name"]
-    service = module.params["service"]
-    network_config = {
-        "netmask": module.params["netmask"],
-        "network": module.params["network"],
-        "default_gateway": module.params["default_gateway"],
-    }
-    interfaces = module.params["interfaces"]
-
-    # print("Updating network space {0}".format(network_space_name))
-
-    # Find space's ID
     space_id = find_network_space_id(module, system)
-
-    net_url = "network/spaces/{0}".format(space_id)
-    net_data = {
-        "name": network_space_name,
-        "service": service,
-        "network_config": network_config,
-        "interfaces": interfaces,
-    }
-
-    # Find existing space
-    net_existing = system.api.get(path=net_url)
-
-    net_update = system.api.put(
-        path=net_url,
-        data=net_data
-    )
-    # print("net_update: {0}".format(net_update))
+    datas = [
+        {"interfaces": module.params["interfaces"]},
+        {"mtu": module.params["mtu"]},
+        {"network_config":
+            {
+                "default_gateway": module.params["default_gateway"],
+                "netmask": module.params["netmask"],
+                "network": module.params["network"],
+            }
+        },
+    ]
+    for data in datas:
+        net_update = system.api.put(
+            path=f"network/spaces/{space_id}",
+            data=data
+        )
+    add_ips_to_network_space(module, system, space_id)
 
 
 def get_network_space_fields(module, network_space):
@@ -305,11 +277,11 @@ def handle_present(module):
     system = get_system(module)
     net_space = get_net_space(module, system)
     if net_space:
-        changed = update_network_space(module, net_space)
-        msg = "Host {0} updated".format(network_space_name)
+        changed = update_network_space(module, system)
+        msg = f"Network space named {network_space_name} updated"
     else:
         changed = create_network_space(module, system)
-        msg = "Network space {0} created".format(network_space_name)
+        msg = f"Network space named {network_space_name} created"
     module.exit_json(changed=changed, msg=msg)
 
 

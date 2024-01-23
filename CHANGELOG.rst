@@ -16,6 +16,7 @@ Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
 * psdev-1045: Add infini_event module. Allow posting of custom events.
 * psdev-1108: Provide configure_array.yml playbook. This is an example playbook demonstrating detailed configuration of Infiniboxes. It is idempotent so may be run against new or existing Infiniboxes repeatedly.
+* Implement network space module present state to handle updating parameters in an existing network space.
 
 -------------------
 v1.4.0 (2023-11-01)
