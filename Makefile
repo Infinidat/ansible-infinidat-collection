@@ -257,7 +257,8 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_certificate
+_module_under_test = infini_fiber_channel_switch
+# _module_under_test = infini_certificate
 # _module_under_test = infini_network_space
 # _module_under_test = infini_event
 # _module_under_test = infini_notification_target
@@ -332,6 +333,12 @@ dev-hack-module-login:  ## Hack login for infini_user module.
 
 dev-hack-module-login-jq:  ## Hack login for infini_user module with jq.
 	@state=login $(_make) _dev-hack-module-jq
+
+dev-hack-module-rename:  ## Hack rename for infini_fiber_channel_switch module.
+	@state=rename $(_make) _dev-hack-module
+
+dev-hack-module-rename-jq:  ## Hack rename for infini_user module with jq.
+	@state=rename $(_make) _dev-hack-module-jq
 
 ##@ Test Module
 _module = infini_network_space.py
