@@ -188,7 +188,7 @@ def add_ips_to_network_space(module, system, space_id):
             ip_add = system.api.post(path=ip_url, data=ip_data)
         except APICommandFailed as err:
             if err.error_code != "NET_SPACE_ADDRESS_CONFLICT":
-                raise
+                module.fail_json(msg=f"Cannot add IP {ip} to network space {network_space_name}: {err}")
 
 
 @api_wrapper

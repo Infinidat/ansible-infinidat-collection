@@ -188,21 +188,6 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-
-#    - name: TODO by Wei - Configure Infinibox - Temporarily setup alerting email
-#      # Ref: http://{{ibox2}}/api/rest/notification/targets
-#      ansible.builtin.debug:
-#        msg: (6) Create event rule to send email to TEO-Engineering-Alerts@jackhenry.com
-#
-#    - name: TODO by Wei - Test Infinibox - Test temporarily  alerting
-#      ansible.builtin.debug:
-#        msg: (6) Create test event
-#
-#    - name: TODO by Wei - Configure Infinibox - Define syslog from list
-#      # Ref: http://{{ibox2}}/api/rest/notification/targets
-#      ansible.builtin.debug:
-#        msg: (7) Configure syslogs
-
     - name: Remove existing syslog notification rules
       # Required since the target cannot be modified if there is a rule that uses the target
       infini_notification_rule:
@@ -273,7 +258,8 @@
         network: 172.20.0.0
         default_gateway: 172.20.95.254
         # rate_limit: 8
-        # mtu: 1280
+        # mtu: 1500
+        # async_only: true
         ips: # IPs borrowed from https://labs.infinidat.com/gdc/systems/psus-vbox-aws44-1/ip/
           - 172.20.50.111
           - 172.20.50.70
@@ -318,14 +304,6 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-
-
-#
-#
-#
-#
-#
-#
 #    - name: Configure Infinibox - Label fibre channel switches
 #      # Ref: http://{{ibox2}}/api/rest/fc/switches/{ID}
 #      ansible.builtin.debug:
@@ -335,20 +313,29 @@
 #      ansible.builtin.debug:
 #        msg: (11) Test renamed fibre channel switches. Validate WWN in BNA
 #
-#    # Ensure that JHA CA Certificate is installed by remote support 
-#    - name: Configure Infinibox - Update management SSL certificate
-#      # Ref: https://wiki.infinidat.com/display/TWDRAFTS/.Config+System+SSL+Certificate+commands+vPUBLISHED
-#      # Ref: http://{{ibox2}}/api/rest/system/certificates
-#      ansible.builtin.debug:
-#        msg: (12) Update management SSL certificate
-#
-#    - name: Configure Infinibox - Update SA SSL certificate
-#      ansible.builtin.debug:
-#        msg: (12) Update SA SSL certificate
-#
-#    - name: Configure Infinibox - Setup alerting production email
-#      ansible.builtin.debug:
-#        msg: (13) Create event rule to send email to Alerts-CorpSystemsStorage@jackhenry.com
+    - name: Install SSL certificate
+      infini_certificate:
+        certificate_file_name: /home/stack/workspace/ansible-infinidat-collection/signed-certificate-with-pkey.pem
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Pause for a short period since the SSL certificate was updated
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Stat SSL certificate
+      infini_certificate:
+        state: "stat"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: cert_out
+
+    - name: Show SSL stat
+      ansible.builtin.debug:
+        msg: "{{ cert_out }}"
 
     - name: Create production email notification rule production_email for addresses {{ prod_alerting_emails }}
       infini_notification_rule:

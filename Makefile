@@ -257,7 +257,8 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_network_space
+_module_under_test = infini_certificate
+# _module_under_test = infini_network_space
 # _module_under_test = infini_event
 # _module_under_test = infini_notification_target
 # _module_under_test = infini_notification_rule
@@ -381,6 +382,9 @@ test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install
 infinishell:  ## Run infinishell.
 	@TERM=xterm infinishell $(_infinishell_creds) --json
 
+infinishell-json:  # Run infinishell with JSON output.
+	@TERM=xterm infinishell --json $(_infinishell_creds)
+
 infinishell-events:  # Run infinishell with hint to watch events.
 	@TERM=xterm echo "Command: event.watch username=$(_user) exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_SESSION_EXPIRED,USER_LOGIN_FAILURE tail_length=35"
 	@TERM=xterm infinishell $(_infinishell_creds)
@@ -412,3 +416,38 @@ infinishell-network-space-iscsi-delete:  ## Delete a network space using infinis
 	TERM=xterm infinishell --cmd="config.net_space.delete net_space=iSCSI -y" $(_infinishell_creds) 2>&1 \
 		| egrep 'deleted|No such network space';
 	@echo -e $(_finish)
+
+##@ Certificates
+# create-cert-not-working:  ## Create a self signed SSL certificate for use with an Infinibox.
+# 	@# Ref: https://support.infinidat.com/hc/en-us/articles/10106396511133-Communicating-with-InfiniBox-using-an-SSL-certificate
+# 	@PHRASE="123456" && \
+# 	CSR="infinibox_csr_leon.pem" && \
+# 	KEY="server.key" && \
+# 	CERT="infinibox.crt" && \
+# 	CONCAT="concat.crt" && \
+# 	echo "== Generating private key file $$KEY" && \
+# 	openssl \
+# 		genrsa \
+# 		-des3 \
+# 		-passout "pass:$$PHRASE" \
+# 		-out "$${KEY}" \
+# 		2048 && \
+# 	echo "== Generating crt file $$CERT" && \
+# 	openssl \
+# 		x509 \
+# 		-req \
+# 		-days 365 \
+# 		-passin "pass:$$PHRASE" \
+# 		-in "$$CSR" \
+# 		-signkey "$$KEY" \
+# 		-out "$$CERT" && \
+# 	echo "== View crt file $$CERT" && \
+# 	openssl x509 -text -noout -in "$${CERT}" && \
+# 	echo "== Creating $$CONCAT containing both" && \
+# 	cat "$$KEY" "$$CERT" > "$$CONCAT"
+
+create-cert:  ## Create a self signed SSL certificate for use with an Infinibox.
+	@# Ref: https://wiki.infinidat.com/pages/viewpage.action?pageId=45624136
+	openssl req -new -newkey rsa:2048 -nodes -out ca.csr -keyout private-key.pem && \
+	openssl x509 -signkey private-key.pem -days 3 -req -in ca.csr -out signed-certificate-no-pkey.pem && \
+	cat signed-certificate-no-pkey.pem private-key.pem > signed-certificate-with-pkey.pem
