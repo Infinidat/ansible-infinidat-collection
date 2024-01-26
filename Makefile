@@ -425,36 +425,27 @@ infinishell-network-space-iscsi-delete:  ## Delete a network space using infinis
 	@echo -e $(_finish)
 
 ##@ Certificates
-# create-cert-not-working:  ## Create a self signed SSL certificate for use with an Infinibox.
-# 	@# Ref: https://support.infinidat.com/hc/en-us/articles/10106396511133-Communicating-with-InfiniBox-using-an-SSL-certificate
-# 	@PHRASE="123456" && \
-# 	CSR="infinibox_csr_leon.pem" && \
-# 	KEY="server.key" && \
-# 	CERT="infinibox.crt" && \
-# 	CONCAT="concat.crt" && \
-# 	echo "== Generating private key file $$KEY" && \
-# 	openssl \
-# 		genrsa \
-# 		-des3 \
-# 		-passout "pass:$$PHRASE" \
-# 		-out "$${KEY}" \
-# 		2048 && \
-# 	echo "== Generating crt file $$CERT" && \
-# 	openssl \
-# 		x509 \
-# 		-req \
-# 		-days 365 \
-# 		-passin "pass:$$PHRASE" \
-# 		-in "$$CSR" \
-# 		-signkey "$$KEY" \
-# 		-out "$$CERT" && \
-# 	echo "== View crt file $$CERT" && \
-# 	openssl x509 -text -noout -in "$${CERT}" && \
-# 	echo "== Creating $$CONCAT containing both" && \
-# 	cat "$$KEY" "$$CERT" > "$$CONCAT"
-
 create-cert:  ## Create a self signed SSL certificate for use with an Infinibox.
 	@# Ref: https://wiki.infinidat.com/pages/viewpage.action?pageId=45624136
-	openssl req -new -newkey rsa:2048 -nodes -out ca.csr -keyout private-key.pem && \
-	openssl x509 -signkey private-key.pem -days 3 -req -in ca.csr -out signed-certificate-no-pkey.pem && \
-	cat signed-certificate-no-pkey.pem private-key.pem > signed-certificate-with-pkey.pem
+	@# Ref: https://support.infinidat.com/hc/en-us/articles/10106396511133-Communicating-with-InfiniBox-using-an-SSL-certificate
+	@# Ref: https://www.digicert.com/kb/ssl-support/openssl-quick-reference-guide.htm
+	@FQDN="vbox-ps-01.lab.gdc.il.infinidat.com" && \
+	CERTIFICATE_SUBJECT_NAME="/C=US/ST=Massachusetts/OU=PSUS/O=Infinidat/CN=$$FQDN" && \
+	CSR="ca.csr" && \
+	KEY="private-key.pem" && \
+	CERT="signed-certificate-no-pkey.pem" && \
+	CONCAT="signed-certificate-with-pkey.pem" && \
+	DAYS="18250" && \
+	\
+	echo "== Generating private key file $$KEY" && \
+	openssl req -new -newkey rsa:2048 -subj "$$CERTIFICATE_SUBJECT_NAME" -nodes -out "$$CSR" -keyout "$$KEY" && \
+	\
+	echo "== Generating CSR file $$CSR" && \
+	openssl req -new -subj "$$CERTIFICATE_SUBJECT_NAME" -key "$$KEY" -out "$$CSR" && \
+	\
+	echo "== Generating crt file $$CERT" && \
+	openssl x509 -signkey "$$KEY" -days "$$DAYS" -req -in "$$CSR" -out "$$CERT" && \
+	\
+	echo "== Creating $$CONCAT containing both" && \
+	cat "$$CERT" "$$KEY" > "$$CONCAT"
+

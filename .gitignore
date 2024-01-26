@@ -111,3 +111,13 @@ changelogs/.plugin-cache.yaml
 # secrets
 ibox_vars/*.yaml
 collections/
+
+# SSL
+ca.csr
+infinidat/
+private-key.pem
+scripts/create-vols.sh
+signed-certificate-no-pkey.pem
+signed-certificate-with-pkey.pem
+
+infinidat/
