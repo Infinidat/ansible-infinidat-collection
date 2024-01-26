@@ -10,7 +10,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 ---
-module: infini_fiber_channel_switch
+module: infini_fibre_channel_switch
 version_added: '2.16.2'
 short_description: Manage Infinibox FC switch names
 description:
@@ -19,11 +19,11 @@ author: David Ohlemacher (@ohlemacher)
 options:
     switch_name:
     description:
-      - Current name of an existing fiber channel switch.
+      - Current name of an existing fibre channel switch.
     required: true
     new_switch_name:
     description:
-      - New name for an existing fiber channel switch.
+      - New name for an existing fibre channel switch.
     required: false
   state:
     description:
@@ -38,16 +38,16 @@ extends_documentation_fragment:
 """
 
 EXAMPLES = r"""
-- name: Rename fiber channel switch
-  infini_fiber_channel:
+- name: Rename fibre channel switch
+  infini_fibre_channel:
     switch_name: VSAN 100
     state: rename
     user: admin
     password: secret
     system: ibox001
 
-- name: Get information about fiber channel switch
-  infini_fiber_channel:
+- name: Get information about fibre channel switch
+  infini_fibre_channel:
     switch_name: VSAN 2000
     state: stat
     user: admin

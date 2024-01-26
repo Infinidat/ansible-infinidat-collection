@@ -147,6 +147,7 @@ _test_playbook:
 		ansible-galaxy collection install --force "$${PWD}"; \
 		ansible-playbook \
 			$$ask_become_pass \
+			-vv \
 			--inventory "inventory" \
 			--extra-vars "$(_extra_vars)" \
 			--vault-password-file ../vault_password.txt \
@@ -227,13 +228,13 @@ test-notification-rules:  ## Run notification rule tests
 	@echo -e $(_finish)
 
 ##@ Solution Examples
-configure-ibox:  ## Configure an Infinibox.
+configure-array:  ## Configure an Infinibox.
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
 	ask_become_pass="" playbook_name=configure_array.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
-# deconfigure-ibox:  ## Remove some Infinibox configureations set by the ibox-configure recipe.
+# deconfigure-array:  ## Remove some Infinibox configureations set by the ibox-configure recipe.
 # 	@echo -e $(_begin)
 # 	ansible-galaxy collection install --force "$${PWD}"
 # 	ask_become_pass="" playbook_name=deconfigure_array.yml $(_make) _test_playbook
@@ -257,7 +258,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_fiber_channel_switch
+_module_under_test = infini_fibre_channel_switch
 # _module_under_test = infini_certificate
 # _module_under_test = infini_network_space
 # _module_under_test = infini_event
@@ -334,7 +335,7 @@ dev-hack-module-login:  ## Hack login for infini_user module.
 dev-hack-module-login-jq:  ## Hack login for infini_user module with jq.
 	@state=login $(_make) _dev-hack-module-jq
 
-dev-hack-module-rename:  ## Hack rename for infini_fiber_channel_switch module.
+dev-hack-module-rename:  ## Hack rename for infini_fibre_channel_switch module.
 	@state=rename $(_make) _dev-hack-module
 
 dev-hack-module-rename-jq:  ## Hack rename for infini_user module with jq.

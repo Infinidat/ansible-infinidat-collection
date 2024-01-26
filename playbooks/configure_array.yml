@@ -189,7 +189,7 @@
         system: "{{ system }}"
 
     - name: Remove existing syslog notification rules
-      # Required since the target cannot be modified if there is a rule that uses the target
+      # Rule removal is required since targets cannot be modified if there rules that use them
       infini_notification_rule:
         name: "{{ item.rule_name }}"
         state: "absent"
@@ -228,14 +228,6 @@
         system: "{{ system }}"
       loop:
         "{{ syslogs }}"
-#
-#    - name: TODO by Wei - Configure Infinibox - Create syslogs
-#      ansible.builtin.debug:
-#        msg: (7) Create syslogs
-#
-#    - name: Done - Configure Infinibox - Create network space
-#      infini_network_space:
-#        msg: (8) Create network space
 
     - name: Remove replication network space named Replication
       infini_network_space:
@@ -304,15 +296,18 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-#    - name: Configure Infinibox - Label fibre channel switches
-#      # Ref: http://{{ibox2}}/api/rest/fc/switches/{ID}
-#      ansible.builtin.debug:
-#        msg: (11) Rename fibre channel switches using names listed in file 
-#
-#    - name: Test Infinibox - Test labels fibre channel switches
-#      ansible.builtin.debug:
-#        msg: (11) Test renamed fibre channel switches. Validate WWN in BNA
-#
+    - name: Update a fibre channel switch label
+      infini_fibre_channel_switch:
+        switch_name: VSAN 100
+        new_switch_name: Switch1000
+        state: "rename"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: switch_label_result
+      failed_when: >  # WARNING: This should be removed if the array has FC configured
+        ("Cannot find switch" not in switch_label_result.msg)
+
     - name: Install SSL certificate
       infini_certificate:
         certificate_file_name: /home/stack/workspace/ansible-infinidat-collection/signed-certificate-with-pkey.pem
