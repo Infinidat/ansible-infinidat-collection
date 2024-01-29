@@ -17,9 +17,13 @@ Feature Enhancements
 * psdev-1151: Add infini_fiber_channel_switch module. Allow renaming of FC switches.
 * psdev-1148: Add infini_certificate module. Allow uploading SSL certificates.
 * psdev-1045: Add infini_event module. Allow posting of custom events.
+* Add infini_config module.
+* Add infini_notification_rule module.
+* Add infini_notification_target module.
 * psdev-1108: Provide configure_array.yml playbook. This is an example playbook demonstrating detailed configuration of Infiniboxes. It is idempotent so may be run against new or existing Infiniboxes repeatedly.
 * psdev-1147: Implement network space module present state to handle updating parameters in an existing network space. Add support for is_async option.
 * psdev-1108: Add state "login" to infini_user module. This tests credentials. Added to support Active Directory testing.
+* Add syslog_server script to allow testing of syslog notifications.
 
 -------------------
 v1.4.0 (2023-11-01)

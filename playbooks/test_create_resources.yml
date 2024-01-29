@@ -21,8 +21,8 @@
     - name: POSITIVE test -> Create pool {{ auto_prefix }}pool
       infini_pool:
         name: "{{ auto_prefix }}pool"
-        size: 1TB
-        vsize: 1TB
+        size: 10GB
+        vsize: 10GB
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
@@ -615,7 +615,7 @@
         user_email: "{{ auto_prefix }}pool_admin_user@example.com"
         user_password: "secret1"
         user_role: "pool_admin"
-        user_enabled: "true"
+        user_enabled: true
         user_pool: "{{ auto_prefix }}pool"
         state: present
         user: "{{ user }}"
@@ -628,7 +628,7 @@
         user_email: "{{ auto_prefix }}pool_admin_user@example.com"
         user_password: "secret1"
         user_role: "pool_admin"
-        user_enabled: "false"
+        user_enabled: false
         user_pool: "{{ auto_prefix }}pool"
         state: present
         user: "{{ user }}"

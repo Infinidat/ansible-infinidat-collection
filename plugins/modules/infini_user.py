@@ -540,11 +540,11 @@ def check_options(module): # pylint: disable=too-many-branches
 
         if user_name:
             required_user_params = [
-                'user_email', 'user_password', 'user_role', 'user_enabled',
+                'user_email', 'user_password', 'user_role',
             ]
             for required_param in required_user_params:
                 param = module.params[required_param]
-                if not param:
+                if param == None:
                     msg = f"For state 'present', option {required_param} is required with option user_name"
                     module.fail_json(msg=msg)
 
@@ -575,15 +575,15 @@ def main():
     argument_spec.update(
         dict(
             user_name=dict(required=False),
-            user_email=dict(required=False),
-            user_password=dict(required=False, no_log=True),
-            user_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only']),
+            user_email=dict(required=False, default=None),
+            user_password=dict(required=False, no_log=True, default=None),
+            user_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only'], default=None),
             user_enabled=dict(required=False, type='bool', default=True),
-            user_pool=dict(required=False),
-            user_ldap_group_name=dict(required=False),
-            user_ldap_group_dn=dict(required=False),
-            user_ldap_group_ldap=dict(required=False),
-            user_ldap_group_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only']),
+            user_pool=dict(required=False, default=None),
+            user_ldap_group_name=dict(required=False, default=None),
+            user_ldap_group_dn=dict(required=False, default=None),
+            user_ldap_group_ldap=dict(required=False, default=None),
+            user_ldap_group_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only'], default=None),
             user_ldap_group_pools=dict(required=False, type='list', default=[]),
             state=dict(default='present', choices=['stat', 'reset_password', 'present', 'absent', 'login']),
         )
