@@ -101,18 +101,26 @@ except ImportError:
 
 
 def handle_stat(module):
-    path = f"system/certificates"
-    system = get_system(module)
+    name = module.params["name"]
+    path = f"config/sso/idps?name={name}"
+
+    breakpoint()
     try:
-        cert_result = system.api.get(path=path).get_result()[0]
+        system = get_system(module)
+        sso_result = system.api.get(path=path).get_result()
     except APICommandFailed as err:
-        msg = f"Cannot stat."
+        msg = f"Cannot stat SSO identity provider {name}: {err}"
         fail(module, msg=msg)
+
+    if not sso_result:
+        msg = f"SSO identity provider {name} not found. Cannot stat."
+        fail(module, msg=msg)
+
     result = dict(
         changed=False,
-        msg="Certficate stat found"
+        msg=f"SSO {name} stat found"
     )
-    result = merge_two_dicts(result, cert_result)
+    result = merge_two_dicts(result, sso_result)
     module.exit_json(**result)
 
 
@@ -126,8 +134,6 @@ def handle_present(module):
     name = module.params['name']
 
     path = f"config/sso/idps"
-    system = get_system(module)
-
     data = {
         "enabled": enabled,
         "issuer": issuer,
@@ -138,20 +144,50 @@ def handle_present(module):
         "signing_certificate": signing_certificate,
     }
 
-    cert_serial       = cert_result['certificate']['serial_number']
-    cert_issued_by_cn = cert_result['certificate']['issued_by']['CN']
-    cert_issued_to_cn = cert_result['certificate']['issued_to']['CN']
+    breakpoint()
+    try:
+        system = get_system(module)
+        system.api.post(path=path, data=data)
+    except APICommandFailed as err:
+        if err.error_code == "LDAP_NAME_CONFLICT":
+            msg = f"Users repository {name} conflicts."
+            module.fail_json(msg=msg)
+        elif err.error_code == "LDAP_BAD_CREDENTIALS":
+            msg = f"Cannot create users repository {name} due to incorrect LDAP credentials: {err}"
+            module.fail_json(msg=msg)
+        else:
+            msg = f"Cannot create users repository {name}: {err}"
+            module.fail_json(msg=msg)
+
     result = dict(
         changed=True,
-        msg="System certificate uploaded successfully. " + \
-        f"Certificate S/N {cert_serial} issued by CN {cert_issued_by_cn} to CN {cert_issued_to_cn}"
+        msg="SSO successfully configured"
     )
     result = merge_two_dicts(result, cert_result)
     module.exit_json(**result)
 
 
 def handle_absent(module):
-    fail(module, msg="Not implemented: handle_absent()")
+    name = module.params["name"]
+    path = f"config/sso/idps?name={name}"
+
+    breakpoint()
+    try:
+        system = get_system(module)
+        sso_result = system.api.delete(path=path).get_result()
+    except APICommandFailed as err:
+        msg = f"Cannot delete SSO identity provider {name}: {err}"
+        fail(module, msg=msg)
+
+    if not sso_result:
+        msg = f"SSO identity provider {name} not found. Cannot stat."
+        fail(module, msg=msg)
+
+    result = dict(
+        changed=False,
+        msg=f"SSO {name} stat found"
+    )
+    module.exit_json(**result)
 
 
 def execute_state(module):
@@ -173,16 +209,21 @@ def execute_state(module):
 
 def check_options(module):
     """Verify module options are sane"""
-    certificate_file_name = module.params["certificate_file_name"]
+    signing_certificate = module.params["signing_certificate"]
+    sign_on_url = module.params["sign_on_url"]
     state = module.params["state"]
-
+    is_failed = False
+    msg = ""
     if state in ["present"]:
         if not sign_on_url:
-            msg = "A sign_on_url parameter must be provided"
-            fail(module, msg=msg)
+            msg += "A sign_on_url parameter must be provided. "
+            is_failed = True
         if not signing_certificate:
-            msg = "A signing_certificate parameter must be provided"
-            fail(module, msg=msg)
+            msg += "A signing_certificate parameter must be provided. "
+            is_failed = True
+    if is_failed:
+        fail(module, msg=msg)
+
 
 def main():
     argument_spec = infinibox_argument_spec()
@@ -192,8 +233,8 @@ def main():
             issuer=dict(required=False, default=None),
             name=dict(required=True),
             sign_on_url=dict(required=False, default=None),
-            signed_assertion=dict(required=False, default=False),
-            signed_response=dict(required=False, default=False),
+            signed_assertion=dict(required=False, type=bool, default=False),
+            signed_response=dict(required=False, type=bool, default=False),
             signing_certificate=dict(required=False, default=None),
             state=dict(default="present", choices=["stat", "present", "absent"]),
         )
@@ -210,6 +251,7 @@ if __name__ == "__main__":
 
 
 
+# dohlemacher@infinidat@ibox2233> config.sso.idps.query
 # {
 #   "command": "config.sso.idps.query",
 #   "result": [
