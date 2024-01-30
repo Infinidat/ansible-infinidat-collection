@@ -258,7 +258,8 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-_module_under_test = infini_fibre_channel_switch
+_module_under_test = infini_sso
+# _module_under_test = infini_fibre_channel_switch
 # _module_under_test = infini_certificate
 # _module_under_test = infini_network_space
 # _module_under_test = infini_event
