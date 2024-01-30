@@ -4,9 +4,13 @@
 # Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+""" Manage SSO """
+
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -77,13 +81,9 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-
-import traceback
+from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-    HAS_INFINISDK,
-    ObjectNotFound,
     api_wrapper,
     merge_two_dicts,
     get_system,
@@ -92,13 +92,13 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
 
 try:
     from infinisdk.core.exceptions import APICommandFailed
-    from infinisdk.core.exceptions import ObjectNotFound
-    from infi.dtypes.iqn import make_iscsi_name
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
 
+@api_wrapper
 def find_sso(module, name):
+    """ Find a SSO using its name """
     path = f"config/sso/idps?name={name}"
 
     try:
@@ -112,6 +112,7 @@ def find_sso(module, name):
 
 
 def handle_stat(module):
+    """ Handle the stat state """
     name = module.params["name"]
     sso_result = find_sso(module, name)
     if not sso_result:
@@ -128,7 +129,8 @@ def handle_stat(module):
     module.exit_json(**result)
 
 
-def handle_present(module):
+def handle_present(module):  # pylint: disable=too-many-locals
+    """ Handle the present state """
     enabled = module.params['enabled']
     issuer = module.params['issuer']
     sign_on_url = module.params['sign_on_url']
@@ -142,7 +144,7 @@ def handle_present(module):
         existing_sso_id = existing_sso[0]['id']
         delete_sso(module, existing_sso_id)
 
-    path = f"config/sso/idps"
+    path = "config/sso/idps"
     data = {
         "enabled": enabled,
         "issuer": issuer,
@@ -175,8 +177,9 @@ def handle_present(module):
 
 
 def delete_sso(module, sso_id):
+    """ Delete a SSO. Reference its ID. """
     path = f"config/sso/idps/{sso_id}"
-
+    name = module.params["name"]
     try:
         system = get_system(module)
         sso_result = system.api.delete(path=path).get_result()
@@ -187,6 +190,7 @@ def delete_sso(module, sso_id):
 
 
 def handle_absent(module):
+    """ Handle the absent state """
     name = module.params["name"]
     found_sso = find_sso(module, name)
     if not found_sso:
@@ -249,6 +253,7 @@ def check_options(module):
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
@@ -271,4 +276,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
