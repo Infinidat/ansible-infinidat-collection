@@ -88,8 +88,6 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     merge_two_dicts,
     get_system,
     infinibox_argument_spec,
-    fail,
-    success,
 )
 
 try:
@@ -100,27 +98,34 @@ except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
 
-def handle_stat(module):
-    name = module.params["name"]
+def find_sso(module, name):
     path = f"config/sso/idps?name={name}"
 
-    breakpoint()
     try:
         system = get_system(module)
         sso_result = system.api.get(path=path).get_result()
     except APICommandFailed as err:
         msg = f"Cannot stat SSO identity provider {name}: {err}"
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
 
+    return sso_result
+
+
+def handle_stat(module):
+    name = module.params["name"]
+    #breakpoint()
+    sso_result = find_sso(module, name)
     if not sso_result:
         msg = f"SSO identity provider {name} not found. Cannot stat."
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
 
     result = dict(
         changed=False,
-        msg=f"SSO {name} stat found"
+        msg=f"SSO identity provider {name} stat found"
     )
-    result = merge_two_dicts(result, sso_result)
+
+    result = merge_two_dicts(result, sso_result[0])
+    result['signing_certificate'] = "redacted"
     module.exit_json(**result)
 
 
@@ -144,49 +149,54 @@ def handle_present(module):
         "signing_certificate": signing_certificate,
     }
 
-    breakpoint()
     try:
         system = get_system(module)
-        system.api.post(path=path, data=data)
+        sso_result = system.api.post(path=path, data=data).get_result()
     except APICommandFailed as err:
-        if err.error_code == "LDAP_NAME_CONFLICT":
-            msg = f"Users repository {name} conflicts."
-            module.fail_json(msg=msg)
-        elif err.error_code == "LDAP_BAD_CREDENTIALS":
-            msg = f"Cannot create users repository {name} due to incorrect LDAP credentials: {err}"
-            module.fail_json(msg=msg)
-        else:
-            msg = f"Cannot create users repository {name}: {err}"
-            module.fail_json(msg=msg)
+        msg = f"Cannot configure SSO {name}: {err}"
+        module.fail_json(msg=msg)
 
     result = dict(
         changed=True,
-        msg="SSO successfully configured"
+        msg=f"SSO identity provider named {name} successfully configured"
     )
-    result = merge_two_dicts(result, cert_result)
+    result = merge_two_dicts(result, sso_result)
+    result['signing_certificate'] = "redacted"
+
     module.exit_json(**result)
 
 
 def handle_absent(module):
     name = module.params["name"]
-    path = f"config/sso/idps?name={name}"
+    found_sso = find_sso(module, name)
+    if not found_sso:
+        result = dict(
+            changed=False,
+            msg=f"SSO {name} already not found"
+        )
+        module.exit_json(**result)
 
-    breakpoint()
+    sso_id = found_sso[0]['id']
+    path = f"config/sso/idps/{sso_id}"
+
     try:
         system = get_system(module)
         sso_result = system.api.delete(path=path).get_result()
     except APICommandFailed as err:
         msg = f"Cannot delete SSO identity provider {name}: {err}"
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
 
     if not sso_result:
-        msg = f"SSO identity provider {name} not found. Cannot stat."
-        fail(module, msg=msg)
+        msg = f"SSO identity provider named {name} with ID {sso_id} not found. Cannot delete."
+        module.fail_json(msg=msg)
 
     result = dict(
-        changed=False,
-        msg=f"SSO {name} stat found"
+        changed=True,
+        msg=f"SSO identity provider named {name} deleted"
     )
+
+    result = merge_two_dicts(result, sso_result)
+    result['signing_certificate'] = "redacted"
     module.exit_json(**result)
 
 
@@ -201,7 +211,7 @@ def execute_state(module):
         elif state == "absent":
             handle_absent(module)
         else:
-            fail(module, msg=f"Internal handler error. Invalid state: {state}")
+            module.fail_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
         system = get_system(module)
         system.logout()
@@ -222,7 +232,7 @@ def check_options(module):
             msg += "A signing_certificate parameter must be provided. "
             is_failed = True
     if is_failed:
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
 
 
 def main():
@@ -235,7 +245,7 @@ def main():
             sign_on_url=dict(required=False, default=None),
             signed_assertion=dict(required=False, type=bool, default=False),
             signed_response=dict(required=False, type=bool, default=False),
-            signing_certificate=dict(required=False, default=None),
+            signing_certificate=dict(required=False, default=None, no_log=True),
             state=dict(default="present", choices=["stat", "present", "absent"]),
         )
     )
@@ -248,24 +258,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-# dohlemacher@infinidat@ibox2233> config.sso.idps.query
-# {
-#   "command": "config.sso.idps.query",
-#   "result": [
-#       {
-#           "enabled": "yes",
-#           "issuer": "http://www.okta.com/exkra32oyyU6KCUCk2p7",
-#           "name": "OKTA",
-#           "sign_on_url": "https://infinidat.okta.com/app/infinidat_walthamiboxtest_1/exkra32oyyU6KCUCk2p7/sso/saml",
-#           "signed_assertion": "no",
-#           "signed_response": "no",
-#           "signing_certificate_expiry": "2020021204000",
-#           "signing_certificate_serial": "1704402004578"
-#       }
-#   ],
-#   "number_of_objects": 1
-# }
 
