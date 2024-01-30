@@ -105,7 +105,7 @@ def find_sso(module, name):
         system = get_system(module)
         sso_result = system.api.get(path=path).get_result()
     except APICommandFailed as err:
-        msg = f"Cannot stat SSO identity provider {name}: {err}"
+        msg = f"Cannot find SSO identity provider {name}: {err}"
         module.fail_json(msg=msg)
 
     return sso_result
@@ -113,7 +113,6 @@ def find_sso(module, name):
 
 def handle_stat(module):
     name = module.params["name"]
-    #breakpoint()
     sso_result = find_sso(module, name)
     if not sso_result:
         msg = f"SSO identity provider {name} not found. Cannot stat."
@@ -138,6 +137,11 @@ def handle_present(module):
     signing_certificate = module.params['signing_certificate']
     name = module.params['name']
 
+    existing_sso = find_sso(module, name)
+    if existing_sso:
+        existing_sso_id = existing_sso[0]['id']
+        delete_sso(module, existing_sso_id)
+
     path = f"config/sso/idps"
     data = {
         "enabled": enabled,
@@ -153,17 +157,33 @@ def handle_present(module):
         system = get_system(module)
         sso_result = system.api.post(path=path, data=data).get_result()
     except APICommandFailed as err:
-        msg = f"Cannot configure SSO {name}: {err}"
+        msg = f"Cannot configure SSO identity provider named {name}: {err}"
         module.fail_json(msg=msg)
 
+    if not existing_sso:
+        msg=f"SSO identity provider named {name} successfully configured"
+    else:
+        msg=f"SSO identity provider named {name} successfully removed and recreated with updated parameters"
     result = dict(
         changed=True,
-        msg=f"SSO identity provider named {name} successfully configured"
+        msg=msg,
     )
     result = merge_two_dicts(result, sso_result)
     result['signing_certificate'] = "redacted"
 
     module.exit_json(**result)
+
+
+def delete_sso(module, sso_id):
+    path = f"config/sso/idps/{sso_id}"
+
+    try:
+        system = get_system(module)
+        sso_result = system.api.delete(path=path).get_result()
+    except APICommandFailed as err:
+        msg = f"Cannot delete SSO identity provider {name}: {err}"
+        module.fail_json(msg=msg)
+    return sso_result
 
 
 def handle_absent(module):
@@ -177,14 +197,7 @@ def handle_absent(module):
         module.exit_json(**result)
 
     sso_id = found_sso[0]['id']
-    path = f"config/sso/idps/{sso_id}"
-
-    try:
-        system = get_system(module)
-        sso_result = system.api.delete(path=path).get_result()
-    except APICommandFailed as err:
-        msg = f"Cannot delete SSO identity provider {name}: {err}"
-        module.fail_json(msg=msg)
+    sso_result = delete_sso(module, sso_id)
 
     if not sso_result:
         msg = f"SSO identity provider named {name} with ID {sso_id} not found. Cannot delete."
