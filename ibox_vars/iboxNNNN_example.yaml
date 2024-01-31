@@ -10,3 +10,5 @@ auto_prefix: "PSUS_ANSIBLE_"
 user: "user"
 password: "password"
 system: "iboxNNNN"
+
+sso_signing_certificate: "signing cert in one single line with the begin and end lines removed" # Used by configure_array playbook

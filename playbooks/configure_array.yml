@@ -67,6 +67,31 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: Configure Single Sign On (SSO)
+      infini_sso:
+        issuer: http://www.okta.com/exkra32oyyU6KCUCk2p7
+        name: OKTA
+        sign_on_url: https://infinidat.okta.com/app/infinidat_ibox2503_1/exkrwdi7dmXSKdC4l2p7/sso/saml
+        signed_assertion: false
+        signed_response: false
+        signing_certificate: "{{ sso_signing_certificate }}"
+        enabled: true
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Stat Single Sign On (SSO)
+      infini_sso:
+        name: OKTA
+        state: stat
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: sso_stat
+    - debug:
+        var: sso_stat
+
     - name: Enable compression
       infini_config:
         config_group: "mgmt"
