@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
 # Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+"""This module creates or modifies SSL certificates on Infinibox."""
+
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -59,67 +63,59 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-
-import traceback
+from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-    HAS_INFINISDK,
-    ObjectNotFound,
-    api_wrapper,
     merge_two_dicts,
     get_system,
     infinibox_argument_spec,
-    fail,
-    success,
 )
 
-try:
-    from infinisdk.core.exceptions import APICommandFailed
-    from infinisdk.core.exceptions import ObjectNotFound
-    from infi.dtypes.iqn import make_iscsi_name
-except ImportError:
-    pass  # Handled by HAS_INFINISDK from module_utils
-
+from infinisdk.core.exceptions import APICommandFailed
 
 def handle_stat(module):
-    path = f"system/certificates"
+    """ Handle the stat state parameter """
+    certificate_file_name = module.params['certificate_file_name']
+    path = "system/certificates"
     system = get_system(module)
     try:
         cert_result = system.api.get(path=path).get_result()[0]
-    except APICommandFailed as err:
-        msg = f"Cannot stat."
-        fail(module, msg=msg)
+    except APICommandFailed:
+        msg = f"Cannot stat SSL certificate {certificate_file_name}"
+        module.fail_json(msg=msg)
     result = dict(
         changed=False,
-        msg="Certficate stat found"
+        msg="SSL certificate stat {certificate_file_name} found"
     )
     result = merge_two_dicts(result, cert_result)
     module.exit_json(**result)
 
 
 def handle_present(module):
+    """ Handle the present state parameter """
     certificate_file_name = module.params['certificate_file_name']
-    path = f"system/certificates"
+    path = "system/certificates"
     system = get_system(module)
-    try:
+
+    with open(certificate_file_name, 'rb') as cert_file:
         try:
-            files = {'file': open(certificate_file_name, 'rb')}
-        except FileNotFoundError:
-            module.fail_json(msg=f"Cannot find certificate file named {certificate_file_name}")
-        except Exception as err:
-            module.fail_json(msg=f"Cannot open certificate file named {certificate_file_name}: {err}")
-        cert_result = system.api.post(path=path, files=files).get_result()
-    except APICommandFailed as err:
-        msg = f"Cannot upload cert: {err}"
-        fail(module, msg=msg)
+            try:
+                files = {'file': cert_file}
+            except FileNotFoundError:
+                module.fail_json(msg=f"Cannot find SSL certificate file named {certificate_file_name}")
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                module.fail_json(msg=f"Cannot open SSL certificate file named {certificate_file_name}: {err}")
+            cert_result = system.api.post(path=path, files=files).get_result()
+        except APICommandFailed as err:
+            msg = f"Cannot upload cert: {err}"
+            module.fail_json(msg=msg)
 
     cert_serial       = cert_result['certificate']['serial_number']
     cert_issued_by_cn = cert_result['certificate']['issued_by']['CN']
     cert_issued_to_cn = cert_result['certificate']['issued_to']['CN']
     result = dict(
         changed=True,
-        msg="System certificate uploaded successfully. " + \
+        msg="System SSL certificate uploaded successfully. " + \
         f"Certificate S/N {cert_serial} issued by CN {cert_issued_by_cn} to CN {cert_issued_to_cn}"
     )
     result = merge_two_dicts(result, cert_result)
@@ -127,7 +123,20 @@ def handle_present(module):
 
 
 def handle_absent(module):
-    fail(module, msg="Not implemented: handle_absent()")
+    """ Handle the absent state parameter. Clear existing cert. IBOX will install self signed cert. """
+    path = "system/certificates/generate_self_signed?approved=true"
+    system = get_system(module)
+    try:
+        cert_result = system.api.post(path=path).get_result()
+    except APICommandFailed as err:
+        msg = f"Cannot clear SSL certificate: {err}"
+        module.fail_json(msg=msg)
+    result = dict(
+        changed=True,
+        msg="System SSL certificate cleared and a self signed certificate was installed successfully"
+    )
+    result = merge_two_dicts(result, cert_result)
+    module.exit_json(**result)
 
 
 def execute_state(module):
@@ -141,7 +150,7 @@ def execute_state(module):
         elif state == "absent":
             handle_absent(module)
         else:
-            fail(module, msg=f"Internal handler error. Invalid state: {state}")
+            module.fail_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
         system = get_system(module)
         system.logout()
@@ -157,10 +166,11 @@ def check_options(module):
     if state in ["present"]:
         if not certificate_file_name:
             msg = "Certificate file name parameter must be provided"
-            fail(module, msg=msg)
+            module.fail_json(msg=msg)
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
