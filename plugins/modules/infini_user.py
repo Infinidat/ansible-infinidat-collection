@@ -204,7 +204,8 @@ def create_ldap_user_group(module):
 
     user = get_user(module, system, ldap_group_name)
     for pool_name in ldap_pools:
-        pool = system.pools.get(name=pool_name)
+        # Pylint is not finding Infinibox.pools but Python does.
+        pool = system.pools.get(name=pool_name)  # pylint: disable=no-member
         add_user_to_pool_owners(user, pool)
 
     return changed
@@ -265,7 +266,7 @@ def update_user(module, system, user):
         try:
             pool_name = module.params['user_pool']
             pool = system.pools.get(name=pool_name)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
             module.fail_json(msg=f'Cannot find pool {pool_name}: {err}')
         if add_user_to_pool_owners(user, pool):
             changed = True
@@ -331,8 +332,8 @@ def get_user_ldap_group(module):
     Find the LDAP user group by name
     """
     result = None
-    ldap_name = module.params["user_ldap_group_name"]
-    path = f"users?name={ldap_name}&type=eq%3ALdap"
+    user_ldap_group_name = module.params["user_ldap_group_name"]
+    path = f"users?name={user_ldap_group_name}&type=eq%3ALdap"
     system = get_system(module)
     api_result = system.api.get(path=path)
     if len(api_result.get_json()['result']) > 0:
@@ -377,14 +378,13 @@ def handle_stat(module):
         if not user:
             module.fail_json(msg=f'User {user_name} not found')
         field_dict = get_user_fields(user)
-        msg = 'User stat found'
+        msg = f'User {user_name} stat found'
     elif user_ldap_group_name:
-        system = get_system(module)
-        user = get_user(module, system, user_name_to_find=user_ldap_group_name)
+        user = get_user_ldap_group(module)
         if not user:
             module.fail_json(msg=f'user_ldap_group_name {user_ldap_group_name} not found')
         field_dict = get_user_fields(user)
-        msg = 'User LDAP group stat found'
+        msg = f'User LDAP group {user_ldap_group_name} stat found'
     else:
         msg = 'Neither user_name nor user_ldap_group_name were provided for state stat'
         module.fail_json(msg)
@@ -477,7 +477,7 @@ def handle_login(module):
     system = get_system(module)
     user_name = module.params["user_name"]
     user_password = module.params['user_password']
-    path = f"users/login"
+    path = "users/login"
     data = {
         "username": user_name,
         "password": user_password,
@@ -544,7 +544,7 @@ def check_options(module): # pylint: disable=too-many-branches
             ]
             for required_param in required_user_params:
                 param = module.params[required_param]
-                if param == None:
+                if param is None:
                     msg = f"For state 'present', option {required_param} is required with option user_name"
                     module.fail_json(msg=msg)
 
@@ -563,7 +563,7 @@ def check_options(module): # pylint: disable=too-many-branches
                     msg = "For state 'present' and user_ldap_group_role 'pool_admin', user_ldap_group_pool must specify one or more pools"
                     module.fail_json(msg=msg)
 
-    elif state == 'reset_password' or state == 'login':
+    elif state in ['reset_password', 'login']:
         if not module.params['user_name'] or not module.params['user_password']:
             msg = f"For state '{state}', user_name and user_password are both required"
             module.fail_json(msg=msg)

@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position
+
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+"""This module creates, deletes or modifies network spaces on Infinibox."""
+
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -108,28 +112,24 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
     infinibox_argument_spec,
     get_system,
-    unixMillisecondsToDate,
     merge_two_dicts,
     get_net_space,
 )
 
 try:
     from infinisdk.core.exceptions import APICommandFailed
-    from infinisdk.core.exceptions import ObjectNotFound
-    from infi.dtypes.iqn import make_iscsi_name
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
 
 @api_wrapper
 def create_empty_network_space(module, system):
+    """ Create an empty network space """
     # Create network space
     network_space_name = module.params["name"]
     service = module.params["service"]
@@ -142,7 +142,7 @@ def create_empty_network_space(module, system):
     }
     interfaces = module.params["interfaces"]
 
-    product_id = system.api.get('system/product_id')
+    #product_id = system.api.get('system/product_id')
 
     net_create_url = "network/spaces"
     net_create_data = {
@@ -156,10 +156,13 @@ def create_empty_network_space(module, system):
     if mtu:
         net_create_data["mtu"] = mtu
 
-    net_create = system.api.post(
-        path=net_create_url,
-        data=net_create_data
-    )
+    try:
+        system.api.post(
+            path=net_create_url,
+            data=net_create_data
+        )
+    except APICommandFailed as err:
+        module.fail_json(msg=f"Cannot create empty network space {network_space_name}: {err}")
 
 
 @api_wrapper
@@ -180,19 +183,21 @@ def find_network_space_id(module, system):
 @api_wrapper
 def add_ips_to_network_space(module, system, space_id):
     """ Add IPs to space. Ignore address conflict errors. """
+    network_space_name = module.params["name"]
     ips = module.params["ips"]
     for ip in ips:
         ip_url = f"network/spaces/{space_id}/ips"
         ip_data = ip
         try:
-            ip_add = system.api.post(path=ip_url, data=ip_data)
+            system.api.post(path=ip_url, data=ip_data)
         except APICommandFailed as err:
-            if err.error_code != "NET_SPACE_ADDRESS_CONFLICT":
+            if err.error_code != "NET_SPACE_ADDRESS_CONFLICT":  # Ignore
                 module.fail_json(msg=f"Cannot add IP {ip} to network space {network_space_name}: {err}")
 
 
 @api_wrapper
 def create_network_space(module, system):
+    """ Create a network space """
     if not module.check_mode:
         # Create space
         create_empty_network_space(module, system)
@@ -233,14 +238,20 @@ def update_network_space(module, system):
         },
     ]
     for data in datas:
-        net_update = system.api.put(
-            path=f"network/spaces/{space_id}",
-            data=data
-        )
+        try:
+            system.api.put(
+                path=f"network/spaces/{space_id}",
+                data=data
+            )
+        except APICommandFailed as err:
+            msg = f"Cannot update network space: {err}"
+            module.fail_json(msg=msg)
     add_ips_to_network_space(module, system, space_id)
+    changed = True
+    return changed
 
-
-def get_network_space_fields(module, network_space):
+def get_network_space_fields(network_space):
+    """ Get the network space fields and return as a dict """
     fields = network_space.get_fields(from_cache=True, raw_value=True)
 
     field_dict = dict(
@@ -261,16 +272,18 @@ def get_network_space_fields(module, network_space):
 
 
 def handle_stat(module):
+    """ Return details about the space """
     network_space_name = module.params["name"]
     system = get_system(module)
     net_space = get_net_space(module, system)
 
     if not net_space:
-        module.fail_json(msg="Network space {0} not found".format(network_space_name))
+        module.fail_json(msg=f"Network space {network_space_name} not found")
 
-    field_dict = get_network_space_fields(module, net_space)
+    field_dict = get_network_space_fields(net_space)
     result = dict(
-        changed=False, msg="Network space {0} stat found".format(network_space_name)
+        changed=False,
+        msg=f"Network space {network_space_name} stat found"
     )
     result = merge_two_dicts(result, field_dict)
     module.exit_json(**result)
@@ -299,10 +312,11 @@ def disable_and_delete_ip(module, network_space, ip):
     if not ip:
         return  # Nothing to do
     addr = ip['ip_address']
+    network_space_name = module.params["name"]
     ip_type = ip['type']
     mgmt = ""
     if ip_type == "MANAGEMENT":
-        mgmt == "management " # Trailing space by design
+        mgmt = "management " # Trailing space by design
 
     try:
         try:
@@ -314,7 +328,7 @@ def disable_and_delete_ip(module, network_space, ip):
                 module.fail_json(msg=f"Disabling of network space {network_space_name} IP {mgmt}{addr} API command failed")
 
         network_space.remove_ip_address(addr)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-exception-caught
         module.fail_json(msg=f"Disabling or removal of network space {network_space_name} IP {mgmt}{addr} failed: {err}")
 
 
@@ -327,7 +341,7 @@ def handle_absent(module):
     network_space = get_net_space(module, system)
     if not network_space:
         changed = False
-        msg = "Network space {0} already absent".format(network_space_name)
+        msg = f"Network space {network_space_name} already absent"
     else:
         # Find IPs from space
         ips = list(network_space.get_ips())
@@ -354,6 +368,7 @@ def handle_absent(module):
 
 
 def execute_state(module):
+    """ Execute a state """
     state = module.params["state"]
     try:
         if state == "stat":
@@ -364,7 +379,7 @@ def execute_state(module):
             handle_absent(module)
         else:
             module.fail_json(
-                msg="Internal handler error. Invalid state: {0}".format(state)
+                msg=f"Internal handler error. Invalid state: {state}"
             )
     finally:
         system = get_system(module)
@@ -372,6 +387,7 @@ def execute_state(module):
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
