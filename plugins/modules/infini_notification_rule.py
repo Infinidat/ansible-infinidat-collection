@@ -296,7 +296,7 @@ def check_options(module):
     recipients = module.params['recipients']
     target = module.params['target']
     if recipients and target:
-        msg = f"Cannot specify both recipients and target parameters"
+        msg = "Cannot specify both recipients and target parameters"
         module.fail_json(msg=msg)
     if recipients:
         for recipient in recipients:

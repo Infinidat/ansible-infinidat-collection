@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
 """This module creates, deletes or modifies metadata on Infinibox."""
 
 # Copyright: (c) 2023, Infinidat <info@infinidat.com>
@@ -8,7 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -121,31 +123,18 @@ EXAMPLES = r"""
 # -*- coding: utf-8 -*-
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import json
-import traceback
-
-HAS_ARROW = True
-try:
-    import arrow
-except ImportError:
-    HAS_ARROW = False
-
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
     infinibox_argument_spec,
     get_system,
-    get_user,
-    get_pool,
-    unixMillisecondsToDate,
     merge_two_dicts,
 )
 
 try:
-    from infi.dtypes.iqn import make_iscsi_name
+    from infinisdk.core.exceptions import APICommandFailed
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
-
 
 @api_wrapper
 def get_target(module):
@@ -157,12 +146,18 @@ def get_target(module):
     name = module.params['name']
     path = f"notifications/targets?name={name}"
     system = get_system(module)
-    target = system.api.get(path=path)
-    if target:
-        result = target.get_result()
-        return result
-    msg = f"Users repository {name} not found. Cannot stat."
-    module.fail_json(msg=msg)
+
+    try:
+        target = system.api.get(path=path)
+    except APICommandFailed as err:
+        msg = f"Cannot find notification target {name}: {err}"
+        module.fail_json(msg=msg)
+
+    if not target:
+        msg = f"Users repository {name} not found. Cannot stat."
+        module.fail_json(msg=msg)
+    result = target.get_result()
+    return result
 
 
 def handle_stat(module):
@@ -182,14 +177,16 @@ def handle_stat(module):
 
 @api_wrapper
 def find_target_id(module, system):
-    """
-    Find the ID of the target by name
-    """
+    """ Find the ID of the target by name """
     target_name = module.params["name"]
-    path = "notifications/targets?name={0}&fields=id".format(target_name)
-    api_result = system.api.get(
-        path=path
-    )
+
+    try:
+        path = f"notifications/targets?name={target_name}&fields=id"
+        api_result = system.api.get(path=path)
+    except APICommandFailed as err:
+        msg = f"Cannot find ID for notification target {name}: {err}"
+        module.fail_json(msg=msg)
+
     if len(api_result.get_json()['result']) > 0:
         result = api_result.get_json()['result'][0]
         target_id = result['id']
@@ -199,26 +196,23 @@ def find_target_id(module, system):
 
 
 @api_wrapper
-def delete_target(module, disable_fail=False):
-    """
-    Delete a notification target
-    """
-
+def delete_target(module):
+    """ Delete a notification target """
     system = get_system(module)
     name = module.params["name"]
     target_id = find_target_id(module,system)
 
-
-    path = f"notifications/targets/{target_id}?approved=true"
-    system.api.delete(path=path)
+    try:
+        path = f"notifications/targets/{target_id}?approved=true"
+        system.api.delete(path=path)
+    except APICommandFailed as err:
+        msg = f"Cannot delete notification target {name}: {err}"
+        module.fail_json(msg=msg)
 
 
 @api_wrapper
-def create_target(module, disable_fail=False):
-    """
-    Create a new notifition target
-    """
-
+def create_target(module):
+    """ Create a new notifition target """
     system = get_system(module)
     name = module.params["name"]
     protocol = module.params["protocol"]
@@ -229,8 +223,7 @@ def create_target(module, disable_fail=False):
     post_test = module.params["post_test"]
     visibility = module.params["visibility"]
 
-
-    path = f"notifications/targets"
+    path = "notifications/targets"
 
     json_data = {
         "name": name,
@@ -242,27 +235,31 @@ def create_target(module, disable_fail=False):
         "visibility": visibility
     }
 
-    system.api.post(path=path, data=json_data)
+    try:
+        system.api.post(path=path, data=json_data)
+    except APICommandFailed as err:
+        msg = f"Cannot create notification target {name}: {err}"
+        module.fail_json(msg=msg)
 
     if post_test:
         target_id = find_target_id(module, system)
-        path = "notifications/targets/{}/test".format(target_id)
+        path = f"notifications/targets/{target_id}/test"
         json_data = {}
-        system.api.post(path=path, data=json_data)
-
+        try:
+            system.api.post(path=path, data=json_data)
+        except APICommandFailed as err:
+            msg = f"Cannot test notification target {name}: {err}"
+            module.fail_json(msg=msg)
 
 @api_wrapper
-def update_target(module, disable_fail=False):
-    """
-    Update an existing target.
-    """
+def update_target(module):
+    """ Update an existing target.  """
     delete_target(module)
     create_target(module)
 
 
 def handle_present(module):
     """Make config present"""
-
     system = get_system(module)
     name = module.params["name"]
     changed = False
@@ -286,19 +283,19 @@ def handle_absent(module):
     target_id = find_target_id(module,system)
 
     if not target_id:
-        msg="Target of {0} does not exist, deletion operation skipped.".format(name)
+        msg = f"Target {name} already does not exist"
         changed = False
     else:
-        msg="Target {0} has been deleted".format(name)
-        changed = True
+        msg=f"Target {name} has been deleted"
         if not module.check_mode:
+            changed = True
             delete_target(module)
 
     module.exit_json(changed=changed, msg=msg)
 
 
 def execute_state(module):
-    """Determine which state function to execute and do so"""
+    """ Determine which state function to execute and do so """
     state = module.params["state"]
     try:
         if state == "stat":
@@ -315,13 +312,13 @@ def execute_state(module):
 
 
 def check_options(module):
-    """Verify module options are sane"""
+    """ Verify module options are sane """
     if module.params['protocol'] != "SYSLOG":
         module.fail_json(msg="The only supported protocol is SYSLOG")
 
 
 def main():
-    """Main module function"""
+    """ Main """
     argument_spec = infinibox_argument_spec()
 
     argument_spec.update(
@@ -343,12 +340,9 @@ def main():
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
 
-    if not HAS_ARROW:
-        module.fail_json(msg=missing_required_lib("arrow"))
-
     check_options(module)
     execute_state(module)
 
 
 if __name__ == '__main__':
-     main()
+    main()
