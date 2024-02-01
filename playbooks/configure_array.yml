@@ -47,6 +47,15 @@
           transport: UDP
           post_test: True
   tasks:
+    - name: Configuration
+      debug:
+        msg:
+          - "user: {{ user }}"
+          #- "password: {{ password }}"
+          - "system: {{ system }}"
+    - ansible.builtin.pause:
+        seconds: 2
+
     - name: Create temporary setup email notification rule setup_email for addresses {{ setup_alerting_emails }}
       infini_notification_rule:
         name: "setup_email"

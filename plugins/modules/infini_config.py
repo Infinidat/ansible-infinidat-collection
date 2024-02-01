@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
+
 """This module Modifies config on Infinibox."""
 
 # Copyright: (c) 2023, Infinidat <info@infinidat.com>
@@ -8,7 +10,8 @@
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
+
 DOCUMENTATION = r"""
 ---
 module: infini_config
@@ -69,31 +72,17 @@ EXAMPLES = r"""
 # -*- coding: utf-8 -*-
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
-HAS_ARROW = True
-try:
-    import arrow
-except ImportError:
-    HAS_ARROW = False
-
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
     infinibox_argument_spec,
     get_system,
-    get_user,
-    get_pool,
-    unixMillisecondsToDate,
-    merge_two_dicts,
 )
 
 try:
-    from infi.dtypes.iqn import make_iscsi_name
+    from infinisdk.core.exceptions import APICommandFailed
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
-
-
 
 @api_wrapper
 def get_config(module, disable_fail=False):
@@ -105,21 +94,23 @@ def get_config(module, disable_fail=False):
     system = get_system(module)
     config_group = module.params["config_group"]
     key = module.params["key"]
+    result = None
 
     path = f"config/{config_group}/{key}"
-    api_response = system.api.get(path=path)
+    try:
+        api_response = system.api.get(path=path)
+    except APICommandFailed as err:
+        module.fail_json(msg=f"Cannot {config_group} key {key}: {err}")
 
     if api_response:
         result = api_response.get_result()
         good_status = api_response.response.status_code == 200
         if not disable_fail and not good_status:
-            msg = f"Config for {config_group} with key {key} disable_fail {status} {path} {result} not found. Cannot stat."
+            msg = f"Configuration for {config_group} with key {key} failed"
             module.fail_json(msg=msg)
-        return result
-    elif disable_fail:
-        return None
-
-    #module.fail_json(msg=msg)
+        elif disable_fail and not good_status:
+            return None
+    return result
 
 
 def handle_stat(module):
@@ -137,8 +128,9 @@ def handle_stat(module):
     }
     module.exit_json(**result)
 
+
 @api_wrapper
-def set_config(module, disable_fail=False):
+def set_config(module):
     """
     Find and return config setting value
     Use disable_fail when we are looking for config
@@ -156,11 +148,11 @@ def set_config(module, disable_fail=False):
         data = True
     elif value.lower() == "false":
         data = False
-    else:
-        data = data
 
-
-    system.api.put(path=path, data=data)
+    try:
+        system.api.put(path=path, data=data)
+    except APICommandFailed as err:
+        module.fail_json(msg=f"Cannot set config group {config_group} key {key} to value {value}: {err}")
     # Variable 'changed' not returned by design
 
 
@@ -180,12 +172,6 @@ def handle_present(module):
     module.exit_json(changed=changed, msg=msg)
 
 
-
-
-def handle_absent(module):
-    pass
-
-
 def execute_state(module):
     """Determine which state function to execute and do so"""
     state = module.params["state"]
@@ -194,13 +180,12 @@ def execute_state(module):
             handle_stat(module)
         elif state == "present":
             handle_present(module)
-        elif state == "absent":
-            handle_absent(module)
         else:
             module.fail_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
         system = get_system(module)
         system.logout()
+
 
 def check_options(module):
     """Verify module options are sane"""
@@ -223,7 +208,6 @@ def check_options(module):
     ]
 
     if state == "present" and key == "pool.compression_enabled_default":
-        values = ["true", "false"]
         if not isinstance(value,type(str())): # isvalue.lower() not in values:
             module.fail_json(
                 f"Value must be of type {type(str())}. Invalid value: {value} of {vtype}."
@@ -232,7 +216,6 @@ def check_options(module):
         module.fail_json(
             f"Config_group must be one of {groups}"
         )
-
 
 
 def main():
@@ -253,12 +236,9 @@ def main():
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
 
-    if not HAS_ARROW:
-        module.fail_json(msg=missing_required_lib("arrow"))
-
     check_options(module)
     execute_state(module)
 
 
 if __name__ == '__main__':
-     main()
+    main()
