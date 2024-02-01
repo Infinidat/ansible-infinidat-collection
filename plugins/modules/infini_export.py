@@ -1,11 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
+
+"""This module modifies exports on Infinibox."""
+
 # Copyright: (c) 2022, Infinidat(info@infinidat.com)
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
+
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -98,8 +103,6 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
@@ -111,22 +114,18 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
 )
 
 MUNCH_IMP_ERR = None
-try:
-    from munch import unmunchify
-    HAS_MUNCH = True
-except ImportError:
-    HAS_MUNCH = False
-    MUNCH_IMPORT_ERROR = traceback.format_exc()
-
+from munch import unmunchify
+HAS_MUNCH = True
 
 def transform(d):
+    """ Create a frozen set from a normal set's items """
     return frozenset(d.items())
 
 
 def create_export(module, export, filesystem, system):
-    """ Create new filesystem or update existing one"""
+    """ Create new export """
     if export:
-        raise AssertionError("Export {0} already exists".format(export.get_name()))
+        raise AssertionError(f"Export {export.get_name()} already exists")
     changed = False
 
     name = module.params['name']
@@ -141,14 +140,13 @@ def create_export(module, export, filesystem, system):
 
 
 @api_wrapper
-def update_export(module, export, filesystem, system):
-    """ Create new filesystem or update existing one"""
+def update_export(module, export):
+    """ Update existing export """
     if not export:
-        raise AssertionError("Export {0} does not exist and cannot be updated".format(export.get_name()))
+        raise AssertionError(f"Export {export.get_name()} does not exist and cannot be updated")
 
     changed = False
 
-    name = module.params['name']
     client_list = module.params['client_list']
 
     if client_list:
@@ -164,7 +162,7 @@ def update_export(module, export, filesystem, system):
 
 @api_wrapper
 def delete_export(module, export):
-    """ Delete file system"""
+    """ Delete export """
     if not module.check_mode:
         export.delete()
     changed = True
@@ -172,6 +170,7 @@ def delete_export(module, export):
 
 
 def get_sys_exp_fs(module):
+    """ Get some params """
     system = get_system(module)
     filesystem = get_filesystem(module, system)
     export = get_export(module, system)
@@ -179,6 +178,7 @@ def get_sys_exp_fs(module):
 
 
 def get_export_fields(export):
+    """ Return export fields dict """
     fields = export.get_fields()  # from_cache=True, raw_value=True)
     export_id = fields.get('id', None)
     permissions = fields.get('permissions', None)
@@ -192,15 +192,12 @@ def get_export_fields(export):
 
 
 def handle_stat(module):
-    """
-    Gather stats on export and return. Changed is always False.
-    """
-    system, export, filesystem = get_sys_exp_fs(module)
+    """ Gather stats on export and return. Changed is always False. """
+    name = module.params['name']
+    filesystem_name = module.params['filesystem']
+    _, export, _ = get_sys_exp_fs(module)
     if not export:
-        module.fail_json(msg='Export "{0}" of file system "{1}" not found'.format(
-            module.params['name'],
-            module.params['filesystem'],
-        ))
+        module.fail_json(msg=f"Export '{name}' of file system '{filesystem_name}' not found")
 
     field_dict = get_export_fields(export)
     result = dict(
@@ -212,30 +209,35 @@ def handle_stat(module):
 
 
 def handle_present(module):
+    """ Handle present state """
     system, export, filesystem = get_sys_exp_fs(module)
+    filesystem_name = module.params['filesystem']
     if not filesystem:
-        module.fail_json(msg='File system {0} not found'.format(module.params['filesystem']))
+        module.fail_json(msg=f'File system {filesystem_name} not found')
     elif not export:
         changed = create_export(module, export, filesystem, system)
         module.exit_json(changed=changed, msg="File system export created")
     else:
-        changed = update_export(module, export, filesystem, system)
+        changed = update_export(module, export)
         module.exit_json(changed=changed, msg="File system export updated")
 
 
 def handle_absent(module):
-    system, export, filesystem = get_sys_exp_fs(module)
+    """ Handle absent state """
+    _, export, _= get_sys_exp_fs(module)
+    filesystem_name = module.params['filesystem']
     if not export:
         changed = False
-        msg = "Export of {0} already absent".format(module.params['filesystem'])
+        msg = "Export of {filesystem_name} already absent"
         module.exit_json(changed=changed, msg=msg)
     else:
         changed = delete_export(module, export)
-        msg = "Export of {0} deleted".format(module.params['filesystem'])
+        msg = f"Export of {filesystem_name} deleted"
         module.exit_json(changed=changed, msg=msg)
 
 
 def execute_state(module):
+    """ Execute states """
     state = module.params['state']
     try:
         if state == 'stat':
@@ -245,13 +247,14 @@ def execute_state(module):
         elif state == 'absent':
             handle_absent(module)
         else:
-            module.fail_json(msg='Internal handler error. Invalid state: {0}'.format(state))
+            module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
     finally:
         system = get_system(module)
         system.logout()
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
