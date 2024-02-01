@@ -1,16 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
+
+"""This module sends events to Infinibox."""
+
 # Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
-module: infini_vol
+module: infini_event
 version_added: '2.16.2'
 short_description:  Create custom events on Infinibox
 description:
@@ -60,31 +64,16 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
-    api_wrapper,
     infinibox_argument_spec,
     get_system,
-    fail,
-    success,
 )
-
-
-HAS_CAPACITY = True
-try:
-    from capacity import KiB, Capacity
-except ImportError:
-    HAS_CAPACITY = False
-
-HAS_ARROW = False
-
 
 def handle_stat(module):
     """Handle stat state"""
-    msg = f"handle_stat() is not implemented"
-    fail(module, msg=msg)
+    msg = "handle_stat() is not implemented"
+    module.exit_json(msg=msg)
 
 
 def handle_present(module):
@@ -101,7 +90,7 @@ def handle_present(module):
         "visibility": visibility,
     }
     system.api.post(path=path, data=json_data)
-    success(module=module, changed=True, msg="Event posted")
+    module.exit_json(changed=True, msg="Event posted")
 
 
 def execute_state(module):
@@ -113,17 +102,13 @@ def execute_state(module):
         elif state == "present":
             handle_present(module)
         else:
-            fail(module, msg=f"Internal handler error. Invalid state: {state}")
+            module.exit_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
         system = get_system(module)
         system.logout()
 
-
-def check_options(module):
-    """Verify module options are sane, but there is little to check in this module"""
-
-
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
@@ -137,9 +122,8 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        fail(module, msg=missing_required_lib("infinisdk"))
+        module.exit_json(msg=missing_required_lib("infinisdk"))
 
-    check_options(module)
     execute_state(module)
 
 
