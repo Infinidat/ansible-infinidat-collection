@@ -1,14 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
+
 """This module creates, deletes or modifies metadata on Infinibox."""
 
-# Copyright: (c) 2023, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -75,6 +77,8 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
+import json
+
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
@@ -90,18 +94,12 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
 )
 from infinisdk.core.exceptions import APICommandFailed
 
-import json
-
-HAS_ARROW = True
-try:
-    import arrow
-except ImportError:
-    HAS_ARROW = False
 
 HAS_CAPACITY = False
 
 @api_wrapper
 def get_metadata_vol(module, disable_fail):
+    """ Get metadata about a volume """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -113,7 +111,7 @@ def get_metadata_vol(module, disable_fail):
         path = f"metadata/{vol.id}/{key}"
         try:
             metadata = system.api.get(path=path)
-        except APICommandFailed as err:
+        except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
@@ -127,6 +125,7 @@ def get_metadata_vol(module, disable_fail):
 
 @api_wrapper
 def get_metadata_fs(module, disable_fail):
+    """ Get metadata about a fs """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -138,7 +137,7 @@ def get_metadata_fs(module, disable_fail):
         path = f"metadata/{fs.id}/{key}"
         try:
             metadata = system.api.get(path=path)
-        except APICommandFailed as err:
+        except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
@@ -153,6 +152,7 @@ def get_metadata_fs(module, disable_fail):
 
 @api_wrapper
 def get_metadata_host(module, disable_fail):
+    """ Get metadata about a host """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -164,7 +164,7 @@ def get_metadata_host(module, disable_fail):
         path = f"metadata/{host.id}/{key}"
         try:
             metadata = system.api.get(path=path)
-        except APICommandFailed as err:
+        except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
@@ -179,6 +179,7 @@ def get_metadata_host(module, disable_fail):
 
 @api_wrapper
 def get_metadata_cluster(module, disable_fail):
+    """ Get metadata about a cluster """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -190,7 +191,7 @@ def get_metadata_cluster(module, disable_fail):
         path = f"metadata/{cluster.id}/{key}"
         try:
             metadata = system.api.get(path=path)
-        except APICommandFailed as err:
+        except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
@@ -205,6 +206,7 @@ def get_metadata_cluster(module, disable_fail):
 
 @api_wrapper
 def get_metadata_fssnap(module, disable_fail):
+    """ Get metadata about a fs snapshot """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -216,7 +218,7 @@ def get_metadata_fssnap(module, disable_fail):
         path = f"metadata/{fssnap.id}/{key}"
         try:
             metadata = system.api.get(path=path)
-        except APICommandFailed as err:
+        except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
@@ -231,6 +233,7 @@ def get_metadata_fssnap(module, disable_fail):
 
 @api_wrapper
 def get_metadata_pool(module, disable_fail):
+    """ Get metadata about a pool """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -242,7 +245,7 @@ def get_metadata_pool(module, disable_fail):
         path = f"metadata/{pool.id}/{key}"
         try:
             metadata = system.api.get(path=path)
-        except APICommandFailed as err:
+        except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
@@ -257,6 +260,7 @@ def get_metadata_pool(module, disable_fail):
 
 @api_wrapper
 def get_metadata_volsnap(module, disable_fail):
+    """ Get metadata for a volume snapshot """
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -268,7 +272,7 @@ def get_metadata_volsnap(module, disable_fail):
         path = f"metadata/{volsnap.id}/{key}"
         try:
             metadata = system.api.get(path=path)
-        except APICommandFailed as err:
+        except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
                     f"Cannot find {object_type} metadata key. "
@@ -321,15 +325,17 @@ def get_metadata(module, disable_fail=False):
             msg = f"Metadata for {object_type} with key {key} not found. Cannot stat."
             module.fail_json(msg=msg)
         return result
-    elif disable_fail:
+
+    if disable_fail:
         return None
 
     msg = f"Metadata for {object_type} named {object_name} not found. Cannot stat."
     module.fail_json(msg=msg)
+    return None  # Quiet pylint
 
 
 @api_wrapper
-def put_metadata(module):
+def put_metadata(module):  # pylint: disable=too-many-statements
     """Create metadata key with a value.  The changed variable is found elsewhere."""
     system = get_system(module)
 
@@ -337,7 +343,7 @@ def put_metadata(module):
     key = module.params["key"]
     value = module.params["value"]
 
-    # TODO check metadata value size < 32k
+    # Could check metadata value size < 32k
 
     if object_type == "system":
         path = "metadata/system"
@@ -402,7 +408,7 @@ def put_metadata(module):
 
 
 @api_wrapper
-def delete_metadata(module):
+def delete_metadata(module):  # pylint: disable=too-many-return-statements
     """
     Remove metadata key.
     Not implemented by design: Deleting all of the system’s metadata
@@ -483,6 +489,7 @@ def handle_stat(module):
         value = metadata["value"]
 
     result = {
+        "msg": "Metadata found",
         "changed": False,
         "object_type": object_type,
         "key": key,
@@ -629,7 +636,7 @@ def check_options(module):
 
 
 def main():
-    """Main module function"""
+    """ Main """
     argument_spec = infinibox_argument_spec()
 
     argument_spec.update(
@@ -646,9 +653,6 @@ def main():
 
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
-
-    if not HAS_ARROW:
-        module.fail_json(msg=missing_required_lib("arrow"))
 
     check_options(module)
     execute_state(module)
