@@ -219,7 +219,7 @@ def update_rule(module):
 
 
 def handle_present(module):
-    """Make notification rule present"""
+    """ Create or update a rule """
     system = get_system(module)
     name = module.params["name"]
     changed = False
@@ -256,7 +256,7 @@ def handle_stat(module):
 
 
 def handle_absent(module):
-    """Make notification rule present"""
+    """ Remove rule """
     changed = False
     name = module.params["name"]
     system = get_system(module)

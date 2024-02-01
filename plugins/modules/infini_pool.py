@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
+"""This module creates, deletes or modifies pools on Infinibox."""
+
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -95,7 +99,6 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
@@ -114,7 +117,7 @@ except ImportError:
 
 @api_wrapper
 def create_pool(module, system):
-    """Create Pool"""
+    """ Create Pool """
     name = module.params['name']
     size = module.params['size']
     vsize = module.params['vsize']
@@ -141,8 +144,8 @@ def create_pool(module, system):
 
 
 @api_wrapper
-def update_pool(module, system, pool):
-    """Update Pool"""
+def update_pool(module, pool):
+    """ Update Pool """
     changed = False
 
     size = module.params['size']
@@ -184,23 +187,21 @@ def update_pool(module, system, pool):
 
 @api_wrapper
 def delete_pool(module, pool):
-    """Delete Pool"""
+    """ Delete Pool """
     if not module.check_mode:
         pool.delete()
     msg = 'Pool deleted'
     module.exit_json(changed=True, msg=msg)
 
 
-def get_sys_pool(module):
+def handle_stat(module):
+    """ Show details about a pool """
     system = get_system(module)
     pool = get_pool(module, system)
-    return (system, pool)
 
-
-def handle_stat(module):
-    system, pool = get_sys_pool(module)
+    name = module.params['name']
     if not pool:
-        module.fail_json(msg='Pool {0} not found'.format(module.params['name']))
+        module.fail_json(msg=f'Pool {name} not found')
     fields = pool.get_fields()
     # print('fields: {0}'.format(fields))
     free_physical_capacity = fields.get('free_physical_capacity', None)
@@ -216,17 +217,21 @@ def handle_stat(module):
 
 
 def handle_present(module):
-    system, pool = get_sys_pool(module)
+    """ Create pool """
+    system = get_system(module)
+    pool = get_pool(module, system)
     if not pool:
         create_pool(module, system)
         module.exit_json(changed=True, msg="Pool created")
     else:
-        changed = update_pool(module, system, pool)
+        changed = update_pool(module, pool)
         module.exit_json(changed=changed, msg="Pool updated")
 
 
 def handle_absent(module):
-    system, pool = get_sys_pool(module)
+    """ Remove pool """
+    system = get_system(module)
+    pool = get_pool(module, system)
     if not pool:
         module.exit_json(changed=False, msg="Pool already absent")
     else:
@@ -235,6 +240,7 @@ def handle_absent(module):
 
 
 def execute_state(module):
+    """Determine which state function to execute and do so"""
     state = module.params['state']
     try:
         if state == 'stat':
@@ -244,13 +250,14 @@ def execute_state(module):
         elif state == 'absent':
             handle_absent(module)
         else:
-            module.fail_json(msg='Internal handler error. Invalid state: {0}'.format(state))
+            module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
     finally:
         system = get_system(module)
         system.logout()
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
@@ -274,13 +281,13 @@ def main():
     if module.params['size']:
         try:
             Capacity(module.params['size'])
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             module.fail_json(msg='size (Physical Capacity) should be defined in MB, GB, TB or PB units')
 
     if module.params['vsize']:
         try:
             Capacity(module.params['vsize'])
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             module.fail_json(msg='vsize (Virtual Capacity) should be defined in MB, GB, TB or PB units')
 
     execute_state(module)
