@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
+"""This module creates, deletes or modifies mappings on Infinibox."""
+
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -86,14 +90,7 @@ EXAMPLES = r'''
     password: secret
 '''
 
-
 # RETURN = r''' # '''
-
-import traceback
-# import sh
-
-# rescan_scsi = sh.Command("rescan-scsi-bus.sh")
-# rescan_scsi_remove = rescan_scsi.bake("--remove")
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
@@ -102,7 +99,6 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     api_wrapper,
     get_cluster,
     get_host,
-    get_pool,
     get_system,
     get_volume,
     infinibox_argument_spec,
@@ -110,39 +106,31 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
 )
 
 try:
-    from infinisdk.core.exceptions import APICommandFailed, ObjectNotFound
+    from infinisdk.core.exceptions import APICommandFailed
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
 
 def vol_is_mapped_to_host(volume, host):
-    volume_fields = volume.get_fields()
-    volume_id = volume_fields.get('id')
+    """ Return a bool showing if a vol is mapped to a host """
     host_luns = host.get_luns()
-    # print('volume id: {0}'.format(volume_id))
-    # print('host luns: {0}'.format(str(host_luns)))
     for lun in host_luns:
         if lun.volume == volume:
-            # print('found mapped volume: {0}'.format(volume))
             return True
     return False
 
 
 def vol_is_mapped_to_cluster(volume, cluster):
-    volume_fields = volume.get_fields()
-    volume_id = volume_fields.get('id')
+    """ Return a bool showing if a vol is mapped to a cluster """
     cluster_luns = cluster.get_luns()
-    # print('volume id: {0}'.format(volume_id))
-    # print('host luns: {0}'.format(str(host_luns)))
-
     for lun in cluster_luns:
         if lun.volume == volume:
-            # print('found mapped volume: {0}'.format(volume))
             return True
     return False
 
 
 def find_host_lun_use(module, host, volume):
+    """ Return a dict showing if a host lun matches a volume. """
     check_result = {'lun_used': False, 'lun_volume_matches': False}
     desired_lun = module.params['lun']
 
@@ -158,12 +146,13 @@ def find_host_lun_use(module, host, volume):
 
 
 def find_cluster_lun_use(module, cluster, volume):
+    """ Return a dict showing if a cluster lun matches a volume. """
     check_result = {'lun_used': False, 'lun_volume_matches': False}
     desired_lun = module.params['lun']
 
     if desired_lun:
         for cluster_lun in cluster.get_luns():
-            if desired_lun == cluster.lun:
+            if desired_lun == cluster_lun:
                 if cluster.volume == volume:
                     check_result = {'lun_used': True, 'lun_volume_matches': True}
                 else:
@@ -173,6 +162,7 @@ def find_cluster_lun_use(module, cluster, volume):
 
 
 def find_host_lun(host, volume):
+    """ Find a hosts lun """
     found_lun = None
     luns = host.get_luns()
 
@@ -183,6 +173,7 @@ def find_host_lun(host, volume):
 
 
 def find_cluster_lun(cluster, volume):
+    """ Find a cluster's LUN """
     found_lun = None
     luns = cluster.get_luns()
 
@@ -194,12 +185,8 @@ def find_cluster_lun(cluster, volume):
 
 @api_wrapper
 def create_mapping(module, system):
-    """
-    Create mapping of volume to host or cluster. If already mapped, exit_json with changed False.
-    """
+    """ Create mapping of volume to host or cluster. If already mapped, exit_json with changed False. """
 
-    host_name = module.params['host']
-    cluster_name = module.params['cluster']
     host = get_host(module, system)
     cluster = get_cluster(module, system)
 
@@ -221,20 +208,18 @@ def create_mapping(module, system):
 
 @api_wrapper
 def create_mapping_to_cluster(module, system):
-    """
-    Create mapping of volume to cluster. If already mapped, exit_json with changed False.
-    """
+    """ Create mapping of volume to cluster. If already mapped, exit_json with changed False. """
     changed = False
 
     cluster = get_cluster(module, system)
     volume = get_volume(module, system)
+    volume_name = module.params['volume']
+    cluster_name = module.params['cluster']
+    lun_name = module.params['lun']
 
     lun_use = find_cluster_lun_use(module, cluster, volume)
     if lun_use['lun_used']:
-        msg = "Cannot create mapping of volume '{0}' to cluster '{1}' using lun '{2}'. Lun in use.".format(
-            volume.get_name(),
-            cluster.get_name(),
-            module.params['lun'])
+        msg = f"Cannot create mapping of volume '{volume_name}' to cluster '{cluster_name}' using lun '{lun_name}'. Lun in use."
         module.fail_json(msg=msg)
 
     try:
@@ -244,30 +229,26 @@ def create_mapping_to_cluster(module, system):
         changed = True
     except APICommandFailed as err:
         if "is already mapped" not in str(err):
-            module.fail_json('Cannot map volume {0} to cluster {1}: {2}. Already mapped.'.format(
-                module.params['volume'],
-                module.params['cluster'],
-                str(err)))
+            msg = f"Cannot map volume '{volume_name}' to cluster '{cluster_name}': {str(err)}. Already mapped."
+            module.fail_json(msg=msg)
 
     return changed
 
 
 @api_wrapper
 def create_mapping_to_host(module, system):
-    """
-    Create mapping of volume to host. If already mapped, exit_json with changed False.
-    """
+    """ Create mapping of volume to host. If already mapped, exit_json with changed False. """
     changed = False
 
     host = system.hosts.get(name=module.params['host'])
     volume = get_volume(module, system)
+    volume_name = module.params['volume']
+    host_name = module.params['host']
+    lun_name = module.params['lun']
 
     lun_use = find_host_lun_use(module, host, volume)
     if lun_use['lun_used']:
-        msg = "Cannot create mapping of volume '{0}' to host '{1}' using lun '{2}'. Lun in use.".format(
-            volume.get_name(),
-            host.get_name(),
-            module.params['lun'])
+        msg = f"Cannot create mapping of volume '{volume_name}' to host '{host_name}' using lun '{lun_name}'. Lun in use."
         module.fail_json(msg=msg)
 
     try:
@@ -277,35 +258,29 @@ def create_mapping_to_host(module, system):
         changed = True
     except APICommandFailed as err:
         if "is already mapped" not in str(err):
-            module.fail_json('Cannot map volume {0} to host {1}: {2}. Already mapped.'.format(
-                module.params['volume'],
-                module.params['host'],
-                str(err)))
+            msg = f"Cannot map volume '{host_name}' to host '{host_name}': {str(err)}. Already mapped."
+            module.fail_json(msg=msg)
 
     return changed
 
 
 @api_wrapper
 def update_mapping_to_host(module, system):
+    """ Update a mapping to a host """
     host = get_host(module, system)
     volume = get_volume(module, system)
+    volume_name = module.params['volume']
+    host_name = module.params['host']
     desired_lun = module.params['lun']
 
     if not vol_is_mapped_to_host(volume, host):
-        msg = "Volume {0} is not mapped to host {1}".format(
-            volume.get_name(),
-            host.get_name(),
-        )
+        msg = f"Volume '{volume_name}' is not mapped to host '{host_name}'"
         module.fail_json(msg=msg)
 
     if desired_lun:
         found_lun = find_host_lun(host, volume)
         if found_lun != desired_lun:
-            msg = "Cannot change the lun from '{0}' to '{1}' for existing mapping of volume '{2}' to host '{3}'".format(
-                found_lun,
-                desired_lun,
-                volume.get_name(),
-                host.get_name())
+            msg = f"Cannot change the lun from '{found_lun}' to '{desired_lun}' for existing mapping of volume '{volume_name}' to host '{host_name}'"
             module.fail_json(msg=msg)
 
     changed = False
@@ -314,25 +289,21 @@ def update_mapping_to_host(module, system):
 
 @api_wrapper
 def update_mapping_to_cluster(module, system):
+    """ Update a mapping to a cluster """
     cluster = get_cluster(module, system)
     volume = get_volume(module, system)
     desired_lun = module.params['lun']
+    volume_name = module.params['volume']
+    cluster_name = module.params['cluster']
 
     if not vol_is_mapped_to_cluster(volume, cluster):
-        msg = "Volume {0} is not mapped to cluster {1}".format(
-            volume.get_name(),
-            cluster.get_name(),
-        )
+        msg = f"Volume {volume_name} is not mapped to cluster {cluster_name}"
         module.fail_json(msg=msg)
 
     if desired_lun:
         found_lun = find_cluster_lun(cluster, volume)
         if found_lun != desired_lun:
-            msg = "Cannot change the lun from '{0}' to '{1}' for existing mapping of volume '{2}' to cluster '{3}'".format(
-                found_lun,
-                desired_lun,
-                volume.get_name(),
-                cluster.get_name())
+            msg = f"Cannot change the lun from '{found_lun}' to '{desired_lun}' for existing mapping of volume '{volume_name}' to cluster '{cluster_name}'"
             module.fail_json(msg=msg)
 
     changed = False
@@ -341,6 +312,7 @@ def update_mapping_to_cluster(module, system):
 
 @api_wrapper
 def delete_mapping(module, system):
+    """ Delete a mapping """
     host = get_host(module, system)
     cluster = get_cluster(module, system)
     if host:
@@ -373,34 +345,22 @@ def delete_mapping_to_host(module, system):
     if not module.check_mode:
         volume = get_volume(module, system)
         host = get_host(module, system)
+        volume_name = module.params['volume']
+        host_name = module.params['host']
 
         if volume and host:
             try:
                 existing_lun = find_host_lun(host, volume)
                 host.unmap_volume(volume)
                 changed = True
-                msg = "Volume '{0}' was unmapped from host '{1}' freeing lun '{2}'".format(
-                    module.params['volume'],
-                    module.params['host'],
-                    existing_lun,
-                )
-
+                msg = f"Volume '{volume_name}' was unmapped from host '{host_name}' freeing lun '{existing_lun}'"
             except KeyError as err:
                 if 'has no logical units' not in str(err):
-                    module.fail_json('Cannot unmap volume {0} from host {1}: {2}'.format(
-                        module.params['volume'],
-                        module.params['host'],
-                        str(err)))
+                    module.fail_json(f"Cannot unmap volume '{volume_name}' from host '{host_name}': {str(err)}")
                 else:
-                    msg = "Volume {0} was not mapped to host {1} and so unmapping was not executed".format(
-                        module.params['volume'],
-                        module.params['host'],
-                    )
+                    msg = f"Volume '{volume_name}' was not mapped to host '{host_name}' and so unmapping was not executed"
         else:
-            msg = "Either volume {0} or host {1} does not exist. Unmapping was not executed".format(
-                module.params['volume'],
-                module.params['host'],
-            )
+            msg = f"Either volume '{volume_name}' or host '{host_name}' does not exist. Unmapping was not executed"
     else:  # check_mode
         changed = True
 
@@ -421,33 +381,23 @@ def delete_mapping_to_cluster(module, system):
     if not module.check_mode:
         volume = get_volume(module, system)
         cluster = get_cluster(module, system)
+        volume_name = module.params['volume']
+        cluster_name = module.params['cluster']
 
         if volume and cluster:
             try:
                 existing_lun = find_cluster_lun(cluster, volume)
                 cluster.unmap_volume(volume)
                 changed = True
-                msg = "Volume '{0}' was unmapped from cluster '{1}' freeing lun '{2}'".format(
-                    module.params['volume'],
-                    module.params['cluster'],
-                    existing_lun,
-                )
+                msg = f"Volume '{volume_name}' was unmapped from cluster '{cluster_name}' freeing lun '{existing_lun}'"
             except KeyError as err:
                 if 'has no logical units' not in str(err):
-                    module.fail_json('Cannot unmap volume {0} from cluster {1}: {2}'.format(
-                        module.params['volume'],
-                        module.params['cluster'],
-                        str(err)))
+                    msg = f"Cannot unmap volume '{volume_name}' from cluster '{cluster_name}': {str(err)}"
+                    module.fail_json(msg=msg)
                 else:
-                    msg = "Volume {0} was not mapped to cluster {1} and so unmapping was not executed".format(
-                        module.params['volume'],
-                        module.params['cluster'],
-                    )
+                    msg = f"Volume '{volume_name}' was not mapped to cluster '{cluster_name}' and so unmapping was not executed"
         else:
-            msg = "Either volume {0} or cluster {1} does not exist. Unmapping was not executed".format(
-                module.params['volume'],
-                module.params['cluster'],
-            )
+            msg = f"Either volume '{volume_name}' or cluster '{cluster_name}' does not exist. Unmapping was not executed"
     else:  # check_mode
         changed = True
 
@@ -455,6 +405,7 @@ def delete_mapping_to_cluster(module, system):
 
 
 def get_sys_vol_host_cluster(module):
+    """ Return info about a cluster """
     system = get_system(module)
     volume = get_volume(module, system)
     host = get_host(module, system)
@@ -463,6 +414,7 @@ def get_sys_vol_host_cluster(module):
 
 
 def get_sys_vol_cluster(module):
+    """ Return info about a cluster """
     system = get_system(module)
     volume = get_volume(module, system)
     cluster = get_cluster(module, system)
@@ -470,6 +422,7 @@ def get_sys_vol_cluster(module):
 
 
 def get_mapping_fields(volume, host_or_cluster):
+    """ Get mapping fields """
     luns = host_or_cluster.get_luns()
     for lun in luns:
         if volume.get_name() == lun.volume.get_name():
@@ -481,50 +434,53 @@ def get_mapping_fields(volume, host_or_cluster):
 
 
 def handle_stat(module):
-    system, volume, host, cluster = get_sys_vol_host_cluster(module)
+    """ Return mapping stat """
+    _, volume, host, cluster = get_sys_vol_host_cluster(module)
     volume_name = module.params['volume']
 
     host_name = module.params['host']
-    if not host_name:
-        host_name = "not specified"
-
     cluster_name = module.params['cluster']
-    if not cluster_name:
-        cluster_name = "not specified"
 
     if not volume:
-        module.fail_json(msg='Volume {0} not found'.format(volume_name))
+        module.fail_json(msg=f"Volume '{volume_name}' not found")
+
     if not host and not cluster:
-        module.fail_json(msg='Neither host [{0}] nor cluster [{1}] found'.format(host_name, cluster_name))
+        msg=f"Neither host '{host_name}' nor cluster '{cluster_name}' found"
+        module.fail_json(msg=msg)
+
     if (not host or not vol_is_mapped_to_host(volume, host)) \
             and (not cluster or not vol_is_mapped_to_cluster(volume, cluster)):
-        msg = 'Volume {0} is mapped to neither host {1} nor cluster {2}'.format(volume_name, host_name, cluster_name)
+        if host_name:
+            msg = f"Volume '{volume_name}' is not mapped to host '{host_name}'"
+        elif cluster_name:
+            msg = f"Volume '{volume_name}' is not mapped to cluster '{cluster_name}'"
         module.fail_json(msg=msg)
-    if host:
+
+    if host and host_name:
         found_lun = find_host_lun(host, volume)
         field_dict = get_mapping_fields(volume, host)
         if found_lun is not None:
-            msg = 'Volume {0} is mapped to host {1} using lun {2}'.format(volume_name, host_name, found_lun),
+            msg = f"Volume '{volume_name}' is mapped to host '{host_name}' using lun '{found_lun}'"
             result = dict(
                 changed=False,
                 volume_lun=found_lun,
                 msg=msg,
             )
         else:
-            msg = 'Volume {0} is not mapped to host {1}'.format(volume_name, host_name)
+            msg = f"Volume '{volume_name}' is not mapped to host '{host_name}'"
             module.fail_json(msg=msg)
-    elif cluster:
+    elif cluster and cluster_name:
         found_lun = find_cluster_lun(cluster, volume)
         field_dict = get_mapping_fields(volume, cluster)
         if found_lun is not None:
-            msg = 'Volume {0} is mapped to cluster {1} using lun {2}'.format(volume_name, cluster_name, found_lun)
+            msg = f"Volume '{volume_name}' is mapped to cluster '{cluster_name}' using lun '{found_lun}'"
             result = dict(
                 changed=False,
                 volume_lun=found_lun,
                 msg=msg,
             )
         else:
-            msg = 'Volume {0} is not mapped to cluster {1}'.format(volume_name, cluster_name)
+            msg = f"Volume '{volume_name}' is not mapped to cluster '{cluster_name}'"
             module.fail_json(msg=msg)
     else:
         msg = 'A programming error has occurred in handle_stat()'
@@ -534,50 +490,35 @@ def handle_stat(module):
 
 
 def handle_present(module):
+    """ Create or update mapping """
     system, volume, host, cluster = get_sys_vol_host_cluster(module)
     volume_name = module.params['volume']
     host_name = module.params['host']
     cluster_name = module.params['cluster']
     if not volume:
-        module.fail_json(changed=False, msg='Volume {0} not found'.format(volume_name))
+        module.fail_json(changed=False, msg=f"Volume '{volume_name}' not found")
     if not host and not cluster:
         if not host_name:
             host_name = "not specified"
         if not cluster_name:
             cluster_name = "not specified"
-        module.fail_json(changed=False, msg='Neither host [{0}] nor cluster [{1}] found'.format(host_name, cluster_name))
+        module.fail_json(changed=False, msg=f"Neither host '{host_name}' nor cluster '{cluster_name}' found")
     if host:
         if not vol_is_mapped_to_host(volume, host):
             changed = create_mapping(module, system)
-            # TODO: Why is find_host_lun() returning None after creating the mapping?
-            #       host.get_luns() returns an empty list, why?
-            # existing_lun = find_host_lun(host, volume)
-            # msg = "Volume '{0}' map to host '{1}' created using lun '{2}'".format(
-            #     volume.get_name(),
-            #     host.get_name(),
-            #     existing_lun,
-            # )
-            msg = "Volume '{0}' map to host '{1}' created".format(volume_name, host_name)
+            msg = f"Volume '{volume_name}' map to host '{host_name}' created"
         else:
             changed = update_mapping_to_host(module, system)
             existing_lun = find_host_lun(host, volume)
-            msg = "Volume '{0}' map to host '{1}' already exists using lun '{2}'".format(volume_name, host_name, existing_lun)
+            msg = f"Volume '{volume_name}' map to host '{host_name}' already exists using lun '{existing_lun}'"
     elif cluster:
         if not vol_is_mapped_to_cluster(volume, cluster):
             changed = create_mapping(module, system)
-            # TODO: Why is find_host_lun() returning None after creating the mapping?
-            #       host.get_luns() returns an empty list, why?
-            # existing_lun = find_host_lun(host, volume)
-            # msg = "Volume '{0}' map to host '{1}' created using lun '{2}'".format(
-            #     volume.get_name(),
-            #     host.get_name(),
-            #     existing_lun,
-            # )
-            msg = "Volume '{0}' map to cluster '{1}' created".format(volume_name, cluster_name)
+            msg = f"Volume '{volume_name}' map to cluster '{cluster_name}' created"
         else:
             changed = update_mapping_to_cluster(module, system)
             existing_lun = find_cluster_lun(cluster, volume)
-            msg = "Volume '{0}' map to cluster '{1}' already exists using lun '{2}'".format(volume_name, cluster_name, existing_lun)
+            msg = f"Volume '{volume_name}' map to cluster '{cluster_name}' already exists using lun '{existing_lun}'"
 
     result = dict(
         changed=changed,
@@ -587,18 +528,20 @@ def handle_present(module):
 
 
 def handle_absent(module):
+    """ Remove mapping """
     system, volume, host, cluster = get_sys_vol_host_cluster(module)
     volume_name = module.params['volume']
     host_name = module.params['host']
     cluster_name = module.params['cluster']
     if not volume or (not host and not cluster):
-        module.exit_json(changed=False, msg='Mapping of volume {0} to host {1} or cluster {2} already absent'.format(volume_name, host_name, cluster_name))
+        module.exit_json(changed=False, msg=f'Mapping of volume {volume_name} to host {host_name} or cluster {cluster_name} already absent')
     else:
         changed = delete_mapping(module, system)
         module.exit_json(changed=changed, msg="Mapping removed")
 
 
 def execute_state(module):
+    """Determine which state function to execute and do so"""
     state = module.params['state']
     try:
         if state == 'stat':
@@ -608,14 +551,14 @@ def execute_state(module):
         elif state == 'absent':
             handle_absent(module)
         else:
-            module.fail_json(msg='Internal handler error. Invalid state: {0}'.format(state))
+            module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
     finally:
         system = get_system(module)
         system.logout()
 
 
 def check_parameters(module):
-    volume_name = module.params['volume']
+    """Verify module options are sane"""
     host_name = module.params['host']
     cluster_name = module.params['cluster']
     if host_name and cluster_name:
@@ -628,14 +571,12 @@ def check_parameters(module):
 
 
 def main():
-    """
-    Gather auguments and manage mapping of vols to hosts.
-    """
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            host=dict(required=False, default=""),
-            cluster=dict(required=False, default=""),
+            host=dict(required=False, default=None),
+            cluster=dict(required=False, default=None),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             volume=dict(required=True),
             lun=dict(type=int),
