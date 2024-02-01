@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# pylint: disable=use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
+
+""" A module for managing Infinibox volumes """
+
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -121,8 +125,6 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     ObjectNotFound,
@@ -134,10 +136,12 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     get_volume,
     infinibox_argument_spec,
     manage_snapshot_locks,
-    fail,
-    success,
 )
 
+try:
+    from infinisdk.core.exceptions import APICommandFailed
+except ImportError:
+    pass  # Handled by HAS_INFINISDK from module_utils
 
 HAS_CAPACITY = True
 try:
@@ -145,18 +149,13 @@ try:
 except ImportError:
     HAS_CAPACITY = False
 
-HAS_ARROW = True
-try:
-    import arrow
-except ImportError:
-    HAS_ARROW = False
-except Exception:
+except Exception:  # pylint: disable=broad-exception-caught
     HAS_INFINISDK = False
 
 
 @api_wrapper
 def create_volume(module, system):
-    """Create Volume"""
+    """ Create Volume """
     changed = False
     if not module.check_mode:
         if module.params["thin_provision"]:
@@ -182,15 +181,13 @@ def create_volume(module, system):
 
 @api_wrapper
 def find_vol_id(module, system, vol_name):
-    """
-    Find the ID of this vol
-    """
+    """ Find the ID of this vol """
     vol_url = f"volumes?name={vol_name}&fields=id"
     vol = system.api.get(path=vol_url)
 
     result = vol.get_json()["result"]
     if len(result) != 1:
-        fail(module, f"Cannot find a volume with name '{vol_name}'")
+        module.fail_json(f"Cannot find a volume with name '{vol_name}'")
 
     vol_id = result[0]["id"]
     return vol_id
@@ -198,7 +195,7 @@ def find_vol_id(module, system, vol_name):
 
 @api_wrapper
 def restore_volume_from_snapshot(module, system):
-    """Use snapshot to restore a volume"""
+    """ Use snapshot to restore a volume """
     changed = False
     is_restoring = module.params["restore_volume_from_snapshot"]
     volume_type = module.params["volume_type"]
@@ -211,31 +208,26 @@ def restore_volume_from_snapshot(module, system):
     if not is_restoring:
         raise AssertionError("A programming error occurred. is_restoring is not True")
     if volume_type != "snapshot":
-        fail(
-            module,
-            msg="Cannot restore a parent volume from snapshot unless the volume "
-            "type is 'snapshot'"
-        )
+        module.exit_json(msg="Cannot restore a parent volume from snapshot unless the volume type is 'snapshot'")
     if not parent_volume_name:
-        fail(
-            module,
-            msg="Cannot restore a parent volume from snapshot unless the parent "
-            "volume name is specified"
-        )
+        module.exit_json(msg="Cannot restore a parent volume from snapshot unless the parent volume name is specified")
 
     if not module.check_mode:
         restore_url = f"volumes/{parent_volume_id}/restore?approved=true"
         restore_data = {
             "source_id": snap_id,
         }
-        restore = system.api.post(path=restore_url, data=restore_data)
-        changed = True
+        try:
+            system.api.post(path=restore_url, data=restore_data)
+            changed = True
+        except APICommandFailed as err:
+            module.fail_json(msg=f"Cannot restore volume {parent_volume_name} from {snap_name}: {err}")
     return changed
 
 
 @api_wrapper
 def update_volume(module, volume):
-    """Update Volume"""
+    """ Update Volume """
     changed = False
 
     if module.check_mode:
@@ -266,7 +258,7 @@ def update_volume(module, volume):
 
 @api_wrapper
 def delete_volume(module, volume):
-    """Delete Volume. Volume could be a snapshot."""
+    """ Delete Volume. Volume could be a snapshot. """
     changed = False
     if not module.check_mode:
         volume.delete()
@@ -281,16 +273,16 @@ def create_snapshot(module, system):
     parent_volume_name = module.params["parent_volume_name"]
     try:
         parent_volume = system.volumes.get(name=parent_volume_name)
-    except ObjectNotFound as err:
+    except ObjectNotFound:
         msg = f"Cannot create snapshot {snapshot_name}. Parent volume {parent_volume_name} not found"
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
     if not parent_volume:
         msg = f"Cannot find new snapshot's parent volume named {parent_volume_name}"
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
     if not module.check_mode:
         if module.params["snapshot_lock_only"]:
             msg = "Snapshot does not exist. Cannot comply with 'snapshot_lock_only: true'."
-            fail(module, msg=msg)
+            module.fail_json(msg=msg)
         check_snapshot_lock_options(module)
         snapshot = parent_volume.create_snapshot(name=snapshot_name)
 
@@ -307,9 +299,7 @@ def create_snapshot(module, system):
 
 @api_wrapper
 def update_snapshot(module, snapshot):
-    """
-    Update/refresh snapshot. May also lock it.
-    """
+    """ Update/refresh snapshot. May also lock it.  """
     refresh_changed = False
     if not module.params["snapshot_lock_only"]:
         snap_is_locked = snapshot.get_lock_state() == "LOCKED"
@@ -319,7 +309,7 @@ def update_snapshot(module, snapshot):
             refresh_changed = True
         else:
             msg = "Snapshot is locked and may not be refreshed"
-            fail(module, msg=msg)
+            module.fail_json(msg=msg)
 
     check_snapshot_lock_options(module)
     lock_changed = manage_snapshot_locks(module, snapshot)
@@ -335,6 +325,7 @@ def update_snapshot(module, snapshot):
 
 
 def get_sys_pool_vol_parname(module):
+    """ Return some parameters """
     system = get_system(module)
     pool = get_pool(module, system)
     if module.params["name"]:
@@ -346,10 +337,11 @@ def get_sys_pool_vol_parname(module):
 
 
 def handle_stat(module):
-    system, pool, volume, parname = get_sys_pool_vol_parname(module)
+    """ Handle the stat state """
+    _, _, volume, _ = get_sys_pool_vol_parname(module)
     if not volume:
         msg = f"Volume {module.params['name']} not found. Cannot stat."
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
     fields = volume.get_fields()  # from_cache=True, raw_value=True)
 
     created_at = str(fields.get("created_at", None))
@@ -395,7 +387,8 @@ def handle_stat(module):
 
 
 def handle_present(module):
-    system, pool, volume, parname = get_sys_pool_vol_parname(module)
+    """ Handle the present state """
+    system, _, volume, _ = get_sys_pool_vol_parname(module)
     volume_type = module.params["volume_type"]
     is_restoring = module.params["restore_volume_from_snapshot"]
     if volume_type == "master":
@@ -423,36 +416,37 @@ def handle_present(module):
                 changed = update_snapshot(module, snapshot)
                 module.exit_json(changed=changed, msg="Snapshot updated")
     else:
-        fail(module, msg="A programming error has occurred")
+        module.fail_json(msg="A programming error has occurred")
 
 
 def handle_absent(module):
-    system, pool, volume, parname = get_sys_pool_vol_parname(module)
+    """ Handle the absent state """
+    _, _, volume, _ = get_sys_pool_vol_parname(module)
     volume_type = module.params["volume_type"]
 
     if volume and volume.get_lock_state() == "LOCKED":
         msg = "Cannot delete snapshot. Locked."
-        fail(module, msg=msg)
+        module.fail_json(msg=msg)
 
     if volume_type == "master":
         if not volume:
-            success(module, changed=False, msg="Volume already absent")
+            module.exit_json(changed=False, msg="Volume already absent")
         else:
             changed = delete_volume(module, volume)
-            success(module, changed=changed, msg="Volume removed")
+            module.exit_json(changed=changed, msg="Volume removed")
     elif volume_type == "snapshot":
         snapshot = volume
         if not snapshot:
-            success(module, changed=False, msg="Snapshot already absent")
+            module.exit_json(changed=False, msg="Snapshot already absent")
         else:
             changed = delete_volume(module, snapshot)
-            success(module, changed=changed, msg="Snapshot removed")
+            module.exit_json(changed=changed, msg="Snapshot removed")
     else:
-        fail(module, msg="A programming error has occured")
+        module.fail_json(msg="A programming error has occured")
 
 
 def execute_state(module):
-    """Handle different write_protected defaults depending on volume_type."""
+    """ Handle each state. Handle different write_protected defaults depending on volume_type. """
     if module.params["volume_type"] == "snapshot":
         if module.params["write_protected"] in ["True", "true", "Default"]:
             module.params["write_protected"] = True
@@ -465,7 +459,7 @@ def execute_state(module):
             module.params["write_protected"] = True
     else:
         msg = f"An error has occurred handling volume_type '{module.params['volume_type']}' or write_protected '{module.params['write_protected']}' values"
-        fail(module, msg)
+        module.fail_json(msg)
 
     state = module.params["state"]
     try:
@@ -476,7 +470,7 @@ def execute_state(module):
         elif state == "absent":
             handle_absent(module)
         else:
-            fail(module, msg=f"Internal handler error. Invalid state: {state}")
+            module.fail_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
         system = get_system(module)
         system.logout()
@@ -495,40 +489,41 @@ def check_options(module):
     if state == "stat":
         if not name and not serial:
             msg = "Name or serial parameter must be provided"
-            fail(module, msg)
+            module.fail_json(msg)
     if state in ["present", "absent"]:
         if not name:
             msg = "Name parameter must be provided"
-            fail(module, msg=msg)
+            module.fail_json(msg=msg)
 
     if state == "present":
         if volume_type == "master":
             if parent_volume_name:
                 msg = "parent_volume_name should not be specified "
                 msg += "if volume_type is 'master'. Used for snapshots only."
-                fail(module, msg=msg)
+                module.fail_json(msg=msg)
             if not size:
                 msg = "Size is required to create a volume"
-                fail(module, msg=msg)
+                module.fail_json(msg=msg)
         elif volume_type == "snapshot":
             if size or pool:
                 msg = "Neither pool nor size should not be specified "
                 msg += "for volume_type snapshot"
-                fail(module, msg=msg)
+                module.fail_json(msg=msg)
             if state == "present":
                 if not parent_volume_name:
                     msg = "For state 'present' and volume_type 'snapshot', "
                     msg += "parent_volume_name is required"
-                    fail(module, msg=msg)
+                    module.fail_json(msg=msg)
         else:
             msg = "A programming error has occurred"
-            fail(module, msg=msg)
+            module.fail_json(msg=msg)
         if not pool and volume_type == "master":
             msg = "For state 'present', pool is required"
-            fail(module, msg=msg)
+            module.fail_json(msg=msg)
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
@@ -550,16 +545,13 @@ def main():
     module = AnsibleModule(argument_spec, supports_check_mode=True)
 
     if not HAS_INFINISDK:
-        fail(module, msg=missing_required_lib("infinisdk"))
-
-    if not HAS_ARROW:
-        fail(module, msg=missing_required_lib("arrow"))
+        module.fail_json(msg=missing_required_lib("infinisdk"))
 
     if module.params["size"]:
         try:
             Capacity(module.params["size"])
-        except Exception:
-            fail(module, msg="size (Physical Capacity) should be defined in MB, GB, TB or PB units")
+        except Exception:  # pylint: disable=broad-exception-caught
+            module.fail_json(msg="size (Physical Capacity) should be defined in MB, GB, TB or PB units")
 
     check_options(module)
     execute_state(module)

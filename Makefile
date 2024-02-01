@@ -263,13 +263,13 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_certificate
 # _module_under_test = infini_network_space
 # _module_under_test = infini_event
-_module_under_test = infini_notification_target
+# _module_under_test = infini_notification_target
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_user
 # _module_under_test = infini_users_repository
 # _module_under_test = infini_fs
 # _module_under_test = infini_conig
-# _module_under_test = infini_vol
+_module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@echo "HACK - Creating hacking module links"
@@ -342,8 +342,8 @@ dev-hack-module-rename:  ## Hack rename for infini_fibre_channel_switch module.
 dev-hack-module-rename-jq:  ## Hack rename for infini_user module with jq.
 	@state=rename $(_make) _dev-hack-module-jq
 
-dev-hack-module-test:  ## Hack testing with multiple recipes.
-	@echo "Testing module $(_module_under_test)" && sleep 1
+dev-hack-module-test-jq:  ## Hack testing with multiple recipes.
+	@>&2 echo "Testing module $(_module_under_test)" && sleep 1
 	$(_make) dev-hack-module-absent-jq
 	$(_make) dev-hack-module-stat-jq
 	$(_make) dev-hack-module-present-jq
