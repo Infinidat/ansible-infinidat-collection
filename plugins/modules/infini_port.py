@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position,multiple-statements
+
+"""This module manages ports on an Infinibox."""
+
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -66,8 +70,6 @@ EXAMPLES = r'''
 # RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-
-import traceback
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
@@ -135,6 +137,7 @@ def delete_ports(module, system):
 
 
 def get_sys_host(module):
+    """ Get parameters """
     system = get_system(module)
     host = get_host(module, system)
     return (system, host)
@@ -168,12 +171,12 @@ def find_host_initiators_data(module, system, host, initiator_type):
     Only include desired initiator keys for each initiator.
     Return the filtered and edited host initiator list.
     """
-    request = "initiators?page=1&page_size=1000&host_id={0}".format(host.id)
+    request = f"initiators?page=1&page_size=1000&host_id={host.id}"
     # print("\nrequest:", request, "initiator_type:", initiator_type)
     get_initiators_result = system.api.get(request, check_version=False)
     result_code = get_initiators_result.status_code
     if result_code != 200:
-        msg = "get initiators REST call failed. code: {0}".format(result_code)
+        msg = f"get initiators REST call failed. code: {result_code}"
         module.fail_json(msg=msg)
 
     # Only return initiators of the desired type.
@@ -208,7 +211,7 @@ def find_host_initiators_data(module, system, host, initiator_type):
     return host_initiators_by_type
 
 
-def get_port_fields(module, system, host):
+def get_port_fields(module, system, host):  # pylint: disable=too-many-locals
     """
     Return a dict with desired fields from FC and ISCSI ports associated with the host.
     """
@@ -297,13 +300,12 @@ def handle_stat(module):
     Return json with status.
     """
     system, host = get_sys_host(module)
-
     host_name = module.params["host"]
     if not host:
-        module.fail_json(msg="Host {0} not found".format(host_name))
+        module.fail_json(msg=f"Host {host_name} not found")
 
     field_dict = get_port_fields(module, system, host)
-    result = dict(changed=False, msg="Host {0} ports found".format(host_name),)
+    result = dict(changed=False, msg=f"Host {host_name} ports found")
     result = merge_two_dicts(result, field_dict)
     module.exit_json(**result)
 
@@ -313,16 +315,15 @@ def handle_present(module):
     Handle present state. Fail if host is None.
     """
     system, host = get_sys_host(module)
-
     host_name = module.params["host"]
     if not host:
-        module.fail_json(msg="Host {0} not found".format(host_name))
+        module.fail_json(msg=f"Host {host_name} not found")
 
     changed = update_ports(module, system)
     if changed:
-        msg = "Mapping created for host {0}".format(host.get_name())
+        msg = f"Mapping created for host {host_name}"
     else:
-        msg = "No mapping changes were required for host {0}".format(host.get_name())
+        msg = f"No mapping changes were required for host {host_name}"
 
     result = dict(changed=changed, msg=msg,)
     module.exit_json(**result)
@@ -333,18 +334,17 @@ def handle_absent(module):
     Handle absent state. Fail if host is None.
     """
     system, host = get_sys_host(module)
+    host_name = module.params["host"]
     if not host:
         module.exit_json(
-            changed=False, msg="Host {0} not found".format(module.params["host"])
+            changed=False, msg=f"Host {host_name} not found"
         )
 
     changed = delete_ports(module, system)
     if changed:
-        msg = "Mapping removed from host {0}".format(host.get_name())
+        msg = f"Mapping removed from host {host_name}"
     else:
-        msg = "No mapping changes were required. Mapping already removed from host {0}".format(
-            host.get_name()
-        )
+        msg = f"No mapping changes were required. Mapping already removed from host {host_name}"
 
     result = dict(changed=changed, msg=msg,)
     module.exit_json(**result)
@@ -364,15 +364,11 @@ def execute_state(module):
             handle_absent(module)
         else:
             module.fail_json(
-                msg="Internal handler error. Invalid state: {0}".format(state)
+                msg=f"Internal handler error. Invalid state: {state}"
             )
     finally:
         system = get_system(module)
         system.logout()
-
-
-def check_options(module):
-    pass
 
 
 def main():
@@ -380,7 +376,6 @@ def main():
     Gather auguments and manage mapping of vols to hosts.
     """
     argument_spec = infinibox_argument_spec()
-    null_list = list()
     argument_spec.update(
         dict(
             host=dict(required=True, type=str),
@@ -395,7 +390,6 @@ def main():
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
 
-    check_options(module)
     execute_state(module)
 
 
