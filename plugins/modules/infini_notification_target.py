@@ -184,7 +184,7 @@ def find_target_id(module, system):
         path = f"notifications/targets?name={target_name}&fields=id"
         api_result = system.api.get(path=path)
     except APICommandFailed as err:
-        msg = f"Cannot find ID for notification target {name}: {err}"
+        msg = f"Cannot find ID for notification target {target_name}: {err}"
         module.fail_json(msg=msg)
 
     if len(api_result.get_json()['result']) > 0:
