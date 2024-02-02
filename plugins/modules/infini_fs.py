@@ -160,6 +160,11 @@ except ModuleNotFoundError:
         manage_snapshot_locks,
     )
 
+try:
+    from infinisdk.core.exceptions import APICommandFailed
+except ImportError:
+    pass  # Handled by HAS_INFINISDK from module_utils
+
 CAPACITY_IMP_ERR = None
 try:
     from capacity import KiB, Capacity
@@ -247,7 +252,7 @@ def create_fs_snapshot(module, system):
     if not module.check_mode:
         try:
             parent_fs = system.filesystems.get(name=parent_fs_name)
-        except ObjectNotFound as err:
+        except ObjectNotFound:
             msg = f"Cannot create snapshot {snapshot_name}. Parent file system {parent_fs_name} not found"
             module.fail_json(msg=msg)
         if not parent_fs:
@@ -358,7 +363,7 @@ def restore_fs_from_snapshot(module, system):
 
 def handle_stat(module):
     """ Handle the stat state """
-    system, pool, filesystem, parname = get_sys_pool_fs_parname(module)
+    _, pool, filesystem, _ = get_sys_pool_fs_parname(module)
     fs_type = module.params["fs_type"]
 
     if fs_type == "master":
@@ -394,7 +399,9 @@ def handle_stat(module):
         filesystem_id=filesystem_id,
         filesystem_type=filesystem_type,
         has_children=has_children,
+        lock_state=lock_state,
         lock_expires_at=lock_expires_at,
+        mapped=mapped,
         msg=msg,
         name=name,
         parent_id=parent_id,
