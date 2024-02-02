@@ -140,6 +140,18 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: POSITIVE test -> Restore parent file system {{ auto_prefix }}fs from snapshot named {{ auto_prefix }}fs_snap
+      infini_fs:
+        name: "{{ auto_prefix }}fs_snap"
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        fs_type: snapshot
+        parent_fs_name: "{{ auto_prefix }}fs"
+        restore_fs_from_snapshot: true,
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: DEBUG test -> Find the current date-time (WARNING - Time marks when the playbook gathered facts)
       ansible.builtin.debug:
         var=ansible_date_time.iso8601_micro
