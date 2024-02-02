@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
+
+"""This module manages file systems on Infinibox."""
+
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -131,8 +135,6 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
 try:
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
         HAS_INFINISDK,
@@ -166,18 +168,9 @@ try:
 except ImportError:
     HAS_CAPACITY = False
 
-HAS_ARROW = True
-try:
-    import arrow
-except ImportError:
-    HAS_ARROW = False
-except Exception:
-    HAS_INFINISDK = False
-
-
 @api_wrapper
 def create_filesystem(module, system):
-    """Create Filesystem"""
+    """ Create Filesystem """
     changed = False
     if not module.check_mode:
         if module.params["thin_provision"]:
@@ -205,7 +198,7 @@ def create_filesystem(module, system):
 
 @api_wrapper
 def update_filesystem(module, filesystem):
-    """Update Filesystem"""
+    """ Update Filesystem """
     changed = False
 
     if module.check_mode:
@@ -237,7 +230,7 @@ def update_filesystem(module, filesystem):
 
 @api_wrapper
 def delete_filesystem(module, filesystem):
-    """Delete Filesystem"""
+    """ Delete Filesystem """
     changed = False
     if not module.check_mode:
         filesystem.delete()
@@ -247,7 +240,7 @@ def delete_filesystem(module, filesystem):
 
 @api_wrapper
 def create_fs_snapshot(module, system):
-    """Create Snapshot from parent fs"""
+    """ Create Snapshot from parent fs """
     snapshot_name = module.params["name"]
     parent_fs_name = module.params["parent_fs_name"]
     changed = False
@@ -279,9 +272,7 @@ def create_fs_snapshot(module, system):
 
 @api_wrapper
 def update_fs_snapshot(module, snapshot):
-    """
-    Update/refresh fs snapshot. May also lock it.
-    """
+    """ Update/refresh fs snapshot. May also lock it. """
     refresh_changed = False
     lock_changed = False
     if not module.check_mode:
@@ -308,6 +299,7 @@ def update_fs_snapshot(module, snapshot):
 
 
 def get_sys_pool_fs_parname(module):
+    """ Get params """
     system = get_system(module)
     pool = get_pool(module, system)
     if module.params["name"]:
@@ -318,7 +310,54 @@ def get_sys_pool_fs_parname(module):
     return (system, pool, filesystem, parname)
 
 
+@api_wrapper
+def find_fs_id(module, system, fs_name):
+    """ Find the ID of this fs """
+    fs_url = f"filesystems?name={fs_name}&fields=id"
+    fs = system.api.get(path=fs_url)
+
+    result = fs.get_json()["result"]
+    if len(result) != 1:
+        module.fail_json(f"Cannot find a file ststem with name '{fs_name}'")
+
+    fs_id = result[0]["id"]
+    return fs_id
+
+
+@api_wrapper
+def restore_fs_from_snapshot(module, system):
+    """ Use snapshot to restore a file system """
+    changed = False
+    is_restoring = module.params["restore_fs_from_snapshot"]
+    fs_type = module.params["fs_type"]
+    snap_name = module.params["name"]
+    snap_id = find_fs_id(module, system, snap_name)
+    parent_fs_name = module.params["parent_fs_name"]
+    parent_fs_id = find_fs_id(module, system, parent_fs_name)
+
+    # Check params
+    if not is_restoring:
+        raise AssertionError("A programming error occurred. is_restoring is not True")
+    if fs_type != "snapshot":
+        module.exit_json(msg="Cannot restore a parent file system from snapshot unless the file system type is 'snapshot'")
+    if not parent_fs_name:
+        module.exit_json(msg="Cannot restore a parent file system from snapshot unless the parent file system name is specified")
+
+    if not module.check_mode:
+        restore_url = f"filesystems/{parent_fs_id}/restore?approved=true"
+        restore_data = {
+            "source_id": snap_id,
+        }
+        try:
+            system.api.post(path=restore_url, data=restore_data)
+            changed = True
+        except APICommandFailed as err:
+            module.fail_json(msg=f"Cannot restore file system {parent_fs_name} from snapshot {snap_name}: {str(err)}")
+    return changed
+
+
 def handle_stat(module):
+    """ Handle the stat state """
     system, pool, filesystem, parname = get_sys_pool_fs_parname(module)
     fs_type = module.params["fs_type"]
 
@@ -370,6 +409,7 @@ def handle_stat(module):
 
 
 def handle_present(module):
+    """ Handle the present state """
     system, pool, filesystem, _ = get_sys_pool_fs_parname(module)
     fs_type = module.params["fs_type"]
     is_restoring = module.params["restore_fs_from_snapshot"]
@@ -387,7 +427,10 @@ def handle_present(module):
         if is_restoring:
             # Restore fs from snapshot
             changed = restore_fs_from_snapshot(module, system)
-            module.exit_json(changed=changed, msg="File system restored from snapshot")
+            snap_fs_name = module.params["name"]
+            parent_fs_name = module.params["parent_fs_name"]
+            msg = f"File system {parent_fs_name} restored from snapshot {snap_fs_name}"
+            module.exit_json(changed=changed, msg=msg)
         else:
             if not snapshot:
                 changed = create_fs_snapshot(module, system)
@@ -398,8 +441,8 @@ def handle_present(module):
 
 
 def handle_absent(module):
-    system, pool, filesystem, _ = get_sys_pool_fs_parname(module)
-    fs_type = module.params["fs_type"]
+    """ Handle the absent state """
+    _, pool, filesystem, _ = get_sys_pool_fs_parname(module)
 
     if filesystem and filesystem.get_lock_state() == "LOCKED":
         msg = "Cannot delete snapshot. Locked."
@@ -407,8 +450,8 @@ def handle_absent(module):
 
     if not pool or not filesystem:
         module.exit_json(changed=False, msg="File system already absent")
-    else:
-        existing_fs_type = filesystem.get_type()
+
+    existing_fs_type = filesystem.get_type()
 
     if existing_fs_type == "MASTER":
         changed = delete_filesystem(module, filesystem)
@@ -422,6 +465,7 @@ def handle_absent(module):
 
 
 def execute_state(module):
+    """ Execute states """
     state = module.params["state"]
     try:
         if state == "stat":
@@ -483,6 +527,7 @@ def check_options(module):
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
@@ -522,7 +567,7 @@ def main():
     if module.params["size"]:
         try:
             Capacity(module.params["size"])
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             module.fail_json(
                 msg="size (Physical Capacity) should be defined in MB, GB, TB or PB units"
             )
