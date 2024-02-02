@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position,multiple-statements
+
 """This module creates, deletes or modifies repositories of users that can log on to an Infinibox."""
 
 # Copyright: (c) 2023, Infinidat <info@infinidat.com>
@@ -8,7 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -136,24 +138,12 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
-    get_cluster,
-    get_filesystem,
-    get_host,
-    get_pool,
     get_system,
-    get_volume,
     infinibox_argument_spec,
 )
 from infinisdk.core.exceptions import APICommandFailed
 
-HAS_ARROW = True
-try:
-    import arrow
-except ImportError:
-    HAS_ARROW = False
-
 HAS_CAPACITY = False
-
 
 @api_wrapper
 def get_users_repository(module, disable_fail=False):
@@ -175,12 +165,11 @@ def get_users_repository(module, disable_fail=False):
             module.fail_json(msg=msg)
         return result
 
-    if disable_fail:
-        return None
+    if not disable_fail:
+        msg = f"Users repository {name} not found. Cannot stat."
+        module.fail_json(msg=msg)
 
-    msg = f"Users repository {name} not found. Cannot stat."
-    module.fail_json(msg=msg)
-
+    return None
 
 @api_wrapper
 def test_users_repository(module, repository_id, disable_fail=False):
@@ -190,10 +179,15 @@ def test_users_repository(module, repository_id, disable_fail=False):
     and it may or may not exist and neither case is an error.
     """
     system = get_system(module)
-    name = module.params["name"]
-
-    path = f"config/ldap/{repository_id}/test"
-    result = system.api.post(path=path)
+    name = module.params['name']
+    try:
+        path = f"config/ldap/{repository_id}/test"
+        result = system.api.post(path=path)
+    except APICommandFailed as err:
+        if disable_fail:
+            return False
+        msg = f"Users repository {name} testing failed: {str(err)}"
+        module.fail_json(msg=msg)
     if result.response.status_code in [200]:
         return True
     return False
@@ -201,7 +195,6 @@ def test_users_repository(module, repository_id, disable_fail=False):
 
 def create_post_data(module):
     """Create data dict for post rest calls"""
-    system = get_system(module)
     name = module.params["name"]
     repo_type = module.params["repository_type"]
     # search_order
@@ -261,9 +254,10 @@ def post_users_repository(module):
 
 
 @api_wrapper
-def delete_users_repository(module, name):
+def delete_users_repository(module):
     """Delete repo."""
     system = get_system(module)
+    name = module.params['name']
     changed = False
     if not module.check_mode:
         repo = get_users_repository(module, disable_fail=True)
@@ -274,7 +268,8 @@ def delete_users_repository(module, name):
                 changed = True
             except APICommandFailed as err:
                 if err.status_code != 404:
-                    raise
+                    msg = f"Deletion of users repository {name} failed: {str(err)}"
+                    module.fail_json(msg=msg)
     return changed
 
 
@@ -298,7 +293,8 @@ def handle_stat(module):
 
 
 @api_wrapper
-def is_existing_users_repo_equal_to_desired(module):
+def is_existing_users_repo_equal_to_desired(module):  # pylint: disable=too-many-return-statements,multiple-statements
+    """ Compare two user user repositories. Return a bool. """
     newdata = create_post_data(module)
     olddata = get_users_repository(module, disable_fail=True)[0]
     if not olddata:
@@ -318,7 +314,6 @@ def is_existing_users_repo_equal_to_desired(module):
 def handle_present(module):
     """Make users repository present"""
     name = module.params['name']
-    repo_type = module.params['repository_type']
     changed = False
     msg = ""
     if not module.check_mode:
@@ -332,7 +327,7 @@ def handle_present(module):
                 module.exit_json(changed=changed, msg=msg)
             else:
                 msg = f"Users repository {name} is being recreated with new settings. "
-                delete_users_repository(module, name)
+                delete_users_repository(module)
                 old_users_repo = None
                 changed = True
 
@@ -358,7 +353,7 @@ def handle_absent(module):
     msg = f"Users repository {name} unchanged"
     changed = False
     if not module.check_mode:
-        changed = delete_users_repository(module, name)
+        changed = delete_users_repository(module)
         if changed:
             msg = f"Users repository {name} removed"
         else:
@@ -385,20 +380,20 @@ def execute_state(module):
 
 def check_options(module):
     """Verify module options are sane"""
-    ad_domain_name = module.params["ad_domain_name"]
-    bind_password = module.params["bind_password"]
-    bind_username = module.params["bind_username"]
-    ad_domain_name = module.params["ad_domain_name"]
-    ldap_servers = module.params["ldap_servers"]
+    # ad_domain_name = module.params["ad_domain_name"]
+    # bind_password = module.params["bind_password"]
+    # bind_username = module.params["bind_username"]
+    # ad_domain_name = module.params["ad_domain_name"]
+    # ldap_servers = module.params["ldap_servers"]
     name = module.params["name"]
-    ldap_port = module.params["ldap_port"]
+    # ldap_port = module.params["ldap_port"]
     repository_type = module.params["repository_type"]
-    schema_group_memberof_attribute = module.params["schema_group_memberof_attribute"]
-    schema_group_name_attribute = module.params["schema_group_name_attribute"]
-    schema_groups_basedn = module.params["schema_groups_basedn"]
-    schema_user_class = module.params["schema_user_class"]
-    schema_username_attribute = module.params["schema_username_attribute"]
-    schema_users_basedn = module.params["schema_users_basedn"]
+    # schema_group_memberof_attribute = module.params["schema_group_memberof_attribute"]
+    # schema_group_name_attribute = module.params["schema_group_name_attribute"]
+    # schema_groups_basedn = module.params["schema_groups_basedn"]
+    # schema_user_class = module.params["schema_user_class"]
+    # schema_username_attribute = module.params["schema_username_attribute"]
+    # schema_users_basedn = module.params["schema_users_basedn"]
     state = module.params["state"]
 
     if state == "stat":
@@ -434,7 +429,7 @@ def check_options(module):
                     msg = f"Cannot create a new LDAP repository named {name} when providing disallowed parameters: {error_params}"
                     module.fail_json(msg=msg)
         else:
-            msg = f"Cannot create a new users repository without providing a repository_type"
+            msg = "Cannot create a new users repository without providing a repository_type"
             module.fail_json(msg=msg)
     elif state == "absent":
         pass
@@ -485,9 +480,6 @@ def main():
 
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
-
-    if not HAS_ARROW:
-        module.fail_json(msg=missing_required_lib("arrow"))
 
     check_options(module)
     execute_state(module)
