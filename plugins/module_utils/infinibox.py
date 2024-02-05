@@ -3,15 +3,18 @@
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position,broad-exception-caught
+
+""" Infinidat utilities """
+
 from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type # pylint: disable=invalid-name
 
-from ansible.module_utils.six import raise_from
-try:
-    import ansible.module_utils.errors
-except (ImportError, ModuleNotFoundError):
-    import errors  # Used during "make dev-hack-module-[present, stat, absent]"
+# try:
+#     import ansible.module_utils.errors
+# except (ImportError, ModuleNotFoundError):
+#     import errors  # Used during "make dev-hack-module-[present, stat, absent]"
 
 try:
     from infinisdk import InfiniBox, core
@@ -40,11 +43,10 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+INFINIBOX_SYSTEM = None
 
-system = None
-
-
-def unixMillisecondsToDate(unix_ms):
+def unixMillisecondsToDate(unix_ms):  # pylint: disable=invalid-name
+    """ Convert unix time with ms to a datetime UTC time """
     return (datetime.utcfromtimestamp(unix_ms / 1000.), 'UTC')
 
 
@@ -55,12 +57,13 @@ def api_wrapper(func):
         module = args[0]
         try:
             return func(*args, **kwargs)
-        except core.exceptions.APICommandException as e:
-            module.fail_json(msg=e.message)
-        except core.exceptions.SystemNotFoundException as e:
-            module.fail_json(msg=e.message)
-        except Exception:
-            raise
+        except core.exceptions.SystemNotFoundException as err:
+            module.fail_json(msg=str(err))
+        except core.exceptions.APICommandException as err:
+            module.fail_json(msg=str(err))
+        except Exception as err:
+            module.fail_json(msg=str(err))
+        return None  # Should never get to this line but it quiets pylint inconsistent-return-statements
     return __wrapper
 
 
@@ -75,7 +78,7 @@ def success(module, changed, msg):
     """Logout of system before calling exit_json()"""
     system = get_system(module)
     system.logout()
-    module.exit_json(msg=msg)
+    module.exit_json(changed=changed, msg=msg)
 
 
 def infinibox_argument_spec():
@@ -110,31 +113,31 @@ def get_system(module):
     system session used for this module instance.
     Enables execute_state() to log out of the only session properly.
     """
-    global system
+    global INFINIBOX_SYSTEM  # pylint: disable=global-statement
 
-    if not system:
+    if not INFINIBOX_SYSTEM:
         # Create system and login
         box = module.params['system']
         user = module.params.get('user', None)
         password = module.params.get('password', None)
         if user and password:
-            system = InfiniBox(box, auth=(user, password), use_ssl=True)
+            INFINIBOX_SYSTEM = InfiniBox(box, auth=(user, password), use_ssl=True)
         elif environ.get('INFINIBOX_USER') and environ.get('INFINIBOX_PASSWORD'):
-            system = InfiniBox(box,
+            INFINIBOX_SYSTEM = InfiniBox(box,
                             auth=(environ.get('INFINIBOX_USER'),
                                     environ.get('INFINIBOX_PASSWORD')),
                             use_ssl=True)
         elif path.isfile(path.expanduser('~') + '/.infinidat/infinisdk.ini'):
-            system = InfiniBox(box, use_ssl=True)
+            INFINIBOX_SYSTEM = InfiniBox(box, use_ssl=True)
         else:
             module.fail_json(msg="You must set INFINIBOX_USER and INFINIBOX_PASSWORD environment variables or set username/password module arguments")
 
         try:
-            system.login()
+            INFINIBOX_SYSTEM.login()
         except Exception:
             module.fail_json(msg="Infinibox authentication failed. Check your credentials")
 
-    return system
+    return INFINIBOX_SYSTEM
 
 
 @api_wrapper
@@ -182,7 +185,7 @@ def get_export(module, system):
             export_name = module.params['name']
 
         export = system.exports.get(export_path=export_name)
-    except ObjectNotFound as err:
+    except ObjectNotFound:
         return None
 
     return export
@@ -312,16 +315,14 @@ def check_snapshot_lock_options(module):
         now = arrow.utcnow()
         if lock_expires_at <= now:
             msg = "Cannot lock snapshot with a snapshot_lock_expires_at "
-            msg += "of '{0}' from the past".format(snapshot_lock_expires_at)
+            msg += f"of '{snapshot_lock_expires_at}' from the past"
             module.fail_json(msg=msg)
 
         # Check for lock later than max lock, i.e. too far in future.
         max_delta_minutes = 43200  # 30 days in minutes
         max_lock_expires_at = now.shift(minutes=max_delta_minutes)
         if lock_expires_at >= max_lock_expires_at:
-            msg = "snapshot_lock_expires_at exceeds {0} days in the future".format(
-                max_delta_minutes // 24 // 60
-            )
+            msg = f"snapshot_lock_expires_at exceeds {max_delta_minutes // 24 // 60} days in the future"
             module.fail_json(msg=msg)
 
 
@@ -330,7 +331,6 @@ def manage_snapshot_locks(module, snapshot):
     Manage the locking of a snapshot. Check for bad lock times.
     See check_snapshot_lock_options() which has additional checks.
     """
-    name = module.params["name"]
     snapshot_lock_expires_at = module.params["snapshot_lock_expires_at"]
     snap_is_locked = snapshot.get_lock_state() == "LOCKED"
     current_lock_expires_at = snapshot.get_lock_expires_at()
@@ -342,9 +342,7 @@ def manage_snapshot_locks(module, snapshot):
         lock_expires_at = arrow.get(snapshot_lock_expires_at)
         if snap_is_locked and lock_expires_at < current_lock_expires_at:
             # Lock earlier than current lock
-            msg = "snapshot_lock_expires_at '{0}' preceeds the current lock time of '{1}'".format(
-                lock_expires_at, current_lock_expires_at
-            )
+            msg = f"snapshot_lock_expires_at '{lock_expires_at}' preceeds the current lock time of '{current_lock_expires_at}'"
             module.fail_json(msg=msg)
         elif snap_is_locked and lock_expires_at == current_lock_expires_at:
             # Lock already set to correct time
@@ -355,4 +353,3 @@ def manage_snapshot_locks(module, snapshot):
                 snapshot.update_lock_expires_at(lock_expires_at)
             changed = True
     return changed
-

@@ -1,11 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+""" Manage Infinibox export clients """
+
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position, wrong-import-order
+
 from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
+
+__metaclass__ = type # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -94,7 +99,7 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     merge_two_dicts,
 )
 
-MUNCH_IMP_ERR = None
+MUNCH_IMPORT_ERROR = None
 try:
     from munch import Munch, unmunchify
     HAS_MUNCH = True
@@ -145,7 +150,7 @@ def update_client(module, export):
 
 @api_wrapper
 def delete_client(module, export):
-    """Update export client list"""
+    """delete export client from client list"""
     if export is None and module.params['state'] == 'absent':
         module.exit_json(changed=False)
 
@@ -169,12 +174,14 @@ def delete_client(module, export):
 
 
 def get_sys_exp(module):
+    """ Get system and export """
     system = get_system(module)
     export = get_export(module, system)
     return (system, export)
 
 
 def get_export_client_fields(export, client_name):
+    """ Get export client fields """
     fields = export.get_fields()  # from_cache=True, raw_value=True)
     permissions = fields.get('permissions', None)
     for munched_perm in permissions:
@@ -185,13 +192,14 @@ def get_export_client_fields(export, client_name):
                 no_root_squash=perm['no_root_squash'],
             )
             return field_dict
-    raise AssertionError("No client {0} match to exports found".format(client_name))
+    raise AssertionError(f"No client {client_name} match to exports found")
 
 
 def handle_stat(module):
-    system, export = get_sys_exp(module)
+    """ Execute the stat state """
+    _, export = get_sys_exp(module)
     if not export:
-        module.fail_json(msg='Export {0} not found'.format(module.params['export']))
+        module.fail_json(msg=f"Export {module.params['export']} not found")
     client_name = module.params['client']
     field_dict = get_export_client_fields(export, client_name)
     result = dict(
@@ -203,9 +211,10 @@ def handle_stat(module):
 
 
 def handle_present(module):
-    system, export = get_sys_exp(module)
+    """ Execute the present state """
+    _, export = get_sys_exp(module)
     if not export:
-        msg = 'Export {0} not found'.format(module.params['export'])
+        msg = f"Export {module.params['export']} not found"
         module.fail_json(msg=msg)
 
     changed = update_client(module, export)
@@ -214,7 +223,8 @@ def handle_present(module):
 
 
 def handle_absent(module):
-    system, export = get_sys_exp(module)
+    """ Execute the absent state """
+    _, export = get_sys_exp(module)
     if not export:
         changed = False
         msg = "Export client already absent"
@@ -226,6 +236,7 @@ def handle_absent(module):
 
 
 def execute_state(module):
+    """ Execute a state """
     state = module.params['state']
     try:
         if state == 'stat':
@@ -235,13 +246,14 @@ def execute_state(module):
         elif state == 'absent':
             handle_absent(module)
         else:
-            module.fail_json(msg='Internal handler error. Invalid state: {0}'.format(state))
+            module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
     finally:
         system = get_system(module)
         system.logout()
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
