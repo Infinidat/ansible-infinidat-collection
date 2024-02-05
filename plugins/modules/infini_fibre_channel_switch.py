@@ -4,9 +4,13 @@
 # Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+""" Manage switch names on Infinibox """
+
+# pylint: disable=use-dict-literal,line-too-long,wrong-import-position
+
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r"""
 ---
@@ -57,45 +61,38 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-
-import traceback
+from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-    HAS_INFINISDK,
-    ObjectNotFound,
-    api_wrapper,
     merge_two_dicts,
     get_system,
     infinibox_argument_spec,
-    fail,
-    success,
 )
 
 try:
     from infinisdk.core.exceptions import APICommandFailed
-    from infinisdk.core.exceptions import ObjectNotFound
-    from infi.dtypes.iqn import make_iscsi_name
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
 
 def find_switch_by_name(module):
+    """ Find switch by name """
     switch=module.params['switch_name']
     path = f"fc/switches?name={switch}"
     system = get_system(module)
     try:
         switch_result = system.api.get(path=path).get_result()
-        if not len(switch_result):
+        if not switch_result:
             msg = f"Cannot find switch {switch}"
-            fail(module, msg=msg)
+            module.exit_json(msg=msg)
     except APICommandFailed as err:
         msg = f"Cannot find switch {switch}: {err}"
-        fail(module, msg=msg)
+        module.exit_json(msg=msg)
     return switch_result[0]
 
 
 def handle_stat(module):
+    """ Handle stat state """
     switch_name = module.params['switch_name']
     switch_result = find_switch_by_name(module)
     result = dict(
@@ -107,6 +104,7 @@ def handle_stat(module):
 
 
 def handle_rename(module):
+    """ Handle rename state """
     switch_name = module.params['switch_name']
     new_switch_name = module.params['new_switch_name']
 
@@ -122,7 +120,7 @@ def handle_rename(module):
         rename_result = system.api.put(path=path, data=data).get_result()
     except APICommandFailed as err:
         msg = f"Cannot rename fc switch {switch_name}: {err}"
-        fail(module, msg=msg)
+        module.exit_json(msg=msg)
 
     result = dict(
         changed=True,
@@ -141,7 +139,7 @@ def execute_state(module):
         elif state == "rename":
             handle_rename(module)
         else:
-            fail(module, msg=f"Internal handler error. Invalid state: {state}")
+            module.exit_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
         system = get_system(module)
         system.logout()
@@ -155,10 +153,11 @@ def check_options(module):
     if state in ["rename"]:
         if not new_switch_name:
             msg = "New switch name parameter must be provided"
-            fail(module, msg=msg)
+            module.exit_json(msg=msg)
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
