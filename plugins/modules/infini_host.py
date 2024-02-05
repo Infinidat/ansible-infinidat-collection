@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position,multiple-statements
+
+""" Manage hosts on Infinibox """
+
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 DOCUMENTATION = r'''
 ---
@@ -44,9 +48,6 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
-import traceback
-
-from infi.dtypes.iqn import make_iscsi_name
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
@@ -60,22 +61,16 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
 
 @api_wrapper
 def create_host(module, system):
-
+    """ Create a host """
     changed = True
-
     if not module.check_mode:
-        host = system.hosts.create(name=module.params['name'])
-    return changed
-
-
-@api_wrapper
-def update_host(module, host):
-    changed = False
+        system.hosts.create(name=module.params['name'])
     return changed
 
 
 @api_wrapper
 def delete_host(module, host):
+    """ Delete a host """
     changed = True
     if not module.check_mode:
         # May raise APICommandFailed if mapped, etc.
@@ -84,12 +79,14 @@ def delete_host(module, host):
 
 
 def get_sys_host(module):
+    """ Get parameters """
     system = get_system(module)
     host = get_host(module, system)
     return (system, host)
 
 
 def get_host_fields(host):
+    """ Get host fields """
     fields = host.get_fields(from_cache=True, raw_value=True)
     created_at, created_at_timezone = unixMillisecondsToDate(fields.get('created_at', None))
     field_dict = dict(
@@ -117,45 +114,49 @@ def get_host_fields(host):
 
 
 def handle_stat(module):
-    system, host = get_sys_host(module)
+    """ Handle the stat state """
+    _, host = get_sys_host(module)
     host_name = module.params["name"]
     if not host:
-        module.fail_json(msg='Host {0} not found'.format(host_name))
+        module.fail_json(msg=f'Host {host_name} not found')
     field_dict = get_host_fields(host)
     result = dict(
         changed=False,
-        msg='Host stat found'
+        msg=f'Host {host_name} stat found'
     )
     result = merge_two_dicts(result, field_dict)
     module.exit_json(**result)
 
 
 def handle_present(module):
+    """ Handle the present state """
     system, host = get_sys_host(module)
     host_name = module.params["name"]
     if not host:
         changed = create_host(module, system)
-        msg = 'Host {0} created'.format(host_name)
+        msg = f'Host {host_name} created'
         module.exit_json(changed=changed, msg=msg)
     else:
-        changed = update_host(module, host)
-        msg = 'Host {0} updated'.format(host_name)
+        changed = False
+        msg = f'Host {host_name} exists and does not need to be updated'
         module.exit_json(changed=changed, msg=msg)
 
 
 def handle_absent(module):
-    system, host = get_sys_host(module)
+    """ Handle the absent state """
+    _, host = get_sys_host(module)
     host_name = module.params["name"]
     if not host:
-        msg = "Host {0} already absent".format(host_name)
+        msg = f"Host {host_name} already absent"
         module.exit_json(changed=False, msg=msg)
     else:
         changed = delete_host(module, host)
-        msg = "Host {0} removed".format(host_name)
+        msg = f"Host {host_name} removed"
         module.exit_json(changed=changed, msg=msg)
 
 
 def execute_state(module):
+    """ Execute a state """
     state = module.params['state']
     try:
         if state == 'stat':
@@ -165,13 +166,14 @@ def execute_state(module):
         elif state == 'absent':
             handle_absent(module)
         else:
-            module.fail_json(msg='Internal handler error. Invalid state: {0}'.format(state))
+            module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
     finally:
         system = get_system(module)
         system.logout()
 
 
 def main():
+    """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
