@@ -24,6 +24,7 @@ export $(shell sed 's/=.*//' $(_env))
 # Use color in Makefiles.
 _use_color = true
 
+include Makefile-git
 include Makefile-help
 
 ### Vars ###
@@ -106,13 +107,13 @@ setup-galaxy: _test-venv
 		sudo mv jq /usr/local/bin && \
 	echo "jq and spruce are installed"
 
-galaxy-collection-build:  ## Build the collection.
+galaxy-collection-build: releasable  ## Build the collection.
 	@echo -e $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
 	@echo -e $(_finish)
 
-galaxy-collection-build-force: ## Force build the collection. Overwrite an existing collection file.
+galaxy-collection-build-force: releasable  ## Force build the collection. Overwrite an existing collection file.
 	@echo -e $(_begin)
 	ansible-galaxy collection build --force
 	@echo -e $(_finish)

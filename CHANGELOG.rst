@@ -3,12 +3,13 @@ Change Log
 ==========
 
 -------------------
-v1.5.0 (2024-01-18)
+v1.4.0 (2024-02-05)
 -------------------
 
 ^^^^^^^^^
 Bug Fixes
 ^^^^^^^^^
+* The default for the write_protected parameter when creating a master volume or master file system has changed from true to false. For snapshots, the default is true.
 * psdev-1147: Fix an issue network space module where when removing a space the management interface was not removed last. This is required.
 
 ^^^^^^^^^^^^^^^^^^^^
@@ -25,19 +26,6 @@ Feature Enhancements
 * psdev-1147: Implement network space module present state to handle updating parameters in an existing network space. Add support for is_async option.
 * psdev-1108: Add state "login" to infini_user module. This tests credentials. Added to support Active Directory testing.
 * Add syslog_server script to allow testing of syslog notifications.
-
--------------------
-v1.4.0 (2023-11-01)
--------------------
-
-^^^^^^^^^
-Bug Fixes
-^^^^^^^^^
-* The default for the write_protected parameter when creating a master volume or master file system has changed from true to false. For snapshots, the default is true.
-
-^^^^^^^^^^^^^^^^^^^^
-Feature Enhancements
-^^^^^^^^^^^^^^^^^^^^
 * Add new infini_users_repository module. Use this module to configure Active Directory and LDAP resournces on an Infinibox.
 * Add new infini_metadata module. This module will set, get and remove metadata (keys and values) to and from objects of these types: ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap"].
 * Add snapshot support to the infini_fs module. File system snapshot locks, regular and immutable are supported.

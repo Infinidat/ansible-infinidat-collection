@@ -1,0 +1,79 @@
+# vim: set foldmethod=indent foldnestmax=1 foldcolumn=1:
+
+_GIT_TAG = v$(shell spruce json galaxy.yml | jq '.version' | sed 's?"??'g)
+
+##@ Releases
+.PHONY: _test-git-porcelain-clean
+_test-git-porcelain-clean:
+	@# Test that source is committed to git. Sometimes it is convenient to disable this.
+	@echo -e $(_begin)
+	@# Enable test
+	@test -z "$$(git status --porcelain)" || (echo -e "\nError: Git is not clean\n" && false)
+	@# Disabled test
+	@#test true
+	@echo -e $(_finish)
+
+.PHONY: _test-git-cherry
+_test-git-cherry:
+	@# Test that HEAD is pushed to upstream
+	@echo -e $(_begin)
+	@git symbolic-ref --short HEAD > /dev/null || (echo -e "\nError: Must be on a git branch, not headless\n" && false)
+	@test -z "$$(git cherry)" || (echo -e "\nError: Git commit needs to be pushed to origin\n" && false)
+	@echo -e $(_finish)
+
+.PHONY: _test-git-tag-exists
+_test-git-tag-exists:
+	@# Test that there is a git commit matching _GIT_TAG.
+	@echo -e $(_begin)
+	@test -n "$$(git tag --list $(_GIT_TAG) | grep $(_GIT_TAG))" || (echo -e "\nError: Git commit is not tagged as $(_GIT_TAG)\n         " && false)
+	@echo -e $(_finish)
+
+.PHONY: _test-git-local-commit-tag-and-head-match
+_test-git-local-commit-tag-and-head-match:
+	@# Test that there is a local tag commit matching HEAD.
+	@echo -e $(_begin)
+	@local_tag_commit=$$(git rev-list -n 1 $(_GIT_TAG)) && \
+	head_commit=$$(git rev-parse HEAD) && \
+	if [[ "$$local_tag_commit" != "$$head_commit" ]]; then echo -e "\nError: For tag $(_GIT_TAG), HEAD commit $$head_commit does not match local tag commit $$local_tag_commit" && false; fi
+	@echo -e $(_finish)
+
+.PHONY: _test-git-tag-exists-remote
+_test-git-tag-exists-remote:
+	@# Test that the git tag has been pushed to remote.
+	@echo -e $(_begin)
+	@test -n "$$(git ls-remote --tags origin $(_GIT_TAG) | grep $(_GIT_TAG))" || (echo -e "\nError: Git commit is not tagged as $(_GIT_TAG) on origin\n" && false)
+	@echo -e $(_finish)
+
+.PHONY: _test-git-tag-remote-and-local-match
+_test-git-tag-remote-and-local-match:
+	@# Test that there is a remote tag commit matching the local tag commit.
+	@echo -e $(_begin)
+	@remote_tag_commit=$$(git ls-remote -t origin | grep $(_GIT_TAG) | awk '{ print $$1 }') && \
+	local_tag_commit=$$(git rev-list -n 1 $(_GIT_TAG)) && \
+	if [[ "$$local_tag_commit" != "$$remote_tag_commit" ]]; then echo -e "\nError: For tag $(_GIT_TAG), remote tag commit $$remote_tag_commit does not match local tag commit $$local_tag_commit" && false; fi
+	@echo -e $(_finish)
+
+.PHONY: releasable
+releasable:   ## Test that the project is git clean and therefore may be used for a release.
+	@echo -e $(_begin)
+	@$(_make) _test-git-porcelain-clean
+	@$(_make) _test-git-cherry
+	@$(_make) _test-git-tag-exists
+	@$(_make) _test-git-local-commit-tag-and-head-match
+	@$(_make) _test-git-tag-exists-remote
+	@$(_make) _test-git-tag-remote-and-local-match
+	@echo -e $(_finish)
+
+##@ Find git information
+.PHONY: git-find-branch
+git-find-branch:  ## Find the current branch.
+	@git symbolic-ref --short HEAD || (echo -e "\nError: Must be on a git branch, not headless\n" && false)
+
+.PHONY: git-find-branch-sanitized
+git-find-branch-sanitized:  ## Find the current branch. Replace / with -.
+	@$(_make) git-find-branch | sed 's?/?-?g'
+
+.PHONY: git-find-commit
+git-find-commit:  ## Find the current short git commit hash.
+	@git rev-parse --short HEAD
+
