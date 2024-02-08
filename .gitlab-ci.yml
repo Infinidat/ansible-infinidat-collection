@@ -52,7 +52,7 @@ playbook_testing:
     - popd > /dev/null
 
     # Show summery of execution tasks
-    - ./bin/test_summarize.sh general
+    - ./scripts/test_summarize.sh general
 
     # Run testing map cluster playbooks
     - git_project="ansible-infinidat-collection"
@@ -67,4 +67,4 @@ playbook_testing:
     - popd > /dev/null
 
     # Show summery of execution tasks
-    - ./bin/test_summarize.sh map-cluster
+    - ./scripts/test_summarize.sh map-cluster
