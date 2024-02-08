@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_metadata
-version_added: '2.13.12'
+version_added: 2.13.0
 short_description:  Create, Delete or Modify metadata on Infinibox
 description:
     - This module creates, deletes or modifies metadata on Infinibox.
@@ -26,23 +26,28 @@ options:
   object_type:
     description:
       - Type of object
+    type: str
     required: true
     choices: ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap"]
   object_name:
     description:
       - Name of the object. Not used if object_type is system
+    type: str
     required: false
   key:
     description:
       - Name of the metadata key
+    type: str
     required: true
   value:
     description:
       - Value of the metadata key
+    type: str
     required: false
   state:
     description:
       - Creates/Modifies metadata when present or removes when absent.
+    type: str
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
@@ -648,9 +653,9 @@ def main():
 
     argument_spec.update(
         {
-            "object_type": {"required": True},
+            "object_type": {"required": True, "choices": ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap"]},
             "object_name": {"required": False, "default": None},
-            "key": {"required": True},
+            "key": {"required": True, "no_log": False},
             "value": {"required": False, "default": None},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
         }
