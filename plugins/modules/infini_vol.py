@@ -23,24 +23,34 @@ author: David Ohlemacher (@ohlemacher)
 options:
   name:
     description:
-      - Volume Name
-    required: true
+      - Volume name.
+    type: str
+    required: false
+  serial:
+    description:
+      - Volume serial number.
+    type: str
+    required: false
   parent_volume_name:
     description:
       - Specify a volume name. This is the volume parent for creating a snapshot. Required if volume_type is snapshot.
+    type: str
     required: false
   pool:
     description:
       - Pool that master volume will reside within.  Required for creating a master volume, but not a snapshot.
+    type: str
     required: false
   size:
     description:
       - Volume size in MB, GB or TB units.  Required for creating a master volume, but not a snapshot
+    type: str
     required: false
   snapshot_lock_expires_at:
     description:
       - This will cause a snapshot to be locked at the specified date-time.
         Uses python's datetime format YYYY-mm-dd HH:MM:SS.ffffff, e.g. 2020-02-13 16:21:59.699700
+    type: str
     required: false
   snapshot_lock_only:
     description:
@@ -51,6 +61,7 @@ options:
   state:
     description:
       - Creates/Modifies master volume or snapshot when present or removes when absent.
+    type: str
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
@@ -63,12 +74,14 @@ options:
   write_protected:
     description:
       - Specifies if the volume should be write protected. Default will be True for snapshots, False for regular volumes.
+    type: str
     required: false
     default: "Default"
     choices: ["Default", "True", "False"]
   volume_type:
     description:
       - Specifies the volume type, regular volume or snapshot.
+    type: str
     required: false
     default: master
     choices: [ "master", "snapshot" ]
@@ -76,8 +89,10 @@ options:
     description:
       - Specify true to restore a volume (parent_volume_name) from an existing snapshot specified by the name field.
       - State must be set to present and volume_type must be 'snapshot'.
+    type: bool
     required: false
     default: false
+
 extends_documentation_fragment:
     - infinibox
 requirements:
@@ -325,7 +340,7 @@ def update_snapshot(module, snapshot):
 def handle_stat(module):
     """ Handle the stat state """
     system = get_system(module)
-    if module.params["name"]:
+    if module.params['name']:
         volume = get_volume(module, system)
     else:
         volume = get_vol_by_sn(module, system)
@@ -526,13 +541,13 @@ def main():
     argument_spec.update(
         dict(
             name=dict(required=False, default=None),
-            parent_volume_name=dict(default=None, required=False, type=str),
+            parent_volume_name=dict(default=None, required=False, type="str"),
             pool=dict(required=False),
-            restore_volume_from_snapshot=dict(default=False, type=bool),
+            restore_volume_from_snapshot=dict(default=False, type="bool"),
             serial=dict(required=False, default=None),
             size=dict(required=False, default=None),
             snapshot_lock_expires_at=dict(),
-            snapshot_lock_only=dict(type="bool", default=False),
+            snapshot_lock_only=dict(default=False, type="bool"),
             state=dict(default="present", choices=["stat", "present", "absent"]),
             thin_provision=dict(type="bool", default=True),
             volume_type=dict(default="master", choices=["master", "snapshot"]),

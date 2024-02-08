@@ -15,88 +15,113 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_users_repository
-version_added: '2.13.12'
+version_added: 2.13.0
 short_description:  Create, Delete or Modify respositories of users that can log on to an Infinibox
 description:
     - This module creates, deletes or modifies respositories of users that can log on to an Infinibox.
 author: David Ohlemacher (@ohlemacher)
 options:
-  ad_domain_name:
+  ad_auto_discover_servers:
+    description:
+      - AD auto discover servers
+    type: bool
+    choices: [true, false]
     required: false
-    default: None
+    default: true
+  ad_domain_name:
+    description:
+      - AD domain name
+    type: str
+    required: false
   bind_password:
     description:
       - The bind user password
-    required: true
+    type: str
+    required: false
   bind_username:
     description:
       - The bind username
-    required: true
+    type: str
+    required: false
   servers:
     description:
       - A list of LDAP servers. For an empty list, use [].
     required: false
     type: list
+    elements: str
+    default: []
   name:
     description:
       - Name of repository
+    type: str
     required: true
   ldap_port:
     description:
       - LDAP or AD port to use
+    type: int
     required: false
     default: 636
+  ldap_servers:
+    description:
+      - List of LDAP or AD servers
+    type: list
+    elements: str
+    required: false
+    default: []
   repository_type:
     description:
       - The type of repository
-    choices: ["AD", "LDAP"]
-    required: true
+    choices: ["ActiveDirectory", "LDAP"]
+    type: str
+    required: False
   schema_group_memberof_attribute:
     description:
       - Schema group memberof attribute
+    type: str
     required: false
-    default: memberof
   schema_group_name_attribute:
     description:
       - Schema group name attribute
+    type: str
     required: false
-    default: cn
   schema_groups_basedn:
     description:
       - Schema groups base DN
+    type: str
     required: false
-    default: None
   schema_group_class:
     description:
       - Schema group class
+    type: str
     required: false
-    default: groupOfNames
   schema_users_basedn:
     description:
       - Schema user base DN
+    type: str
     required: false
-    default: None
   schema_user_class:
     description:
       - Schema user class
+    type: str
     required: false
-    default: posixAccount
   schema_username_attribute:
     description:
       - Schema username attribute
+    type: str
     required: false
-    default: uid
   state:
     description:
       - Creates/Modifies users repositories when present or removes when absent.
       - When getting the stats for a users repository, the module will test
         connectivity to the repository and report the result in 'test_ok' as true or false.
     required: false
+    type: str
     default: present
     choices: [ "stat", "present", "absent" ]
   use_ldaps:
     description:
       - Use SSL (LDAPS)
+    type: bool
     choices: ["true", "false"]
     default: true
 
@@ -475,13 +500,13 @@ def main():
 
     argument_spec.update(
         {
-            "ad_auto_discover_servers": {"required": False, "choices": [True, False], "default": True},
+            "ad_auto_discover_servers": {"required": False, "choices": [True, False], "type": "bool", "default": True},
             "ad_domain_name": {"required": False, "default": None},
             "bind_password": {"required": False, "default": None, "no_log": True},
             "bind_username": {"required": False, "default": None},
             "ldap_servers": {"required": False, "default": [], "type": "list", "elements": "str"},
             "name": {"required": True},
-            "ldap_port": {"required": False, "type": int, "default": 636},
+            "ldap_port": {"required": False, "type": "int", "default": 636},
             "repository_type": {"required": False, "choices": ["LDAP", "ActiveDirectory"], "default": None},
             "schema_group_class": {"required": False, "default": None},
             "schema_group_memberof_attribute": {"required": False, "default": None},
@@ -490,9 +515,9 @@ def main():
             "schema_user_class": {"required": False, "default": None},
             "schema_username_attribute": {"required": False, "default": None},
             "schema_users_basedn": {"required": False, "default": None},
-            "servers": {"required": False, "default": [], "type": list},
+            "servers": {"required": False, "default": [], "type": "list", "elements": "str"},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
-            "use_ldaps": {"required": False, "choices": [True, False], "default": True},
+            "use_ldaps": {"required": False, "choices": [True, False], "type": "bool", "default": True},
         }
     )
 

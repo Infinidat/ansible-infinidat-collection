@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: infini_user
-version_added: '2.9.0'
+version_added: 2.9.0
 short_description: Create, Delete and Modify a User on Infinibox
 description:
     - This module creates, deletes or modifies a user on Infinibox.
@@ -57,10 +57,12 @@ options:
     type: str
   state:
     description:
-      - Creates/Modifies user when present or removes when absent
+      - Creates/Modifies user when present or removes when absent.
+      - Use state 'login' to test user credentials.
+      - Use state 'reset' to reset a user password.
     required: false
     default: present
-    choices: [ "stat", "reset_password", "present", "absent" ]
+    choices: [ "stat", "reset_password", "present", "absent", "login" ]
     type: str
 
   user_ldap_group_name:
@@ -87,8 +89,10 @@ options:
   user_ldap_group_pools:
     description:
       - A list of existing pools managed by the LDAP user group
+    default: []
     required: false
     type: list
+    elements: str
 extends_documentation_fragment:
     - infinibox
 '''
@@ -587,7 +591,7 @@ def main():
             user_ldap_group_dn=dict(required=False, default=None),
             user_ldap_group_ldap=dict(required=False, default=None),
             user_ldap_group_role=dict(required=False, choices=['admin', 'pool_admin', 'read_only'], default=None),
-            user_ldap_group_pools=dict(required=False, type='list', default=[]),
+            user_ldap_group_pools=dict(required=False, type='list', elements='str', default=[]),
             state=dict(default='present', choices=['stat', 'reset_password', 'present', 'absent', 'login']),
         )
     )
