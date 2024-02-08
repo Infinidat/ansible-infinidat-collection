@@ -50,6 +50,7 @@ except ImportError:
 
 INFINIBOX_SYSTEM = None
 
+
 def unixMillisecondsToDate(unix_ms):  # pylint: disable=invalid-name
     """ Convert unix time with ms to a datetime UTC time """
     return (datetime.utcfromtimestamp(unix_ms / 1000.), 'UTC')
@@ -115,9 +116,9 @@ def get_system(module):
             INFINIBOX_SYSTEM = InfiniBox(box, auth=(user, password), use_ssl=True)
         elif environ.get('INFINIBOX_USER') and environ.get('INFINIBOX_PASSWORD'):
             INFINIBOX_SYSTEM = InfiniBox(box,
-                            auth=(environ.get('INFINIBOX_USER'),
-                                    environ.get('INFINIBOX_PASSWORD')),
-                            use_ssl=True)
+                                         auth=(environ.get('INFINIBOX_USER'),
+                                               environ.get('INFINIBOX_PASSWORD')),
+                                         use_ssl=True)
         elif path.isfile(path.expanduser('~') + '/.infinidat/infinisdk.ini'):
             INFINIBOX_SYSTEM = InfiniBox(box, use_ssl=True)
         else:
@@ -192,7 +193,7 @@ def get_volume(module, system):
             try:
                 volume = system.volumes.get(name=module.params['volume'])
             except KeyError:
-                volume = system.volumes.get(name=module.params['object_name']) # Used by metadata module
+                volume = system.volumes.get(name=module.params['object_name'])  # Used by metadata module
         return volume
     except Exception:
         return None

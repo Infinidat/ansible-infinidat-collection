@@ -415,7 +415,7 @@ def put_metadata(module):  # pylint: disable=too-many-statements
 def delete_metadata(module):  # pylint: disable=too-many-return-statements
     """
     Remove metadata key.
-    Not implemented by design: Deleting all of the system’s metadata
+    Not implemented by design: Deleting all of the system's metadata
     using 'DELETE api/rest/metadata/system'.
     """
     system = get_system(module)

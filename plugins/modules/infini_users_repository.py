@@ -288,9 +288,8 @@ def handle_stat(module):
     """Return users repository stat"""
     name = module.params['name']
     repos = get_users_repository(module)
-    try:
-        assert len(repos) == 1
-    except AssertionError:
+
+    if len(repos) != 1:
         msg = f"Users repository {name} not found in repository list {repos}. Cannot stat."
         module.fail_json(msg=msg)
 
@@ -330,7 +329,6 @@ def handle_present(module):
     if not module.check_mode:
         old_users_repo = None
         old_users_repo_result = get_users_repository(module, disable_fail=True)
-        assert not old_users_repo_result or len(old_users_repo_result) == 1
         if old_users_repo_result:
             old_users_repo = old_users_repo_result[0]
             if is_existing_users_repo_equal_to_desired(module):
@@ -426,8 +424,7 @@ def check_options(module):
                 if error_params:
                     msg = f"Cannot create a new LDAP repository named {name} when providing disallowed parameters: {error_params}"
                     module.fail_json(msg=msg)
-            else: # Creating an AD
-                assert repository_type == "ActiveDirectory"
+            elif repository_type == "ActiveDirectory":
                 req_params = common_params
                 missing_params = [param for param in req_params if not is_set_in_params(module, param)]
                 if missing_params:
@@ -439,6 +436,9 @@ def check_options(module):
                 if error_params:
                     msg = f"Cannot create a new LDAP repository named {name} when providing disallowed parameters: {error_params}"
                     module.fail_json(msg=msg)
+            else:
+                msg = f"Unsupported respository type: {repository_type}"
+                module.fail_json(msg=msg)
         else:
             msg = "Cannot create a new users repository without providing a repository_type"
             module.fail_json(msg=msg)

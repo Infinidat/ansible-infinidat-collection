@@ -77,6 +77,7 @@ try:
 except ImportError:
     HAS_URLLIB3 = False
 
+
 def handle_stat(module):
     """ Handle the stat state parameter """
     certificate_file_name = module.params['certificate_file_name']
