@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: infini_map
-version_added: '2.9.0'
+version_added: 2.9.0
 short_description: Create and Delete mapping of a volume to a host or cluster on Infinibox
 description:
     - This module creates or deletes mappings of volumes to hosts or clusters
@@ -28,10 +28,12 @@ options:
   host:
     description:
       - Host Name
+    type: str
     required: false
   cluster:
     description:
       - Cluster Name
+    type: str
     required: false
   state:
     description:
@@ -44,10 +46,12 @@ options:
   volume:
     description:
       - Volume name to map to the host.
+    type: str
     required: true
   lun:
     description:
       - Volume lun.
+    type: int
 extends_documentation_fragment:
     - infinibox
 '''
@@ -571,7 +575,7 @@ def main():
             cluster=dict(required=False, default=None),
             state=dict(default='present', choices=['stat', 'present', 'absent']),
             volume=dict(required=True),
-            lun=dict(type=int),
+            lun=dict(type="int"),
         )
     )
 
