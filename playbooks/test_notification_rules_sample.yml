@@ -9,8 +9,6 @@
     - name: Delete a notification rule
       infini_notification_rule:
         name: "test-rule-to-target" # this need to be uniq
-        user: "{{ user }}"
-        password: "{{ password }}"
         state: "absent"
         user: "{{ user }}"
         password: "{{ password }}"
@@ -63,9 +61,6 @@
           - ACTIVE_DIRECTORY_ALL_DOMAIN_CONTROLLERS_DOWN
           - ACTIVE_DIRECTORY_LEFT
         target: testgraylog1
-        user: "{{ user }}"
-        password: "{{ password }}"
-        state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"

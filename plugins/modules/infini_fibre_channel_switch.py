@@ -21,11 +21,11 @@ description:
     - This module renames FC switch names (rename state) or shows information about FC switches (stat state)
 author: David Ohlemacher (@ohlemacher)
 options:
-    switch_name:
+  switch_name:
     description:
       - Current name of an existing fibre channel switch.
     required: true
-    new_switch_name:
+  new_switch_name:
     description:
       - New name for an existing fibre channel switch.
     required: false

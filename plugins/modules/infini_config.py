@@ -25,17 +25,7 @@ options:
     description:
       - Config group
     required: true
-    choices: = [
-        "core",
-        "ip_config",
-        "iscsi",
-        "limits",
-        "mgmt",
-        "ndoe_interfaces",
-        "overriders",
-        "security",
-        "ssh",
-    ]
+    choices: = [ "core", "ip_config", "iscsi", "limits", "mgmt", "ndoe_interfaces", "overriders", "security", "ssh" ]
   key:
     description:
       - Name of the config

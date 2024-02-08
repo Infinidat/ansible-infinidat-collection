@@ -110,8 +110,6 @@ EXAMPLES = r"""
       - ACTIVE_DIRECTORY_ALL_DOMAIN_CONTROLLERS_DOWN
       - ACTIVE_DIRECTORY_LEFT
     target: testgraylog1
-    user: "{{ user }}"
-    password: "{{ password }}"
     state: "present"
     user: "{{ user }}"
     password: "{{ password }}"

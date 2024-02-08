@@ -35,7 +35,6 @@
         write_protected: false
         pool: "{{ auto_prefix }}pool"
         thin_provision: false
-        write_protected: false
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
@@ -53,7 +52,6 @@
         system: "{{ system }}"
 
     - name: POSITIVE test -> Stat nonwritable volume {{ auto_prefix }}vol_nonwriteable under pool {{ auto_prefix }}pool
-      register: output
       infini_vol:
         name: "{{ auto_prefix }}vol_nonwriteable"
         pool: "{{ auto_prefix }}pool"
@@ -67,7 +65,6 @@
         msg: stat - {{ stat_nonwritable }}
 
     - name: POSITIVE test -> Stat explicitely writable volume {{ auto_prefix }}vol_explicitly_writable under pool {{ auto_prefix }}pool
-      register: output
       infini_vol:
         name: "{{ auto_prefix }}vol_explicitly_writable"
         pool: "{{ auto_prefix }}pool"
@@ -81,7 +78,6 @@
         msg: stat - {{ stat_explicitely_writable }}
 
     - name: POSITIVE test -> Stat implicitely writable volume {{ auto_prefix }}vol_writable under pool {{ auto_prefix }}pool
-      register: output
       infini_vol:
         name: "{{ auto_prefix }}vol_writable"
         pool: "{{ auto_prefix }}pool"

@@ -30,7 +30,7 @@ options:
   object_name:
     description:
       - Name of the object. Not used if object_type is system
-    required = false
+    required: false
   key:
     description:
       - Name of the metadata key

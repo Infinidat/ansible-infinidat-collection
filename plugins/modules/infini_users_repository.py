@@ -105,27 +105,36 @@ extends_documentation_fragment:
 """
 
 EXAMPLES = r"""
-- name: Create new metadata key foo with value bar
+- name: Create AD 
   infini_users_repository:
-    name: ldap.example.com
+    name: PSUS_ANSIBLE_ad
+    bind_password: tuFrAxahuYe4
+    bind_username: conldap
+    ad_domain_name: infinidat.com
+    repository_type: ActiveDirectory
+    schema_group_class: group
+    schema_group_memberof_attribute: memberof
+    schema_group_name_attribute: cn
+    schema_groups_basedn: 
+    schema_user_class: user
+    schema_username_attribute: sAMAccountName
     state: present
-    # TODO
-    user: admin
-    password: secret
-    system: ibox001
-- name: Stat metadata key named foo
-  infini_users_repository
-    name: ldap.example.com
+    system: 172.20.67.167
+    user: dohlemacher
+    password: 123456
+
+- name: Stat AD 
+  infini_users_repository:
+    name: PSUS_ANSIBLE_ad
     state: stat
-    # TODO
     user: admin
     password: secret
     system: ibox001
-- name: Remove metadata keyn named foo
-  infini_users_repository
-    name: ldap.example.com
+
+- name: Remove AD
+  infini_users_repository:
+    name: PSUS_ANSIBLE_ad
     state: absent
-    # TODO
     user: admin
     password: secret
     system: ibox001

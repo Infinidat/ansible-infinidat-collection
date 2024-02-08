@@ -387,8 +387,7 @@ test-sanity:  ## Run ansible sanity tests
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
 	@# This runs on an collection installed from galaxy. This makes it
 	@# somewhat useless for dev and debugging. Use target test-sanity-locally.
-	cd $(_install_path)/ansible_collections/infinidat/infinibox && \
-		ansible-test sanity --docker default -v
+	@ansible-test sanity --docker default -v
 
 _setup-sanity-locally: galaxy-collection-build-force galaxy-collection-install-locally
 	@# Setup a test env.
