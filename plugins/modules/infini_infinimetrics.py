@@ -65,7 +65,7 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     merge_two_dicts,
@@ -83,16 +83,17 @@ except ImportError:
 def handle_stat(module):
     """ Handle the stat state parameter """
     infinimetrics_system = module.params['infinimetrics_system']
+    infinibox_system = module.params['system']
     path = "system/certificates"
     system = get_system(module)
     try:
         cert_result = system.api.get(path=path).get_result()[0]
     except APICommandFailed:
-        msg = f"Cannot stat SSL certificate {certificate_file_name}"
+        msg = f"Cannot stat infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system}"
         module.fail_json(msg=msg)
     result = dict(
         changed=False,
-        msg="SSL certificate stat {certificate_file_name} found"
+        msg="Infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system} found"
     )
     result = merge_two_dicts(result, cert_result)
     module.exit_json(**result)

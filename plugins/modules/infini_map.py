@@ -404,23 +404,6 @@ def delete_mapping_to_cluster(module, system):
     module.exit_json(msg=msg, changed=changed)
 
 
-def get_sys_vol_host_cluster(module):
-    """ Return info about a cluster """
-    system = get_system(module)
-    volume = get_volume(module, system)
-    host = get_host(module, system)
-    cluster = get_cluster(module, system)
-    return (system, volume, host, cluster)
-
-
-def get_sys_vol_cluster(module):
-    """ Return info about a cluster """
-    system = get_system(module)
-    volume = get_volume(module, system)
-    cluster = get_cluster(module, system)
-    return (system, volume, cluster)
-
-
 def get_mapping_fields(volume, host_or_cluster):
     """ Get mapping fields """
     luns = host_or_cluster.get_luns()
@@ -435,7 +418,10 @@ def get_mapping_fields(volume, host_or_cluster):
 
 def handle_stat(module):
     """ Return mapping stat """
-    _, volume, host, cluster = get_sys_vol_host_cluster(module)
+    system = get_system(module)
+    volume = get_volume(module, system)
+    host = get_host(module, system)
+    cluster = get_cluster(module, system)
     volume_name = module.params['volume']
 
     host_name = module.params['host']
@@ -491,7 +477,10 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Create or update mapping """
-    system, volume, host, cluster = get_sys_vol_host_cluster(module)
+    system = get_system(module)
+    volume = get_volume(module, system)
+    host = get_host(module, system)
+    cluster = get_cluster(module, system)
     volume_name = module.params['volume']
     host_name = module.params['host']
     cluster_name = module.params['cluster']
@@ -529,7 +518,10 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Remove mapping """
-    system, volume, host, cluster = get_sys_vol_host_cluster(module)
+    system = get_system(module)
+    volume = get_volume(module, system)
+    host = get_host(module, system)
+    cluster = get_cluster(module, system)
     volume_name = module.params['volume']
     host_name = module.params['host']
     cluster_name = module.params['cluster']

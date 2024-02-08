@@ -78,13 +78,6 @@ def delete_host(module, host):
     return changed
 
 
-def get_sys_host(module):
-    """ Get parameters """
-    system = get_system(module)
-    host = get_host(module, system)
-    return (system, host)
-
-
 def get_host_fields(host):
     """ Get host fields """
     fields = host.get_fields(from_cache=True, raw_value=True)
@@ -115,7 +108,8 @@ def get_host_fields(host):
 
 def handle_stat(module):
     """ Handle the stat state """
-    _, host = get_sys_host(module)
+    system = get_system(module)
+    host = get_host(module, system)
     host_name = module.params["name"]
     if not host:
         module.fail_json(msg=f'Host {host_name} not found')
@@ -130,7 +124,8 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Handle the present state """
-    system, host = get_sys_host(module)
+    system = get_system(module)
+    host = get_host(module, system)
     host_name = module.params["name"]
     if not host:
         changed = create_host(module, system)
@@ -144,7 +139,8 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Handle the absent state """
-    _, host = get_sys_host(module)
+    system = get_system(module)
+    host = get_host(module, system)
     host_name = module.params["name"]
     if not host:
         msg = f"Host {host_name} already absent"

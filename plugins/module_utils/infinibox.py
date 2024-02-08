@@ -350,9 +350,9 @@ def manage_snapshot_locks(module, snapshot):
 def catch_failed_module_utils_imports(module):
     msg = ""
     if not HAS_ARROW:
-        msg += f"Failed to import arrow module. "
+        msg += "Failed to import arrow module. "
     if not HAS_INFINISDK:
-        msg += f"Failed to import infinisdk module. "
+        msg += "Failed to import infinisdk module. "
     if not HAS_URLLIB3:
-        msg += f"Failed to import urllib3 module. "
+        msg += "Failed to import urllib3 module. "
     module.fail_json(msg=msg)

@@ -5,7 +5,7 @@
 
 """This module modifies exports on Infinibox."""
 
-# Copyright: (c) 2022, Infinidat(info@infinidat.com)
+# Copyright: (c) 2024, Infinidat(info@infinidat.com)
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -172,14 +172,6 @@ def delete_export(module, export):
     return changed
 
 
-def get_sys_exp_fs(module):
-    """ Get some params """
-    system = get_system(module)
-    filesystem = get_filesystem(module, system)
-    export = get_export(module, system)
-    return (system, export, filesystem)
-
-
 def get_export_fields(export):
     """ Return export fields dict """
     fields = export.get_fields()  # from_cache=True, raw_value=True)
@@ -198,7 +190,8 @@ def handle_stat(module):
     """ Gather stats on export and return. Changed is always False. """
     name = module.params['name']
     filesystem_name = module.params['filesystem']
-    _, export, _ = get_sys_exp_fs(module)
+    system = get_system(module)
+    export = get_export(module, system)
     if not export:
         module.fail_json(msg=f"Export '{name}' of file system '{filesystem_name}' not found")
 
@@ -213,7 +206,9 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Handle present state """
-    system, export, filesystem = get_sys_exp_fs(module)
+    system = get_system(module)
+    filesystem = get_filesystem(module, system)
+    export = get_export(module, system)
     filesystem_name = module.params['filesystem']
     if not filesystem:
         module.fail_json(msg=f'File system {filesystem_name} not found')
@@ -227,7 +222,8 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Handle absent state """
-    _, export, _ = get_sys_exp_fs(module)
+    system = get_system(module)
+    export = get_export(module, system)
     filesystem_name = module.params['filesystem']
     if not export:
         changed = False

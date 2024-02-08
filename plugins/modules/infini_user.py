@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 """ Manage Infinibox users """
@@ -347,13 +347,6 @@ def get_user_ldap_group(module):
     return result
 
 
-def get_sys_user(module):
-    """ Get system and user information """
-    system = get_system(module)
-    user = get_user(module, system)
-    return (system, user)
-
-
 def get_user_fields(user):
     """ Get user's fields """
     pools = user.get_owned_pools()
@@ -379,7 +372,8 @@ def handle_stat(module):
     user_name = module.params['user_name']
     user_ldap_group_name = module.params['user_ldap_group_name']
     if user_name:
-        _, user = get_sys_user(module)
+        system = get_system(module)
+        user = get_user(module, system)
         user_name = module.params["user_name"]
         if not user:
             module.fail_json(msg=f'User {user_name} not found')
@@ -411,7 +405,8 @@ def handle_present(module):
     msg = 'Message not set'
 
     if user_name:
-        system, user = get_sys_user(module)
+        system = get_system(module)
+        user = get_user(module, system)
         if not user:
             changed = create_user(module, system)
             msg = f'User {user_name} created'
@@ -444,7 +439,8 @@ def handle_absent(module):
     user_name = module.params['user_name']
     user_ldap_group_name = module.params['user_ldap_group_name']
     if user_name:
-        _, user = get_sys_user(module)
+        system = get_system(module)
+        user = get_user(module, system)
         user_name = module.params["user_name"]
         if not user:
             changed = False
@@ -467,7 +463,8 @@ def handle_absent(module):
 
 def handle_reset_password(module):
     """ Reset user password """
-    _, user = get_sys_user(module)
+    system = get_system(module)
+    user = get_user(module, system)
     user_name = module.params["user_name"]
     if not user:
         msg = f'Cannot change password. User {user_name} not found'

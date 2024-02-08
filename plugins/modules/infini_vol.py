@@ -322,21 +322,13 @@ def update_snapshot(module, snapshot):
     return refresh_changed or lock_changed
 
 
-def get_sys_pool_vol_parname(module):
-    """ Return some parameters """
+def handle_stat(module):
+    """ Handle the stat state """
     system = get_system(module)
-    pool = get_pool(module, system)
     if module.params["name"]:
         volume = get_volume(module, system)
     else:
         volume = get_vol_by_sn(module, system)
-    parname = module.params["parent_volume_name"]
-    return (system, pool, volume, parname)
-
-
-def handle_stat(module):
-    """ Handle the stat state """
-    _, _, volume, _ = get_sys_pool_vol_parname(module)
     if not volume:
         msg = f"Volume {module.params['name']} not found. Cannot stat."
         module.fail_json(msg=msg)
@@ -386,7 +378,11 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Handle the present state """
-    system, _, volume, _ = get_sys_pool_vol_parname(module)
+    system = get_system(module)
+    if module.params["name"]:
+        volume = get_volume(module, system)
+    else:
+        volume = get_vol_by_sn(module, system)
     volume_type = module.params["volume_type"]
     is_restoring = module.params["restore_volume_from_snapshot"]
     if volume_type == "master":
@@ -419,7 +415,11 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Handle the absent state """
-    _, _, volume, _ = get_sys_pool_vol_parname(module)
+    system = get_system(module)
+    if module.params["name"]:
+        volume = get_volume(module, system)
+    else:
+        volume = get_vol_by_sn(module, system)
     volume_type = module.params["volume_type"]
 
     if volume and volume.get_lock_state() == "LOCKED":

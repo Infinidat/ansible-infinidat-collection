@@ -5,7 +5,7 @@
 
 """ A module for managing Infinibox clusters """
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -152,13 +152,6 @@ def delete_cluster(module, cluster):
     return changed
 
 
-def get_sys_cluster(module):
-    """ Get the system and cluster """
-    system = get_system(module)
-    cluster = get_cluster(module, system)
-    return (system, cluster)
-
-
 def get_cluster_fields(cluster):
     """ Find fields for cluster """
     fields = cluster.get_fields(from_cache=True, raw_value=True)
@@ -181,7 +174,8 @@ def get_cluster_fields(cluster):
 
 def handle_stat(module):
     """ Handle stat state """
-    _, cluster = get_sys_cluster(module)
+    system = get_system(module)
+    cluster = get_cluster(module, system)
     cluster_name = module.params["name"]
     if not cluster:
         module.fail_json(msg=f'Cluster {cluster_name} not found')
@@ -196,7 +190,8 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Handle present state """
-    system, cluster = get_sys_cluster(module)
+    system = get_system(module)
+    cluster = get_cluster(module, system)
     cluster_name = module.params["name"]
     if not cluster:
         changed = create_cluster(module, system)
@@ -213,7 +208,8 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Handle absent state """
-    _, cluster = get_sys_cluster(module)
+    system = get_system(module)
+    cluster = get_cluster(module, system)
     cluster_name = module.params["name"]
     if not cluster:
         changed = False
@@ -252,7 +248,9 @@ def check_options(module):
                     # Check host has required keys
                     valid_keys = ['host_name', 'host_cluster_state']
                     for valid_key in valid_keys:
-                        _ = host[valid_key]
+                        # _ = host[valid_key]
+                        if valid_key not in host.keys():
+                            raise KeyError
                     # Check host has no unknown keys
                     if len(host.keys()) != len(valid_keys):
                         raise KeyError

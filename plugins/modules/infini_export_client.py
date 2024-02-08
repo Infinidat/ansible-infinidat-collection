@@ -173,13 +173,6 @@ def delete_client(module, export):
     return changed
 
 
-def get_sys_exp(module):
-    """ Get system and export """
-    system = get_system(module)
-    export = get_export(module, system)
-    return (system, export)
-
-
 def get_export_client_fields(export, client_name):
     """ Get export client fields """
     fields = export.get_fields()  # from_cache=True, raw_value=True)
@@ -197,7 +190,8 @@ def get_export_client_fields(export, client_name):
 
 def handle_stat(module):
     """ Execute the stat state """
-    _, export = get_sys_exp(module)
+    system = get_system(module)
+    export = get_export(module, system)
     if not export:
         module.fail_json(msg=f"Export {module.params['export']} not found")
     client_name = module.params['client']
@@ -212,7 +206,8 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Execute the present state """
-    _, export = get_sys_exp(module)
+    system = get_system(module)
+    export = get_export(module, system)
     if not export:
         msg = f"Export {module.params['export']} not found"
         module.fail_json(msg=msg)
@@ -224,7 +219,8 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Execute the absent state """
-    _, export = get_sys_exp(module)
+    system = get_system(module)
+    export = get_export(module, system)
     if not export:
         changed = False
         msg = "Export client already absent"

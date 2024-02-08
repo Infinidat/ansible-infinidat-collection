@@ -5,7 +5,7 @@
 # still belong to the author of the module, and may assign their own license
 # to the complete work.
 #
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -28,7 +28,6 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from ansible.errors import AnsibleError
 import datetime
 
 

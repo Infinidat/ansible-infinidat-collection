@@ -5,7 +5,7 @@
 
 """This module manages file systems on Infinibox."""
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -305,18 +305,6 @@ def update_fs_snapshot(module, snapshot):
     return refresh_changed or lock_changed
 
 
-def get_sys_pool_fs_parname(module):
-    """ Get params """
-    system = get_system(module)
-    pool = get_pool(module, system)
-    if module.params["name"]:
-        filesystem = get_filesystem(module, system)
-    else:
-        filesystem = get_fs_by_sn(module, system)
-    parname = module.params["parent_fs_name"]
-    return (system, pool, filesystem, parname)
-
-
 @api_wrapper
 def find_fs_id(module, system, fs_name):
     """ Find the ID of this fs """
@@ -365,7 +353,12 @@ def restore_fs_from_snapshot(module, system):
 
 def handle_stat(module):
     """ Handle the stat state """
-    _, pool, filesystem, _ = get_sys_pool_fs_parname(module)
+    system = get_system(module)
+    pool = get_pool(module, system)
+    if module.params["name"]:
+        filesystem = get_filesystem(module, system)
+    else:
+        filesystem = get_fs_by_sn(module, system)
     fs_type = module.params["fs_type"]
 
     if fs_type == "master":
@@ -419,7 +412,12 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Handle the present state """
-    system, pool, filesystem, _ = get_sys_pool_fs_parname(module)
+    system = get_system(module)
+    pool = get_pool(module, system)
+    if module.params["name"]:
+        filesystem = get_filesystem(module, system)
+    else:
+        filesystem = get_fs_by_sn(module, system)
     fs_type = module.params["fs_type"]
     is_restoring = module.params["restore_fs_from_snapshot"]
     if fs_type == "master":
@@ -451,7 +449,12 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Handle the absent state """
-    _, pool, filesystem, _ = get_sys_pool_fs_parname(module)
+    system = get_system(module)
+    pool = get_pool(module, system)
+    if module.params["name"]:
+        filesystem = get_filesystem(module, system)
+    else:
+        filesystem = get_fs_by_sn(module, system)
 
     if filesystem and filesystem.get_lock_state() == "LOCKED":
         msg = "Cannot delete snapshot. Locked."

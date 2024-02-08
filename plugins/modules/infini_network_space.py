@@ -3,7 +3,7 @@
 
 # pylint: disable=invalid-name,use-list-literal,use-dict-literal,line-too-long,wrong-import-position
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 """This module creates, deletes or modifies network spaces on Infinibox."""

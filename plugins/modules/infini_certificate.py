@@ -63,7 +63,7 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     merge_two_dicts,

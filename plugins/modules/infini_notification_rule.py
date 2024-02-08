@@ -5,7 +5,7 @@
 
 """This module creates, deletes or modifies metadata on Infinibox."""
 
-# Copyright: (c) 2023, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -149,7 +149,6 @@ def create_rule(module):
     system = get_system(module)
     name = module.params["name"]
     event_level = module.params["event_level"]
-    # target_id = module.params["target_id"] #if using email, target id is 3, if not find id by name, if
     include_events = module.params["include_events"]
     exclude_events = module.params["exclude_events"]
     recipients = module.params["recipients"]
