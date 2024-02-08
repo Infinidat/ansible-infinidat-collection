@@ -71,7 +71,11 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     infinibox_argument_spec,
 )
 
-from infinisdk.core.exceptions import APICommandFailed
+HAS_URLLIB3 = True
+try:
+    from infinisdk.core.exceptions import APICommandFailed
+except ImportError:
+    HAS_URLLIB3 = False
 
 def handle_stat(module):
     """ Handle the stat state parameter """
@@ -180,6 +184,9 @@ def main():
     )
 
     module = AnsibleModule(argument_spec, supports_check_mode=True)
+
+    if not HAS_URLLIB3:
+        module.fail_json(msg=missing_required_lib("urllib3"))
 
     check_options(module)
     execute_state(module)

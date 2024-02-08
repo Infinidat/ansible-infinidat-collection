@@ -135,10 +135,9 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
+HAS_INFINISDK = True
 try:
     from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-        HAS_INFINISDK,
-        ObjectNotFound,
         api_wrapper,
         check_snapshot_lock_options,
         get_filesystem,
@@ -150,7 +149,6 @@ try:
     )
 except ModuleNotFoundError:
     from infinibox import (  # Used when hacking
-        HAS_INFINISDK,
         api_wrapper,
         check_snapshot_lock_options,
         get_filesystem,
@@ -159,11 +157,14 @@ except ModuleNotFoundError:
         infinibox_argument_spec,
         manage_snapshot_locks,
     )
+except ImportError:
+    HAS_INFINISDK = False
 
 try:
     from infinisdk.core.exceptions import APICommandFailed
+    from infinisdk.core.exceptions import ObjectNotFound
 except ImportError:
-    pass  # Handled by HAS_INFINISDK from module_utils
+    HAS_INFINISDK = False
 
 CAPACITY_IMP_ERR = None
 try:

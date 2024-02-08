@@ -113,14 +113,19 @@ EXAMPLES = r'''
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-    HAS_INFINISDK,
     api_wrapper,
     infinibox_argument_spec,
     get_system,
     get_user,
     merge_two_dicts,
 )
-from infinisdk.core.exceptions import APICommandFailed
+
+
+HAS_INFINISDK = True
+try:
+    from infinisdk.core.exceptions import APICommandFailed
+except ImportError:
+    HAS_INFINISDK = False
 
 @api_wrapper
 def find_user_ldap_group_id(module):

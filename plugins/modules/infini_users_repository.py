@@ -145,14 +145,16 @@ EXAMPLES = r"""
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-    HAS_INFINISDK,
     api_wrapper,
     get_system,
     infinibox_argument_spec,
 )
-from infinisdk.core.exceptions import APICommandFailed
 
-HAS_CAPACITY = False
+HAS_INFINISDK = True
+try:
+    from infinisdk.core.exceptions import APICommandFailed
+except ImportError:
+    HAS_INFINISDK = False
 
 @api_wrapper
 def get_users_repository(module, disable_fail=False):

@@ -43,10 +43,10 @@ from datetime import datetime
 HAS_URLLIB3 = True
 try:
     import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 except ImportError:
     HAS_URLLIB3 = False
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 INFINIBOX_SYSTEM = None
 

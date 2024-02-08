@@ -127,7 +127,6 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
-    ObjectNotFound,
     api_wrapper,
     check_snapshot_lock_options,
     get_pool,
@@ -138,20 +137,18 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     manage_snapshot_locks,
 )
 
+HAS_INFINISDK = True
 try:
     from infinisdk.core.exceptions import APICommandFailed
+    from infinisdk.core.exceptions import ObjectNotFound
 except ImportError:
-    pass  # Handled by HAS_INFINISDK from module_utils
+    HAS_INFINISDK = False
 
 HAS_CAPACITY = True
 try:
     from capacity import KiB, Capacity
 except ImportError:
     HAS_CAPACITY = False
-
-except Exception:  # pylint: disable=broad-exception-caught
-    HAS_INFINISDK = False
-
 
 @api_wrapper
 def create_volume(module, system):
@@ -546,6 +543,9 @@ def main():
 
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
+
+    if not HAS_CAPACITY:
+        module.fail_json(msg=missing_required_lib("capacity"))
 
     if module.params["size"]:
         try:

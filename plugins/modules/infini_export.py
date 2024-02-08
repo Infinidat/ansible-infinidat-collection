@@ -113,9 +113,11 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     merge_two_dicts,
 )
 
-MUNCH_IMP_ERR = None
-from munch import unmunchify
 HAS_MUNCH = True
+try:
+    from munch import unmunchify
+except ImportError:
+    HAS_MUNCH = False
 
 def transform(d):
     """ Create a frozen set from a normal set's items """

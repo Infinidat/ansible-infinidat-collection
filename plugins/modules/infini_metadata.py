@@ -92,8 +92,12 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     get_volume,
     infinibox_argument_spec,
 )
-from infinisdk.core.exceptions import APICommandFailed
 
+HAS_INFINISDK = True
+try:
+    from infinisdk.core.exceptions import APICommandFailed
+except ImportError:
+    HAS_INFINISDK = False
 
 HAS_CAPACITY = False
 
