@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2022, Infinidat <info@infinidat.com>
+# Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position,broad-exception-caught
+# pylint:
+# disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position,broad-exception-caught,invalid-name
 
 """ Infinidat utilities """
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type # pylint: disable=invalid-name
+__metaclass__ = type
 
 # try:
 #     import ansible.module_utils.errors
@@ -38,8 +39,12 @@ from functools import wraps
 from os import environ
 from os import path
 from datetime import datetime
-import urllib3
 
+HAS_URLLIB3 = True
+try:
+    import urllib3
+except ImportError:
+    HAS_URLLIB3 = False
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -65,20 +70,6 @@ def api_wrapper(func):
             module.fail_json(msg=str(err))
         return None  # Should never get to this line but it quiets pylint inconsistent-return-statements
     return __wrapper
-
-
-def fail(module, msg):
-    """Logout of system before calling fail_json()"""
-    system = get_system(module)
-    system.logout()
-    module.fail_json(msg=msg)
-
-
-def success(module, changed, msg):
-    """Logout of system before calling exit_json()"""
-    system = get_system(module)
-    system.logout()
-    module.exit_json(changed=changed, msg=msg)
 
 
 def infinibox_argument_spec():
@@ -353,3 +344,14 @@ def manage_snapshot_locks(module, snapshot):
                 snapshot.update_lock_expires_at(lock_expires_at)
             changed = True
     return changed
+
+
+def catch_failed_module_utils_imports(module):
+    msg = ""
+    if not HAS_ARROW:
+        msg += f"Failed to import arrow module. "
+    if not HAS_INFINISDK:
+        msg += f"Failed to import infinisdk module. "
+    if not HAS_URLLIB3:
+        msg += f"Failed to import urllib3 module. "
+    module.fail_json(msg=msg)

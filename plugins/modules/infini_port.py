@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position,multiple-statements
+# pylint: disable=invalid-name,use-list-literal,use-dict-literal,line-too-long,wrong-import-position,multiple-statements
 
 """This module manages ports on an Infinibox."""
 
@@ -10,7 +10,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type  # pylint: disable=invalid-name
+__metaclass__ = type
 
 DOCUMENTATION = r'''
 ---

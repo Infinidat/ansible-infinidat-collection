@@ -1,6 +1,6 @@
 # vim: set foldmethod=indent foldnestmax=1 foldcolumn=1:
 
-_GIT_TAG = v$(shell spruce json galaxy.yml | jq '.version' | sed 's?"??'g)
+_GIT_TAG = v$(_version)
 
 ##@ Releases
 .PHONY: _test-git-porcelain-clean
@@ -56,6 +56,7 @@ _test-git-tag-remote-and-local-match:
 .PHONY: releasable
 releasable:   ## Test that the project is git clean and therefore may be used for a release.
 	@echo -e $(_begin)
+	@echo "git tag: $(_GIT_TAG)"
 	@$(_make) _test-git-porcelain-clean
 	@$(_make) _test-git-cherry
 	@$(_make) _test-git-tag-exists

@@ -14,8 +14,10 @@
 # as envvars only for the life of make.  It does not
 # pollute the environment persistently.
 # Format:
-# API_KEY=someAnsibleGalaxyApiKey
+# GALAXY_API_KEY=someAnsibleGalaxyApiKey
 # The key only needs to be valid to use target galaxy-colletion-publish.
+# Getting a token:
+# https://galaxy.ansible.com/ui/token/
 
 _env = ~/.ssh/ansible-galaxy.sh
 include $(_env)
@@ -24,7 +26,6 @@ export $(shell sed 's/=.*//' $(_env))
 # Use color in Makefiles.
 _use_color = true
 
-include Makefile-git
 include Makefile-help
 
 ### Vars ###
@@ -48,6 +49,7 @@ _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py
 
 # Include, but do not fail if not found. Ignored by git. Use to temporarily set vars.
 -include Makefile-vars
+include Makefile-git
 
 ##@ General
 setup: ## Setup Python requirements.
@@ -63,12 +65,12 @@ setup: ## Setup Python requirements.
 	which ansible || (echo "Ansible not found. May need $$HOME/.local/bin in PATH"; exit 1)
 
 _check-vars:
-ifeq ($(strip $(API_KEY)),)
-	@echo "API_KEY variable is unset" && false
+ifeq ($(strip $(GALAXY_API_KEY)),)
+	@echo "GALAXY_API_KEY variable is unset" && false
 endif
 
 env-show: _check-vars
-	@echo "API_KEY=[ set but redacted ]"
+	@echo "GALAXY_API_KEY=[ set but redacted ]"
 
 version: _check-vars  ## Show versions.
 	@echo -e $(_begin)
@@ -107,20 +109,23 @@ setup-galaxy: _test-venv
 		sudo mv jq /usr/local/bin && \
 	echo "jq and spruce are installed"
 
-galaxy-collection-build: releasable  ## Build the collection.
+galaxy-collection-build: ## Build the collection.
 	@echo -e $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
 	@echo -e $(_finish)
 
-galaxy-collection-build-force: releasable  ## Force build the collection. Overwrite an existing collection file.
+galaxy-collection-build-force: ## Force build the collection. Overwrite an existing collection file.
 	@echo -e $(_begin)
 	ansible-galaxy collection build --force
 	@echo -e $(_finish)
 
-galaxy-collection-publish: _check-vars  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
+galaxy-collection-publish: _check-vars releasable  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
 	@echo -e $(_begin)
-	ansible-galaxy collection publish --api-key $(API_KEY) ./$(_namespace)-$(_name)-$(_version).tar.gz -vvv
+	ansible-galaxy collection publish --api-key $(GALAXY_API_KEY) ./$(_namespace)-$(_name)-$(_version).tar.gz -vvvv
+	@echo "On Github:"
+	@echo "    git push upstream-github develop"
+	@echo "    git push upstream-github --tags develop"
 	@echo -e $(_finish)
 
 galaxy-collection-install:  ## Download and install from galaxy.ansible.com. This will wipe $(_install_path).

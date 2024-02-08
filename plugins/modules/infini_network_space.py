@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# pylint: disable=use-list-literal,use-dict-literal,line-too-long,wrong-import-position
+# pylint: disable=invalid-name,use-list-literal,use-dict-literal,line-too-long,wrong-import-position
 
 # Copyright: (c) 2022, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -10,7 +10,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type  # pylint: disable=invalid-name
+__metaclass__ = type
 
 DOCUMENTATION = r'''
 ---

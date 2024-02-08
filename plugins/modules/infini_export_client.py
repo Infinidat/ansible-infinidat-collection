@@ -6,11 +6,11 @@
 
 """ Manage Infinibox export clients """
 
-# pylint: disable=use-dict-literal,line-too-long,wrong-import-position, wrong-import-order
+# pylint: disable=invalid-name,use-dict-literal,line-too-long,wrong-import-position, wrong-import-order
 
 from __future__ import (absolute_import, division, print_function)
 
-__metaclass__ = type # pylint: disable=invalid-name
+__metaclass__ = type
 
 DOCUMENTATION = r'''
 ---

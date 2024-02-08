@@ -3,6 +3,16 @@ Change Log
 ==========
 
 -------------------
+v1.4.1 (2024-02-06)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Feature Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* Require Ansible >= 2.14.0
+* psdev-1178: Add infini_infinimetrics moduile. Allows add an Infinibox to Infinimetrics.
+
+-------------------
 v1.4.0 (2024-02-05)
 -------------------
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# pylint: disable=use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
+# pylint: disable=invalid-name,use-dict-literal,too-many-branches,too-many-locals,line-too-long,wrong-import-position
 
 """ A module for managing Infinibox volumes """
 
@@ -10,7 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type  # pylint: disable=invalid-name
+__metaclass__ = type
 
 DOCUMENTATION = r"""
 ---
@@ -458,7 +458,7 @@ def execute_state(module):
         else:
             module.params["write_protected"] = True
     else:
-        msg = f"An error has occurred handling volume_type '{module.params['volume_type']}' or write_protected '{module.params['write_protected']}' values"
+        msg = f"An error has occurred handling volume_type {module.params['volume_type']} or write_protected {module.params['write_protected']} values"
         module.fail_json(msg)
 
     state = module.params["state"]
