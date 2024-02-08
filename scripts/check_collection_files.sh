@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Disable shellcheck: Don't use variables in the printf format string. Use printf "..%s.." "$foo". 
+# shellcheck disable=SC2059
+
 set -o nounset
 set -o pipefail
 set -o noclobber
@@ -16,7 +19,7 @@ function die {
     local leader="${2:-Fatal:}"
     (>&2 echo -e "$leader $msg\n")  # Subshell avoids interactions with other redirections
     if [ "$enable_syslogging" == "true" ]; then
-        logger -p user.error -t "$(basename $0)" "$leader $msg"
+        logger -p user.error -t "$(basename "$0")" "$leader $msg"
     fi
     kill -SIGPIPE "$$"  # Die with exit code 141
 }
@@ -29,7 +32,7 @@ function info {
     local leader="${2:-Info:}"
     (echo -e "$leader $msg\n")  # Subshell avoids interactions with other redirections
     if [ "$enable_syslogging" == "true" ]; then
-        logger -p user.notice -t "$(basename $0)" "$leader $msg"
+        logger -p user.notice -t "$(basename "$0")" "$leader $msg"
     fi
 }
 
@@ -39,7 +42,7 @@ function check_glob {
     #info "$fglob" "\nTesting"
     result="$(find . -name "$fglob")"
     if [ -n "$result" ]; then
-        echo -n "$result\n"
+        printf "$result\n"
     fi
 }
 

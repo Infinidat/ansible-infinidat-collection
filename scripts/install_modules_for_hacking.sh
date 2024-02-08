@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Disable shellcheck: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
+# shellcheck disable=SC2181,SC2059
+
 #####
 # A utility script to copy collection resources into a clone of ansible source code.
 # This is useful if using ansible hacking to execute modules without use of playbooks.
@@ -24,7 +27,7 @@ function die {
     (>&2 printf "$leader $msg\n")  # Subshell avoids interactions with other redirections
     if [ "$enable_syslogging" == "true" ]
     then
-        logger -p user.error -t "$(basename $0)" "$leader $msg"
+        logger -p user.error -t "$(basename "$0")" "$leader $msg"
     fi
     kill -SIGPIPE "$$"  # Die with exit code 141
 }
@@ -38,7 +41,7 @@ function info {
     (printf "$leader $msg\n")  # Subshell avoids interactions with other redirections
     if [ "$enable_syslogging" == "true" ]
     then
-        logger -p user.notice -t "$(basename $0)" "$leader $msg"
+        logger -p user.notice -t "$(basename "$0")" "$leader $msg"
     fi
 }
 

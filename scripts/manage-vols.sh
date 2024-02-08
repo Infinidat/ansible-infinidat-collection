@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Disable shellcheck: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
+# shellcheck disable=SC2181
+
 # Create or delete many volumes and snapshots.
 # Examples:
 #   ./manage-vols.sh create_vols_and_snaps     1  5000
@@ -30,7 +33,7 @@ function create_vol {
     local -r volume="$1"
     local -r cmd="vol.create name=$volume pool=$pool size=$size"
     echo "- Creating volume $volume"
-    $infinishell --cmd="$cmd" 2>&1 | egrep 'NAME_CONFLICT|created'
+    $infinishell --cmd="$cmd" 2>&1 | grep -E 'NAME_CONFLICT|created'
 }
 
 function create_snap {
@@ -39,7 +42,7 @@ function create_snap {
     local -r snap="$2"
     local -r cmd="vol.snap.create name=${snap} vol=${volume}"
     echo "- Creating snapshot $snap from volume $volume"
-    $infinishell --cmd="$cmd" 2>&1 | egrep 'NAME_CONFLICT|created'
+    $infinishell --cmd="$cmd" 2>&1 | grep -E 'NAME_CONFLICT|created'
 }
 
 function delete_vol {
@@ -47,11 +50,11 @@ function delete_vol {
     local -r volume="$1"
     local -r cmd="vol.delete --yes vol=${volume}"
     echo "- Deleting volume $volume"
-    $infinishell --cmd="$cmd" 2>&1 | egrep 'No such volume|deleted'
+    $infinishell --cmd="$cmd" 2>&1 | grep -E 'No such volume|deleted'
 }
 
 function create_vols {
-    for i in `seq $vstart 1 $vend`; do
+        for i in $(seq "$vstart" 1 "$vend"); do
         vol="${prefix}vol-${i}"
         until create_vol "$vol"; [ "$?" == 0 ]; do
             :
@@ -60,7 +63,7 @@ function create_vols {
 }
 
 function create_snaps {
-    for i in `seq $vstart 1 $vend`; do
+        for i in $(seq "$vstart" 1 "$vend"); do
         vol="${prefix}vol-${i}"
         snap="$vol-snap"
         until create_snap "$vol" "$snap"; [ "$?" == 0 ]; do
@@ -70,7 +73,7 @@ function create_snaps {
 }
 
 function create_vols_and_snaps {
-    for i in `seq $vstart 1 $vend`; do
+        for i in $(seq "$vstart" 1 "$vend"); do
         vol="${prefix}vol-${i}"
         snap="${prefix}vol-${i}-snap"
         until create_vol "$vol"; [ "$?" == 0 ]; do
@@ -83,7 +86,7 @@ function create_vols_and_snaps {
 }
 
 function delete_vols {
-    for i in `seq $vstart 1 $vend`; do
+        for i in $(seq "$vstart" 1 "$vend"); do
         vol="${prefix}vol-${i}"
         until delete_vol "$vol"; [ "$?" == 0 ]; do
             :
