@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_sso
-version_added: '2.16.2'
+version_added: 2.16.0
 short_description: Configures or queries SSO on Infinibox
 description:
     - This module configures (present state) or gets information about (absent state) SSO on Infinibox
@@ -25,18 +25,38 @@ options:
     description:
       - Sets a name to reference the SSO by.
     required: true
+    type: str
   issuer:
     description:
       - URI of the SSO issuer.
     required: false
+    type: str
   sign_on_url:
     description:
       - URL for sign on.
+    type: str
+    required: false
+  signed_assertion:
+    description:
+      - Signed assertion
+    type: bool
+    required: false
+    default: false
+  signed_response:
+    description:
+      - Signed response
+    required: false
+    type: bool
+    default: false
+  signing_certificate:
+    description:
+      - Signing certificate content.
+    type: str
     required: false
   enabled:
     description:
       - Determines if the SSO is enabled.
-    required:  false
+    required: false
     default: true
     type: bool
   state:
@@ -44,6 +64,7 @@ options:
       - Creates/Modifies the SSO, when using state present.
       - For state absent, the SSO is removed.
       - State stat shows the existing SSO's details.
+    type: str
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
@@ -257,12 +278,12 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            enabled=dict(required=False, type=bool, default=True),
+            enabled=dict(required=False, type="bool", default=True),
             issuer=dict(required=False, default=None),
             name=dict(required=True),
             sign_on_url=dict(required=False, default=None),
-            signed_assertion=dict(required=False, type=bool, default=False),
-            signed_response=dict(required=False, type=bool, default=False),
+            signed_assertion=dict(required=False, type="bool", default=False),
+            signed_response=dict(required=False, type="bool", default=False),
             signing_certificate=dict(required=False, default=None, no_log=True),
             state=dict(default="present", choices=["stat", "present", "absent"]),
         )
