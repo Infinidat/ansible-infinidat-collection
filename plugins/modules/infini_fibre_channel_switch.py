@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_fibre_channel_switch
-version_added: '2.16.2'
+version_added: 2.16.0
 short_description: Manage Infinibox FC switch names
 description:
     - This module renames FC switch names (rename state) or shows information about FC switches (stat state)
@@ -24,16 +24,19 @@ options:
   switch_name:
     description:
       - Current name of an existing fibre channel switch.
+    type: str
     required: true
   new_switch_name:
     description:
       - New name for an existing fibre channel switch.
+    type: str
     required: false
   state:
     description:
       - Rename an FC switch name, when using state rename.
       - States present and absent are not implemented.
       - State stat shows the existing FC switch details.
+    type: str
     required: false
     default: rename
     choices: [ "stat", "rename" ]
