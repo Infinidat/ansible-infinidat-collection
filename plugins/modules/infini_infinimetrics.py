@@ -15,8 +15,8 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_infinimetrics
-version_added: '2.16.2'
-short_description:  Create (present state) or remove (absent state) an Infinibox registration on an Infinimetrics.
+version_added: 2.16.0
+short_description: Create (present state) or remove (absent state) an Infinibox registration on an Infinimetrics.
 description:
     - Create (present state) or remove (absent state) an Infinibox registration on an Infinimetrics.
 author: David Ohlemacher (@ohlemacher)
@@ -24,12 +24,14 @@ options:
   infinimetrics_system:
     description:
       - Infinimetrics hostname or IPv4 Address.
+    type: str
     required: true
   state:
     description:
       - Registers the Infinibox with Infinimetrics, when using state present.
       - For state absent, the Infinibox is deregistered from Infinimetrics.
       - State stat shows the registration status of the Infinibox with Infinimetrics.
+    type: str
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
