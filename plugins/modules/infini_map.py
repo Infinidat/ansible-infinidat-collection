@@ -445,7 +445,7 @@ def handle_stat(module):
         module.fail_json(msg=f"Volume '{volume_name}' not found")
 
     if not host and not cluster:
-        msg=f"Neither host '{host_name}' nor cluster '{cluster_name}' found"
+        msg = f"Neither host '{host_name}' nor cluster '{cluster_name}' found"
         module.fail_json(msg=msg)
 
     if (not host or not vol_is_mapped_to_host(volume, host)) \

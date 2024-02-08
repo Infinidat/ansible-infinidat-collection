@@ -70,6 +70,7 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     get_system,
 )
 
+
 def handle_stat(module):
     """Handle stat state"""
     msg = "handle_stat() is not implemented"
@@ -106,6 +107,7 @@ def execute_state(module):
     finally:
         system = get_system(module)
         system.logout()
+
 
 def main():
     """ Main """

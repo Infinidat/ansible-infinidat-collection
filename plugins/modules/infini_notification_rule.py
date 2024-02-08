@@ -105,7 +105,7 @@ def find_target_id(module, system):
         result = api_result.get_json()['result'][0]
         target_id = result['id']
     else:
-        target_id=None
+        target_id = None
     return target_id
 
 
@@ -130,7 +130,7 @@ def find_rule_id(module, system):
         result = api_result.get_json()['result'][0]
         rule_id = result['id']
     else:
-        rule_id=None
+        rule_id = None
     return rule_id
 
 
@@ -138,7 +138,7 @@ def find_rule_id(module, system):
 def delete_rule(module):
     """ Delete a notification rule """
     system = get_system(module)
-    rule_id = find_rule_id(module,system)
+    rule_id = find_rule_id(module, system)
     path = f"notifications/rules/{rule_id}?approved=true"
     system.api.delete(path=path)
 
@@ -149,15 +149,12 @@ def create_rule(module):
     system = get_system(module)
     name = module.params["name"]
     event_level = module.params["event_level"]
-    #target_id= module.params["target_id"] #if using email, target id is 3, if not find id by name, if
+    # target_id = module.params["target_id"] #if using email, target id is 3, if not find id by name, if
     include_events = module.params["include_events"]
     exclude_events = module.params["exclude_events"]
     recipients = module.params["recipients"]
     target = module.params["target"]
-
-
     path = "notifications/rules"
-
     json_data = {
         "name": name,
         "event_level": event_level,
@@ -165,7 +162,7 @@ def create_rule(module):
         "exclude_events": exclude_events,
     }
 
-    if not len(recipients)==0:
+    if not len(recipients) == 0:
         target_parameters = {
             "recipients": recipients
         }
@@ -173,8 +170,7 @@ def create_rule(module):
         json_data["target_parameters"] = target_parameters
 
     if target:
-        target_id=find_target_id(module, system)
-        #json_data["target"] = target
+        target_id = find_target_id(module, system)
 
     json_data["target_id"] = target_id
 
@@ -201,7 +197,7 @@ def update_rule(module):
         "exclude_events": exclude_events,
     }
 
-    if not len(recipients)==0:
+    if not len(recipients) == 0:
         target_parameters = {
             "recipients": recipients
         }
@@ -209,11 +205,10 @@ def update_rule(module):
         json_data["target_parameters"] = target_parameters
 
     if target:
-        target_id=find_target_id(module, system)
-        #json_data["target"] = target
+        target_id = find_target_id(module, system)
 
     json_data["target_id"] = target_id
-    rule_id = find_rule_id(module,system)
+    rule_id = find_rule_id(module, system)
     path = f"notifications/rules/{rule_id}"
     system.api.put(path=path, data=json_data)
 
@@ -224,15 +219,15 @@ def handle_present(module):
     name = module.params["name"]
     changed = False
     if not module.check_mode:
-        rule_id = find_rule_id(module,system)
+        rule_id = find_rule_id(module, system)
         if not rule_id:
             create_rule(module)
-            changed=True
+            changed = True
             msg = f"Rule {name} created"
         else:
             update_rule(module)
             msg = f"Rule {name} updated"
-            changed=True
+            changed = True
 
     module.exit_json(changed=changed, msg=msg)
 
@@ -247,7 +242,7 @@ def handle_stat(module):
         path = f"notifications/rules/{rule_id}"
         api_result = system.api.get(path=path)
         result = api_result.get_json()['result']
-        result["rule_id"] = result.pop("id") # Rename id to rule_id
+        result["rule_id"] = result.pop("id")  # Rename id to rule_id
         result["msg"] = f"Stats for notification rule {name}"
         result["changed"] = False
         module.exit_json(**result)
@@ -261,12 +256,12 @@ def handle_absent(module):
     name = module.params["name"]
     system = get_system(module)
 
-    rule_id = find_rule_id(module,system)
+    rule_id = find_rule_id(module, system)
     if not rule_id:
-        msg=f"Rule of {name} does not exist, deletion operation skipped"
+        msg = f"Rule of {name} does not exist, deletion operation skipped"
         changed = False
     else:
-        msg=f"Rule {name} has been deleted"
+        msg = f"Rule {name} has been deleted"
         changed = True
         if not module.check_mode:
             delete_rule(module)

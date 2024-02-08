@@ -19,7 +19,8 @@ version_added: '2.13.12'
 short_description:  Create, Delete or Modify metadata on Infinibox
 description:
     - This module creates, deletes or modifies metadata on Infinibox.
-    - Deleting metadata by object, without specifying a key, is not implemented for any object_type (e.g. DELETE api/rest/metadata/system). This would delete all metadata belonging to the object. Instead delete each key explicitely using its key name.
+    - Deleting metadata by object, without specifying a key, is not implemented for any object_type (e.g. DELETE api/rest/metadata/system).
+    - This would delete all metadata belonging to the object. Instead delete each key explicitely using its key name.
 author: David Ohlemacher (@ohlemacher)
 options:
   object_type:
@@ -101,6 +102,7 @@ except ImportError:
 
 HAS_CAPACITY = False
 
+
 @api_wrapper
 def get_metadata_vol(module, disable_fail):
     """ Get metadata about a volume """
@@ -126,6 +128,7 @@ def get_metadata_vol(module, disable_fail):
         module.fail_json(msg=msg)
 
     return metadata
+
 
 @api_wrapper
 def get_metadata_fs(module, disable_fail):
@@ -467,7 +470,7 @@ def delete_metadata(module):  # pylint: disable=too-many-return-statements
             return changed  # No volsnap therefore no metadata to delete
         path = f"metadata/{volsnap.id}/{key}"
     else:
-        module.fail_json( f"TODO: Implement for object_type {object_type}")
+        module.fail_json(f"Object type {object_type} not supported")
 
     try:
         system.api.delete(path=path)

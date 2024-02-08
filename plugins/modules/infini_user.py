@@ -127,6 +127,7 @@ try:
 except ImportError:
     HAS_INFINISDK = False
 
+
 @api_wrapper
 def find_user_ldap_group_id(module):
     """
@@ -360,15 +361,15 @@ def get_user_fields(user):
 
     fields = user.get_fields(from_cache=True, raw_value=True)
     field_dict = {
-        "dn":      fields.get('dn', None),
-        "email":   fields.get('email', None),
+        "dn": fields.get('dn', None),
+        "email": fields.get('email', None),
         "enabled": fields.get('enabled', None),
-        "id":      user.id,
+        "id": user.id,
         "ldap_id": fields.get('ldap_id', None),
-        "pools":   pool_names,
-        "role":    fields.get('role', None),
-        "roles":   fields.get('roles', []),
-        "type":    fields.get('type', None),
+        "pools": pool_names,
+        "role": fields.get('role', None),
+        "roles": fields.get('roles', []),
+        "type": fields.get('type', None),
     }
     return field_dict
 
@@ -521,12 +522,12 @@ def execute_state(module):
         system.logout()
 
 
-def check_options(module): # pylint: disable=too-many-branches
+def check_options(module):  # pylint: disable=too-many-branches
     """ Check option logic """
     state = module.params['state']
-    user_name =            module.params['user_name']
-    user_role =            module.params['user_role']
-    user_pool =            module.params['user_pool']
+    user_name = module.params['user_name']
+    user_role = module.params['user_role']
+    user_pool = module.params['user_pool']
     user_ldap_group_name = module.params['user_ldap_group_name']
     user_ldap_group_role = module.params['user_ldap_group_role']
     if state == 'present':

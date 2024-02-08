@@ -77,6 +77,7 @@ except ModuleNotFoundError:
         merge_two_dicts,
     )
 
+
 @api_wrapper
 def get_host_by_name(system, host_name):
     """Find a host by the name specified in the module"""

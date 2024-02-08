@@ -105,7 +105,7 @@ extends_documentation_fragment:
 """
 
 EXAMPLES = r"""
-- name: Create AD 
+- name: Create AD
   infini_users_repository:
     name: PSUS_ANSIBLE_ad
     bind_password: tuFrAxahuYe4
@@ -115,7 +115,7 @@ EXAMPLES = r"""
     schema_group_class: group
     schema_group_memberof_attribute: memberof
     schema_group_name_attribute: cn
-    schema_groups_basedn: 
+    schema_groups_basedn:
     schema_user_class: user
     schema_username_attribute: sAMAccountName
     state: present
@@ -123,7 +123,7 @@ EXAMPLES = r"""
     user: dohlemacher
     password: 123456
 
-- name: Stat AD 
+- name: Stat AD
   infini_users_repository:
     name: PSUS_ANSIBLE_ad
     state: stat
@@ -156,6 +156,7 @@ try:
 except ImportError:
     HAS_INFINISDK = False
 
+
 @api_wrapper
 def get_users_repository(module, disable_fail=False):
     """
@@ -181,6 +182,7 @@ def get_users_repository(module, disable_fail=False):
         module.fail_json(msg=msg)
 
     return None
+
 
 @api_wrapper
 def test_users_repository(module, repository_id, disable_fail=False):
@@ -210,13 +212,13 @@ def create_post_data(module):
     repo_type = module.params["repository_type"]
     # search_order
     schema_definition = {
-        "group_class":               module.params["schema_group_class"],
-        "group_memberof_attribute":  module.params["schema_group_memberof_attribute"],
-        "group_name_attribute":      module.params["schema_group_name_attribute"],
-        "groups_basedn":             module.params["schema_groups_basedn"],
-        "user_class":                module.params["schema_user_class"],
-        "username_attribute":        module.params["schema_username_attribute"],
-        "users_basedn":              module.params["schema_users_basedn"],
+        "group_class": module.params["schema_group_class"],
+        "group_memberof_attribute": module.params["schema_group_memberof_attribute"],
+        "group_name_attribute": module.params["schema_group_name_attribute"],
+        "groups_basedn": module.params["schema_groups_basedn"],
+        "user_class": module.params["schema_user_class"],
+        "username_attribute": module.params["schema_username_attribute"],
+        "users_basedn": module.params["schema_users_basedn"],
     }
 
     # Create json data
@@ -232,7 +234,7 @@ def create_post_data(module):
 
     # Add type specific fields to data dict
     if repo_type == "ActiveDirectory":
-        data["domain_name"] =  module.params["ad_domain_name"]
+        data["domain_name"] = module.params["ad_domain_name"]
         data["servers"] = []
     else:  # LDAP
         data["domain_name"]: None
@@ -309,15 +311,22 @@ def is_existing_users_repo_equal_to_desired(module):  # pylint: disable=too-many
     olddata = get_users_repository(module, disable_fail=True)[0]
     if not olddata:
         return False
-    if olddata['bind_username']     != newdata['bind_username']: return False
-    if olddata['repository_type']   != newdata['repository_type']: return False
-    if olddata['domain_name']       != newdata['domain_name']: return False
-    if olddata['ldap_port']         != newdata['ldap_port']: return False
-    if olddata['name']              != newdata['name']: return False
-    if olddata['schema_definition'] != newdata['schema_definition']: return False
-    # if olddata['search_order']      != newdata['search_order']: return False
-    if olddata['servers']           != newdata['servers']: return False
-    if olddata['use_ldaps']         != newdata['use_ldaps']: return False
+    if olddata['bind_username'] != newdata['bind_username']:
+        return False
+    if olddata['repository_type'] != newdata['repository_type']:
+        return False
+    if olddata['domain_name'] != newdata['domain_name']:
+        return False
+    if olddata['ldap_port'] != newdata['ldap_port']:
+        return False
+    if olddata['name'] != newdata['name']:
+        return False
+    if olddata['schema_definition'] != newdata['schema_definition']:
+        return False
+    if olddata['servers'] != newdata['servers']:
+        return False
+    if olddata['use_ldaps'] != newdata['use_ldaps']:
+        return False
     return True
 
 

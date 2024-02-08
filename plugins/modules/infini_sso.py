@@ -163,9 +163,9 @@ def handle_present(module):  # pylint: disable=too-many-locals
         module.fail_json(msg=msg)
 
     if not existing_sso:
-        msg=f"SSO identity provider named {name} successfully configured"
+        msg = f"SSO identity provider named {name} successfully configured"
     else:
-        msg=f"SSO identity provider named {name} successfully removed and recreated with updated parameters"
+        msg = f"SSO identity provider named {name} successfully removed and recreated with updated parameters"
     result = dict(
         changed=True,
         msg=msg,

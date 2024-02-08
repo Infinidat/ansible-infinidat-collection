@@ -74,6 +74,7 @@ try:
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
+
 @api_wrapper
 def get_config(module, disable_fail=False):
     """
@@ -130,7 +131,6 @@ def set_config(module):
     config_group = module.params["config_group"]
     key = module.params["key"]
     value = module.params["value"]
-
 
     path = f"config/{config_group}/{key}"
 
@@ -198,7 +198,7 @@ def check_options(module):
     ]
 
     if state == "present" and key == "pool.compression_enabled_default":
-        if not isinstance(value,type(str())): # isvalue.lower() not in values:
+        if not isinstance(value, type(str())):  # isvalue.lower() not in values:
             module.fail_json(
                 f"Value must be of type {type(str())}. Invalid value: {value} of {vtype}."
             )

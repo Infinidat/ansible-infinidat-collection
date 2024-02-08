@@ -79,6 +79,7 @@ try:
 except ImportError:
     HAS_INFINISDK = False
 
+
 def handle_stat(module):
     """ Handle the stat state parameter """
     infinimetrics_system = module.params['infinimetrics_system']
@@ -116,12 +117,12 @@ def handle_present(module):
             msg = f"Cannot upload cert: {err}"
             module.fail_json(msg=msg)
 
-    cert_serial       = cert_result['certificate']['serial_number']
+    cert_serial = cert_result['certificate']['serial_number']
     cert_issued_by_cn = cert_result['certificate']['issued_by']['CN']
     cert_issued_to_cn = cert_result['certificate']['issued_to']['CN']
     result = dict(
         changed=True,
-        msg="System SSL certificate uploaded successfully. " + \
+        msg="System SSL certificate uploaded successfully. "
         f"Certificate S/N {cert_serial} issued by CN {cert_issued_by_cn} to CN {cert_issued_to_cn}"
     )
     result = merge_two_dicts(result, cert_result)

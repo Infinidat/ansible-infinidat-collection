@@ -142,7 +142,7 @@ def create_empty_network_space(module, system):
     }
     interfaces = module.params["interfaces"]
 
-    #product_id = system.api.get('system/product_id')
+    # product_id = system.api.get('system/product_id')
 
     net_create_url = "network/spaces"
     net_create_data = {
@@ -224,18 +224,18 @@ def update_network_space(module, system):
         {"interfaces": module.params["interfaces"]},
         {"mtu": module.params["mtu"]},
         {"network_config":
-            {
-                "default_gateway": module.params["default_gateway"],
-                "netmask": module.params["netmask"],
-                "network": module.params["network"],
-            }
-        },
+         {
+             "default_gateway": module.params["default_gateway"],
+             "netmask": module.params["netmask"],
+             "network": module.params["network"],
+         }
+         },
         {"rate_limit": module.params["rate_limit"]},
-        { "properties":
-            {
-                "is_async_only": module.params["async_only"],
-            }
-        },
+        {"properties":
+         {
+             "is_async_only": module.params["async_only"],
+         }
+         },
     ]
     for data in datas:
         try:
@@ -249,6 +249,7 @@ def update_network_space(module, system):
     add_ips_to_network_space(module, system, space_id)
     changed = True
     return changed
+
 
 def get_network_space_fields(network_space):
     """ Get the network space fields and return as a dict """
@@ -316,7 +317,7 @@ def disable_and_delete_ip(module, network_space, ip):
     ip_type = ip['type']
     mgmt = ""
     if ip_type == "MANAGEMENT":
-        mgmt = "management " # Trailing space by design
+        mgmt = "management "  # Trailing space by design
 
     try:
         try:
@@ -350,7 +351,7 @@ def handle_absent(module):
         if not module.check_mode:
             management_ip = None  # Must be disabled and deleted last
             for ip in ips:
-                if ip ['type'] == 'MANAGEMENT':
+                if ip['type'] == 'MANAGEMENT':
                     management_ip = ip
                     continue
                 disable_and_delete_ip(module, network_space, ip)

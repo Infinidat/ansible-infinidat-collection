@@ -134,6 +134,7 @@ try:
 except ImportError:
     pass  # Handled by HAS_INFINISDK from module_utils
 
+
 @api_wrapper
 def get_target(module):
     """
@@ -189,7 +190,7 @@ def find_target_id(module, system):
         result = api_result.get_json()['result'][0]
         target_id = result['id']
     else:
-        target_id=None
+        target_id = None
     return target_id
 
 
@@ -198,7 +199,7 @@ def delete_target(module):
     """ Delete a notification target """
     system = get_system(module)
     name = module.params["name"]
-    target_id = find_target_id(module,system)
+    target_id = find_target_id(module, system)
 
     try:
         path = f"notifications/targets/{target_id}?approved=true"
@@ -225,7 +226,7 @@ def create_target(module):
 
     json_data = {
         "name": name,
-        "protocol":  protocol,
+        "protocol": protocol,
         "host": host,
         "port": port,
         "facility": facility,
@@ -249,6 +250,7 @@ def create_target(module):
             msg = f"Cannot test notification target {name}: {err}"
             module.fail_json(msg=msg)
 
+
 @api_wrapper
 def update_target(module):
     """ Update an existing target.  """
@@ -262,14 +264,14 @@ def handle_present(module):
     name = module.params["name"]
     changed = False
     if not module.check_mode:
-        target_id = find_target_id(module,system)
+        target_id = find_target_id(module, system)
         if not target_id:
             create_target(module)
             msg = f"Target {name} created"
         else:
             update_target(module)
             msg = f"Target {name} deleted and recreated"
-        changed=True
+        changed = True
         module.exit_json(changed=changed, msg=msg)
 
 
@@ -278,13 +280,13 @@ def handle_absent(module):
     changed = False
     name = module.params["name"]
     system = get_system(module)
-    target_id = find_target_id(module,system)
+    target_id = find_target_id(module, system)
 
     if not target_id:
         msg = f"Target {name} already does not exist"
         changed = False
     else:
-        msg=f"Target {name} has been deleted"
+        msg = f"Target {name} has been deleted"
         if not module.check_mode:
             changed = True
             delete_target(module)

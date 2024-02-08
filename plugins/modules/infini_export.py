@@ -119,6 +119,7 @@ try:
 except ImportError:
     HAS_MUNCH = False
 
+
 def transform(d):
     """ Create a frozen set from a normal set's items """
     return frozenset(d.items())
@@ -226,7 +227,7 @@ def handle_present(module):
 
 def handle_absent(module):
     """ Handle absent state """
-    _, export, _= get_sys_exp_fs(module)
+    _, export, _ = get_sys_exp_fs(module)
     filesystem_name = module.params['filesystem']
     if not export:
         changed = False

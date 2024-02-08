@@ -77,7 +77,7 @@ except ImportError:
 
 def find_switch_by_name(module):
     """ Find switch by name """
-    switch=module.params['switch_name']
+    switch = module.params['switch_name']
     path = f"fc/switches?name={switch}"
     system = get_system(module)
     try:

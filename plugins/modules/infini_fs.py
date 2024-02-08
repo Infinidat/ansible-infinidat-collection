@@ -174,6 +174,7 @@ try:
 except ImportError:
     HAS_CAPACITY = False
 
+
 @api_wrapper
 def create_filesystem(module, system):
     """ Create Filesystem """
