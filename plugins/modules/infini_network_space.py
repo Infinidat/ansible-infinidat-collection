@@ -24,25 +24,35 @@ options:
   name:
     description:
       - Network space name
+    type: str
     required: true
   state:
     description:
       - Creates/Modifies network spaces when present. Removes when absent. Shows status when stat.
+    type: str
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
   interfaces:
     description:
-      - A list of interfaces for the space.
+      - A list of interface IDs for the space.
     required: false
     type: list
-    elements: str
+    elements: int
+    default: []
+  network_config:
+    description:
+      - A network description.
+    type: dict
+    default: {}
+    required: false
   service:
     description:
       - Choose a service.
+    type: str
     required: false
-    default: "replication"
-    choices: ["replication", "NAS", "iSCSI"]
+    default: "RMR_SERVICE"
+    choices: ["RMR_SERVICE", "NAS_SERVICE", "ISCSI_SERVICE"]
   mtu:
     description:
       - Set an MTU. If not specified, defaults to 1500 bytes.
@@ -58,6 +68,11 @@ options:
       - Network mask.
     required: false
     type: int
+  default_gateway:
+    description:
+      - Default gateway.
+    type: str
+    required: false
   ips:
     description:
       - List of IPs.
@@ -77,7 +92,7 @@ options:
     description:
       - Run asynchronously only.
     required: false
-    type: boolean
+    type: bool
     default: false
 extends_documentation_fragment:
     - infinibox
@@ -401,15 +416,15 @@ def main():
                 required=False,
                 choices=["RMR_SERVICE", "NAS_SERVICE", "ISCSI_SERVICE"],
             ),
-            mtu=dict(default=None, required=False, type=int),
+            mtu=dict(default=None, required=False, type="int"),
             network=dict(default=None, required=False),
-            netmask=dict(default=None, required=False, type=int),
+            netmask=dict(default=None, required=False, type="int"),
             default_gateway=dict(default=None, required=False),
             interfaces=dict(default=list(), required=False, type="list", elements="int"),
-            network_config=dict(default=dict(), required=False, type=dict),
+            network_config=dict(default=dict(), required=False, type="dict"),
             ips=dict(default=list(), required=False, type="list", elements="str"),
-            rate_limit=dict(default=None, required=False, type=int),
-            async_only=dict(default=False, required=False, type=bool),
+            rate_limit=dict(default=None, required=False, type="int"),
+            async_only=dict(default=False, required=False, type="bool"),
         )
     )
 
