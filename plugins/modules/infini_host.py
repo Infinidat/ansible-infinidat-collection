@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: infini_host
-version_added: '2.3.0'
+version_added: 2.3.0
 short_description: Create, Delete or Modify Hosts on Infinibox
 description:
     - This module creates, deletes or modifies hosts on Infinibox.
@@ -24,10 +24,12 @@ options:
   name:
     description:
       - Host Name
+    type: str
     required: true
   state:
     description:
       - Creates/Modifies Host when present or removes when absent
+    type: str
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
