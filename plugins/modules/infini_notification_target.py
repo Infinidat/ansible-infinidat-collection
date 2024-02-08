@@ -15,28 +15,32 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_notification_target
-version_added: '2.13.12'
+version_added: 2.13.0
 short_description:  Config notification target
 description:
     - This module configures syslog notification targets on an Infinibox
-author: Wei Wang
+author: Wei Wang (@wwang)
 options:
   name:
     description:
       - Name of the syslog target
+    type: str
     required: true
   host:
     description:
       - Host name or IP address of the target
+    type: str
     required: false
   port:
     description:
       - Port of the target
+    type: int
     required: false
     default: 514
   transport:
     description:
       -  TCP or UDP
+    type: str
     required: false
     choices:
       - UDP
@@ -45,9 +49,11 @@ options:
   protocol:
     description:
       - Protocol used for this target. Currently, the only valid value is SYSLOG.
+    type: str
     required: false
     choices:
       - SYSLOG
+    default: SYSLOG
   facility:
     description:
       - Facility
@@ -60,23 +66,30 @@ options:
       - LOCAL5
       - LOCAL6
       - LOCAL7
+    type: str
     required: false
     default: LOCAL7
   visibility:
     description:
       - Visibility
+    type: str
     choices:
       - CUSTOMER
       - INFINIDAT
     required: false
+    default: CUSTOMER
   post_test:
-    descrption:
+    description:
       - Run a test after new target is created
+    type: bool
     required: false
+    default: true
   state:
     description:
       - Query or modifies target
-    required: true
+    type: str
+    required: false
+    default: present
     choices: [ "stat", "present", "absent" ]
 
 extends_documentation_fragment:
@@ -324,13 +337,13 @@ def main():
     argument_spec.update(
         {
             "name": {"required": True},
-            "host": {"required": False, "type": str},
-            "port": {"required": False, "type": int, "default": 514},
+            "host": {"required": False},
+            "port": {"required": False, "type": "int", "default": 514},
             "transport": {"required": False, "default": "UDP", "choices": ["UDP", "TCP"]},
             "protocol": {"required": False, "default": "SYSLOG", "choices": ["SYSLOG"]},
             "facility": {"required": False, "default": "LOCAL7", "choices": ["LOCAL0", "LOCAL1", "LOCAL2", "LOCAL3", "LOCAL4", "LOCAL5", "LOCAL6", "LOCAL7"]},
             "visibility": {"required": False, "default": "CUSTOMER", "choices": ["CUSTOMER", "INFINIDAT"]},
-            "post_test": {"required": False, "default": True, "type": bool},
+            "post_test": {"required": False, "default": True, "type": "bool"},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
         }
     )
