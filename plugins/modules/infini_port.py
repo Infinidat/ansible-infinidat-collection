@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: infini_port
-version_added: '2.9.0'
+version_added: 2.9.0
 short_description: Add and Delete fiber channel and iSCSI ports to a host on Infinibox
 description:
     - This module adds or deletes fiber channel or iSCSI ports to hosts on
@@ -25,6 +25,7 @@ options:
   host:
     description:
       - Host Name
+    type: str
     required: true
   state:
     description:
@@ -378,7 +379,7 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            host=dict(required=True, type=str),
+            host=dict(required=True, type="str"),
             state=dict(default="present", choices=["stat", "present", "absent"]),
             wwns=dict(type="list", elements="str", default=list()),
             iqns=dict(type="list", elements="str", default=list()),
