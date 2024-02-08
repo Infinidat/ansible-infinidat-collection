@@ -15,28 +15,32 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_config
-version_added: '2.13.12'
+version_added: 2.13.0
 short_description:  Modify config on Infinibox
 description:
     - This module modifies system config on Infinibox.
-author: Wei Wang
+author: Wei Wang (@wwang)
 options:
   config_group:
     description:
       - Config group
+    type: str
     required: true
-    choices: = [ "core", "ip_config", "iscsi", "limits", "mgmt", "ndoe_interfaces", "overriders", "security", "ssh" ]
+    choices: [ "core", "ip_config", "iscsi", "limits", "mgmt", "ndoe_interfaces", "overriders", "security", "ssh" ]
   key:
     description:
       - Name of the config
+    type: str
     required: true
   value:
     description:
       - Value of the config key
+    type: str
     required: false
   state:
     description:
       - Query or modifies config when.
+    type: str
     required: false
     default: present
     choices: [ "stat", "present" ]
@@ -198,7 +202,7 @@ def check_options(module):
     ]
 
     if state == "present" and key == "pool.compression_enabled_default":
-        if not isinstance(value, type(str())):  # isvalue.lower() not in values:
+        if not isinstance(value, str):  # isvalue.lower() not in values:
             module.fail_json(
                 f"Value must be of type {type(str())}. Invalid value: {value} of {vtype}."
             )
@@ -214,10 +218,10 @@ def main():
 
     argument_spec.update(
         {
-            "config_group": {"required": True},
-            "key": {"required": True, "default": None},
+            "config_group": {"required": True, "choices": ["core", "ip_config", "iscsi", "limits", "mgmt", "ndoe_interfaces", "overriders", "security", "ssh"]},
+            "key": {"required": True, "no_log": False},
             "value": {"required": False, "default": None},
-            "state": {"default": "present", "choices": ["stat", "present"]},
+            "state": {"required": False, "default": "present", "choices": ["stat", "present"]},
         }
     )
 

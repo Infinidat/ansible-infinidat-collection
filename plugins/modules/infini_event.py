@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_event
-version_added: '2.16.2'
+version_added: 2.16.0
 short_description:  Create custom events on Infinibox
 description:
     - This module creates events on Infinibox.
@@ -24,17 +24,21 @@ options:
   description_template:
     description:
       - The content of the custom event
+    type: str
     required: true
   visibility:
     description:
       - The event's visibility
+    type: str
     required: false
     choices:
       - CUSTOMER
       - INFINIDAT
+    default: CUSTOMER
   level:
     description:
       - The level of the custom event
+    type: str
     required: true
     choices:
       - INFO
@@ -44,9 +48,13 @@ options:
   state:
     description:
       - Creates a custom event when present. Stat is not yet implemented. There is no way to remove events once posted, so abent is also not implemented.
+    type: str
     required: false
     default: present
     choices: [ "present" ]
+
+extends_documentation_fragment:
+    - infinibox
 """
 
 EXAMPLES = r"""
@@ -114,7 +122,7 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            description_template=dict(required=True, type=str),
+            description_template=dict(required=True),
             level=dict(required=True, choices=["INFO", "WARNING", "ERROR", "CRITICAL"]),
             state=dict(required=False, default="present", choices=["present"]),
             visibility=dict(default="CUSTOMER", required=False, choices=["CUSTOMER", "INFINIDAT"]),
