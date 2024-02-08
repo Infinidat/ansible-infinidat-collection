@@ -15,7 +15,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_fs
-version_added: '2.3.0'
+version_added: 2.3.0
 short_description: Create, Delete or Modify filesystems on Infinibox
 description:
     - This module creates, deletes or modifies filesystems on Infinibox.
@@ -24,17 +24,19 @@ options:
   fs_type:
     description:
       - Specifies the file system type, regular or snapshot.
+    type: str
     required: false
     default: master
     choices: [ "master", "snapshot" ]
   name:
     description:
       - File system name.
-    required: true
+    required: false
     type: str
   parent_fs_name:
     description:
       - Specify a fs name. This is the fs parent for creating a snapshot. Required if fs_type is snapshot.
+    type: str
     required: false
   pool:
     description:
@@ -45,6 +47,7 @@ options:
     description:
       - Specify true to restore a file system (parent_fs_name) from an existing snapshot specified by the name field.
       - State must be set to present and fs_type must be 'snapshot'.
+    type: bool
     required: false
     default: false
   serial:
@@ -61,6 +64,7 @@ options:
     description:
       - This will cause a snapshot to be locked at the specified date-time.
         Uses python's datetime format YYYY-mm-dd HH:MM:SS.ffffff, e.g. 2020-02-13 16:21:59.699700
+    type: str
     required: false
   snapshot_lock_only:
     description:
@@ -84,6 +88,7 @@ options:
   write_protected:
     description:
       - Specifies if the file system should be write protected. Default will be True for snapshots, False for master file systems.
+    type: str
     required: false
     default: "Default"
     choices: ["Default", "True", "False"]
@@ -545,18 +550,16 @@ def main():
         dict(
             fs_type=dict(choices=["master", "snapshot"], default="master"),
             name=dict(required=False, default=None),
-            parent_fs_name=dict(default=None, required=False, type=str),
+            parent_fs_name=dict(default=None, required=False),
             pool=dict(required=True),
-            restore_fs_from_snapshot=dict(default=False, type=bool),
+            restore_fs_from_snapshot=dict(default=False, type="bool"),
             serial=dict(required=False, default=None),
             size=dict(),
             snapshot_lock_expires_at=dict(),
-            snapshot_lock_only=dict(type="bool", default=False),
+            snapshot_lock_only=dict(required=False, type="bool", default=False),
             state=dict(default="present", choices=["stat", "present", "absent"]),
-            thin_provision=dict(type=bool, default="Default"),
-            write_protected=dict(
-                type=str, choices=["True", "False", "Default"], default="Default"
-            ),
+            thin_provision=dict(default=True, type="bool"),
+            write_protected=dict( choices=["True", "False", "Default"], default="Default"),
         )
     )
 
