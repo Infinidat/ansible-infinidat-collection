@@ -107,7 +107,7 @@ EXAMPLES = r"""
     facility: LOCAL7
     transport: TCP
     visibility: CUSTOMER
-    post_test: True
+    post_test: true
     user: "{{ user }}"
     password: "{{ password }}"
     system: "{{ system }}"

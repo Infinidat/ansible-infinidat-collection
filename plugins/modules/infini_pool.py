@@ -81,7 +81,7 @@ EXAMPLES = r'''
 - name: Disable SSD Cache on pool
   infini_pool:
     name: foo
-    ssd_cache: no
+    ssd_cache: false
     user: admin
     password: secret
     system: ibox001
@@ -89,7 +89,7 @@ EXAMPLES = r'''
 - name: Disable Compression on pool
   infini_pool:
     name: foo
-    compression: no
+    compression: false
     user: admin
     password: secret
     system: ibox001
