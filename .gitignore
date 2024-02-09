@@ -74,6 +74,7 @@ coverage.xml
 # Development
 tests/hacking
 tests/sanity
+tests/output
 /test/develop
 venv
 Vagrantfile
