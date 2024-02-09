@@ -2,8 +2,6 @@
 ### Localhost
 - hosts: forensics
   gather_facts: false
-  collections:
-    - infinidat.infinibox
   vars:
     network_space: InfiniSafe-Fenced-Network # iSCSI
     service: ISCSI_SERVICE
@@ -18,7 +16,7 @@
   tasks:
 
     - name: Create {{ service }} network space named {{ network_space }}
-      infini_network_space:
+      infinidat.infinibox.infini_network_space:
         name: "{{ network_space }}"
         state: present
         service: "{{ service }}"
@@ -45,7 +43,7 @@
       delegate_to: localhost
 
     - name: Create forensic host {{ host }}
-      infini_host:
+      infinidat.infinibox.infini_host:
         name: "{{ host }}"
         state: present
 
@@ -55,7 +53,7 @@
       delegate_to: localhost
 
     - name: Map snapshot {{ snap }} to host {{ host }}
-      infini_map:
+      infinidat.infinibox.infini_map:
         host: "{{ host }}"
         volume: "{{ snap }}"
         state: present
@@ -66,7 +64,7 @@
       delegate_to: localhost
 
     - name: Add port to host {{ host }}
-      infini_port:
+      infinidat.infinibox.infini_port:
         host: "{{ host }}"
         iqns: "{{ host_iqn }}"
         state: present
@@ -108,7 +106,7 @@
       delegate_to: localhost
 
     - name: Restoring volume {{ volume }} from known clean snapshot {{ snap }}
-      infini_vol:
+      infinidat.infinibox.infini_vol:
         name: "{{ snap }}"
         state: present
         parent_volume_name: "{{ volume }}"
