@@ -559,7 +559,7 @@ def main():
             snapshot_lock_only=dict(required=False, type="bool", default=False),
             state=dict(default="present", choices=["stat", "present", "absent"]),
             thin_provision=dict(default=True, type="bool"),
-            write_protected=dict( choices=["True", "False", "Default"], default="Default"),
+            write_protected=dict(choices=["True", "False", "Default"], default="Default"),
         )
     )
 
