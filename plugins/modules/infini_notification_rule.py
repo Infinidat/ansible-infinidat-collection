@@ -15,42 +15,58 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: infini_notification_rule
-version_added: '2.13.12'
+version_added: 2.13.0
 short_description:  Config notification rules
 description:
     - This module config notification rules on Infinibox
-author: Wei Wang
+author: Wei Wang (@wwang)
 options:
   name:
     description:
       - Name of the rule
+    type: str
     required: true
   event_level:
     description:
       - Event levels
+    type: list
+    elements: str
     required: false
+    default: []
   include_events:
     description:
       - Included events
+    type: list
+    elements: str
     required: false
+    default: []
   exclude_events:
     description:
       - Exclued events
+    type: list
+    elements: str
     required: false
+    default: []
   recipients:
     description:
       - Email list of the recipients
       - Recipients and target are exclusive to each other, i.e. only recipients or target
         should be used, don't use both at the same time.
+    type: list
+    elements: str
     required: false
+    default: []
   target:
     description:
       - Notification target
       - Recipients and target are exclusive to each other, i.e. only recipients or target
         should be used, don't use both at the same time.
+    type: str
+    required: false
   state:
     description:
       - Query or modifies config.
+    type: str
     required: false
     default: present
     choices: [ "stat", "present", "absent" ]
@@ -91,6 +107,7 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     infinibox_argument_spec,
     get_system,
 )
+
 
 
 @api_wrapper
@@ -309,11 +326,11 @@ def main():
     argument_spec.update(
         {
             "name": {"required": True},
-            "event_level": {"required": False, "default": {}, "type": list},
-            "include_events": {"required": False, "default": {}, "type": list},
-            "exclude_events": {"required": False, "default": {}, "type": list},
-            "recipients": {"required": False, "default": {}, "type": list},
-            "target": {"required": False, "type": str},
+            "event_level": {"required": False, "default": [], "type": "list", "elements": "str"},
+            "include_events": {"required": False, "default": [], "type": "list", "elements": "str"},
+            "exclude_events": {"required": False, "default": [], "type": "list", "elements": "str"},
+            "recipients": {"required": False, "default": [], "type": "list", "elements": "str"},
+            "target": {"required": False, "type": "str", "default": None},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
         }
     )
