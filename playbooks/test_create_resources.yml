@@ -563,6 +563,7 @@
       become: true
       register: rescan
       failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
+      changed_when: true
 
     - name: POSITIVE test -> Stat map of volume to host
       infinidat.infinibox.infini_map:
@@ -588,6 +589,7 @@
       become: true
       register: rescan
       failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
+      changed_when: true
 
     - name: POSITIVE test -> Map volume to host using lun 0
       infinidat.infinibox.infini_map:
@@ -605,6 +607,7 @@
       become: true
       register: rescan
       failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
+      changed_when: true
 
     - name: POSITIVE test -> Stat map of volume to host using lun 0
       infinidat.infinibox.infini_map:
