@@ -116,6 +116,7 @@ except ModuleNotFoundError:
         get_system,
     )
 
+
 @api_wrapper
 def find_target_id(module, system):
     """ Find the ID of the target by name """
@@ -177,6 +178,7 @@ def create_rule(module):
     recipients = module.params["recipients"]
     target = module.params["target"]
     path = "notifications/rules"
+
     json_data = {
         "name": name,
         "event_level": event_level,
@@ -184,15 +186,17 @@ def create_rule(module):
         "exclude_events": exclude_events,
     }
 
-    if not len(recipients) == 0:
+    if recipients:
         target_parameters = {
             "recipients": recipients
         }
-        target_id = 3
+        target_id = 3  # Target ID for sending to recipients
         json_data["target_parameters"] = target_parameters
-
-    if target:
+    elif target:
         target_id = find_target_id(module, system)
+    else:
+        msg = f"Neither recipients nor target parameters specified"
+        module.fail_json(msg=msg)
 
     json_data["target_id"] = target_id
 
@@ -219,15 +223,17 @@ def update_rule(module):
         "exclude_events": exclude_events,
     }
 
-    if not len(recipients) == 0:
+    if recipients:
         target_parameters = {
             "recipients": recipients
         }
-        target_id = 3
+        target_id = 3  # Target ID for sending to recipients
         json_data["target_parameters"] = target_parameters
-
-    if target:
+    elif target:
         target_id = find_target_id(module, system)
+    else:
+        msg = f"Neither recipients nor target parameters specified"
+        module.fail_json(msg=msg)
 
     json_data["target_id"] = target_id
     rule_id = find_rule_id(module, system)
@@ -245,10 +251,10 @@ def handle_present(module):
         if not rule_id:
             create_rule(module)
             changed = True
-            msg = f"Rule {name} created"
+            msg = f"Rule named {name} created"
         else:
             update_rule(module)
-            msg = f"Rule {name} updated"
+            msg = f"Rule named {name} updated"
             changed = True
 
     module.exit_json(changed=changed, msg=msg)
@@ -265,7 +271,7 @@ def handle_stat(module):
         api_result = system.api.get(path=path)
         result = api_result.get_json()['result']
         result["rule_id"] = result.pop("id")  # Rename id to rule_id
-        result["msg"] = f"Stats for notification rule {name}"
+        result["msg"] = f"Stat for notification rule named {name}"
         result["changed"] = False
         module.exit_json(**result)
     msg = f"Notification rule {name} not found"
