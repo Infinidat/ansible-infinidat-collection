@@ -5,7 +5,7 @@
 # - VAULT_PASSWORD_FILE
 #     - Type: File
 #     - Key: VAULT_PASSWORD_FILE
-#     - Value: <ansible vault password for the vars file for the ibox specified in --extra-vars> 
+#     - Value: <ansible vault password for the vars file for the ibox specified in --extra-vars>
 #         - i.e. The password that allows one to view the file using "ansible-vault view <file>"
 
 image: psusdev/gitlab-cicd:v0.14

@@ -3,8 +3,6 @@
 # Create three volumes: vol_nonwriteable, vol_explicitly_writable and vol_writable.
 - hosts: localhost
   gather_facts: true  # Required for ansible_date_time
-  collections:
-    - infinidat.infinibox
   vars:
     - dataset_default_provisioning: THIN
     - use_base2_units: true
@@ -16,11 +14,11 @@
     - pool_admin_user_password: 123456
     - pool_admin_user_email: dohlemacher@infinidat.com
     - ldap_name: PSUS_ANSIBLE_ad
-    - setup_alerting_emails: [ "dohlemacher@infinidat.com" ]
-    - prod_alerting_emails: [ "dohlemacher@infinidat.com" ]
-    - alerting_event_levels: [ "INFO", "WARNING", "ERROR", "CRITICAL" ]
+    - setup_alerting_emails: ["dohlemacher@infinidat.com"]
+    - prod_alerting_emails: ["dohlemacher@infinidat.com"]
+    - alerting_event_levels: ["INFO", "WARNING", "ERROR", "CRITICAL"]
     - alerting_includes: []
-    - alerting_excludes: [ "EVENT_FLOOD", "USER_LOGIN_SUCCESS", "USER_LOGGED_OUT" ]
+    - alerting_excludes: ["EVENT_FLOOD", "USER_LOGIN_SUCCESS", "USER_LOGGED_OUT"]
     - syslogs: # A list of syslog dictionaries
         - target_name: syslog1_target
           rule_name: syslog1
@@ -29,7 +27,7 @@
           port: 514
           facility: LOCAL7
           transport: UDP
-          post_test: True # Not a real test if using UDP
+          post_test: true # Not a real test if using UDP
         - target_name: syslog2_target
           rule_name: syslog2
           protocol: SYSLOG
@@ -37,7 +35,7 @@
           port: 515
           facility: LOCAL7
           transport: UDP
-          post_test: True
+          post_test: true
         - target_name: graylog_target
           rule_name: graylog
           protocol: SYSLOG
@@ -45,19 +43,21 @@
           port: 1514
           facility: LOCAL7
           transport: UDP
-          post_test: True
+          post_test: true
   tasks:
     - name: Configuration
-      debug:
+      ansible.builtin.debug:
         msg:
           - "user: {{ user }}"
-          #- "password: {{ password }}"
+          # - "password: {{ password }}"
           - "system: {{ system }}"
-    - ansible.builtin.pause:
+
+    - name: Pause
+      ansible.builtin.pause:
         seconds: 2
 
     - name: Create temporary setup email notification rule setup_email for addresses {{ setup_alerting_emails }}
-      infini_notification_rule:
+      infinidat.infinibox.infini_notification_rule:
         name: "setup_email"
         event_level: "{{ alerting_event_levels }}"
         include_events: "{{ alerting_includes }}"
@@ -69,7 +69,7 @@
         system: "{{ system }}"
 
     - name: Temporarily remove production email notification rule for {{ prod_alerting_emails }}
-      infini_notification_rule:
+      infinidat.infinibox.infini_notification_rule:
         name: "production_email"
         state: "absent"
         user: "{{ user }}"
@@ -77,7 +77,7 @@
         system: "{{ system }}"
 
     - name: Configure Single Sign On (SSO)
-      infini_sso:
+      infinidat.infinibox.infini_sso:
         issuer: http://www.okta.com/exkra32oyyU6KCUCk2p7
         name: OKTA
         sign_on_url: https://infinidat.okta.com/app/infinidat_ibox2503_1/exkrwdi7dmXSKdC4l2p7/sso/saml
@@ -91,18 +91,20 @@
         system: "{{ system }}"
 
     - name: Stat Single Sign On (SSO)
-      infini_sso:
+      infinidat.infinibox.infini_sso:
         name: OKTA
         state: stat
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       register: sso_stat
-    - debug:
+
+    - name: Show sso_stat
+      ansible.builtin.debug:
         var: sso_stat
 
     - name: Enable compression
-      infini_config:
+      infinidat.infinibox.infini_config:
         config_group: "mgmt"
         key: "pool.compression_enabled_default"
         value: true
@@ -112,7 +114,7 @@
         system: "{{ system }}"
 
     - name: Set capacity units
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-base2-units"
         value: "{{ use_base2_units }}"
@@ -122,7 +124,7 @@
         system: "{{ system }}"
 
     - name: Set dataset default provisioning to {{ dataset_default_provisioning }}
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
         value: "{{ dataset_default_provisioning }}"
@@ -132,7 +134,7 @@
         system: "{{ system }}"
 
     - name: Configure Infinibox - Set maximum export rows to {{ table_export_limit }}
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-table-export-limit"
         value: "{{ table_export_limit }}"
@@ -142,7 +144,7 @@
         system: "{{ system }}"
 
     - name: Configure Infinibox - Setup Active Directory
-      infini_users_repository:
+      infinidat.infinibox.infini_users_repository:
         name: "{{ ldap_name }}"
         bind_password: "tuFrAxahuYe4"
         bind_username: "conldap"
@@ -160,7 +162,7 @@
         system: "{{ system }}"
 
     - name: Test user login using Active Directory credentials
-      infini_user:
+      infinidat.infinibox.infini_user:
         user_name: "admin"  # Must be an AD account, not local
         user_password: "123456"
         state: "login"
@@ -169,7 +171,7 @@
         system: "{{ system }}"
 
     - name: Configure 'CO-ReadOnly' LDAP user group
-      infini_user:
+      infinidat.infinibox.infini_user:
         user_ldap_group_name: "CO-ReadOnly"
         user_ldap_group_dn: "CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com"
         user_ldap_group_ldap: "{{ ldap_name }}"
@@ -180,7 +182,7 @@
         system: "{{ system }}"
 
     # - name: Configure 'CO-StorageAdmin' LDAP user group
-    #   infini_user:
+    #   infinidat.infinibox.infini_user:
     #     user_ldap_group_name: "CO-StorageAdmin"
     #     user_ldap_group_dn: "CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com"
     #     user_ldap_group_ldap: "{{ ldap_name }}"
@@ -191,7 +193,7 @@
     #     system: "{{ system }}"
 
     # - name: Configure 'ETS-CommVault' LDAP user group
-    #   infini_user:
+    #   infinidat.infinibox.infini_user:
     #     user_ldap_group_name: "ETS-CommVault"
     #     user_ldap_group_dn: "CN=Infinidat,OU=Security Groups,OU=Groups,OU=Corp,DC=infinidat,DC=com"
     #     user_ldap_group_ldap: "{{ ldap_name }}"
@@ -202,17 +204,8 @@
     #     password: "{{ password }}"
     #     system: "{{ system }}"
 
-#
-#    - name: TODO by David - Test Infinibox - Test LDAP
-#      ansible.builtin.debug:
-#        msg: (4) Test LDAP
-#
-#    - name: TODO by David - Test Infinibox - Test LDAP roles
-#      ansible.builtin.debug:
-#        msg: (4) Test LDAP roles
-#
     - name: Set up an admin user
-      infini_user:
+      infinidat.infinibox.infini_user:
         user_name: "{{ admin_user_name }}"
         user_email: "{{ admin_user_email }}"
         user_password: "{{ admin_user_password }}"
@@ -224,7 +217,7 @@
 
     - name: Remove existing syslog notification rules
       # Rule removal is required since targets cannot be modified if there rules that use them
-      infini_notification_rule:
+      infinidat.infinibox.infini_notification_rule:
         name: "{{ item.rule_name }}"
         state: "absent"
         user: "{{ user }}"
@@ -234,7 +227,7 @@
         "{{ syslogs }}"
 
     - name: Create syslog notification targets
-      infini_notification_target:
+      infinidat.infinibox.infini_notification_target:
         state: "present"
         name: "{{ item.target_name }}"
         protocol: "{{ item.protocol }}"
@@ -250,7 +243,7 @@
         "{{ syslogs }}"
 
     - name: Create syslog notification rules
-      infini_notification_rule:
+      infinidat.infinibox.infini_notification_rule:
         name: "{{ item.rule_name }}"
         target: "{{ item.target_name }}"
         event_level: "{{ alerting_event_levels }}"
@@ -264,7 +257,7 @@
         "{{ syslogs }}"
 
     - name: Remove replication network space named Replication
-      infini_network_space:
+      infinidat.infinibox.infini_network_space:
         name: Replication
         state: absent
         user: "{{ user }}"
@@ -272,7 +265,7 @@
         system: "{{ system }}"
 
     - name: Create replication network space named Replication
-      infini_network_space:
+      infinidat.infinibox.infini_network_space:
         name: Replication
         state: present
         interfaces:
@@ -305,7 +298,7 @@
 #        msg: (9) Add Infinibox to Infinimetrics
 #
     - name: Create pools
-      infini_pool:
+      infinidat.infinibox.infini_pool:
         name: "{{ item }}"
         size: 10GB
         vsize: 10GB
@@ -318,8 +311,8 @@
         - pool-b
         - pool-c
 
-    - name: Set up pool admin user {{ pool_admin_user_name }} for pool pool-a
-      infini_user:
+    - name: Set up pool admin user for pool
+      infinidat.infinibox.infini_user:
         user_name: "{{ pool_admin_user_name }}"
         user_email: "{{ pool_admin_user_email }}"
         user_password: "{{ pool_admin_user_password }}"
@@ -331,7 +324,7 @@
         system: "{{ system }}"
 
     - name: Update a fibre channel switch label
-      infini_fibre_channel_switch:
+      infinidat.infinibox.infini_fibre_channel_switch:
         switch_name: VSAN 100
         new_switch_name: Switch1000
         state: "rename"
@@ -343,7 +336,7 @@
         ("Cannot find switch" not in switch_label_result.msg)
 
     - name: Install SSL certificate
-      infini_certificate:
+      infinidat.infinibox.infini_certificate:
         certificate_file_name: /home/stack/workspace/ansible-infinidat-collection/signed-certificate-with-pkey.pem
         state: "present"
         user: "{{ user }}"
@@ -355,7 +348,7 @@
         seconds: 30
 
     - name: Stat SSL certificate
-      infini_certificate:
+      infinidat.infinibox.infini_certificate:
         state: "stat"
         user: "{{ user }}"
         password: "{{ password }}"
@@ -367,7 +360,7 @@
         msg: "{{ cert_out }}"
 
     - name: Create production email notification rule production_email for addresses {{ prod_alerting_emails }}
-      infini_notification_rule:
+      infinidat.infinibox.infini_notification_rule:
         name: "production_email"
         event_level: "{{ alerting_event_levels }}"
         include_events: "{{ alerting_includes }}"
@@ -378,8 +371,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Configure Infinibox - Post event that Infinibox {{ system }} configuration is completed by user {{ user }}
-      infini_event:
+    - name: Configure Infinibox - Post event that Infinibox configuration is complete
+      infinidat.infinibox.infini_event:
         description_template: Infinibox {{ system }} configuration is complete
         level: INFO
         user: "{{ user }}"
@@ -387,7 +380,7 @@
         system: "{{ system }}"
 
     - name: Remove temporary setup email notification rule for {{ setup_alerting_emails }}
-      infini_notification_rule:
+      infinidat.infinibox.infini_notification_rule:
         name: "setup_email"
         state: "absent"
         user: "{{ user }}"

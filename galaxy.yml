@@ -25,7 +25,7 @@ tags:
   - nas
   - nfs
   - san
-  - storage 
+  - storage
   - storage_array
   - storagearray
 repository: "https://www.github.com/infinidat/ansible-infinidat-collection"
