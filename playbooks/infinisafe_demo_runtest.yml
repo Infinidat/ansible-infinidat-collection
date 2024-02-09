@@ -15,7 +15,7 @@
     ibox_iqn: iqn.2009-11.com.infinidat:storage:infinibox-sn-1521
   tasks:
 
-    - name: Create {{ service }} network space named {{ network_space }}
+    - name: Create network space
       infinidat.infinibox.infini_network_space:
         name: "{{ network_space }}"
         state: present
@@ -42,7 +42,7 @@
         system: "{{ system }}"
       delegate_to: localhost
 
-    - name: Create forensic host {{ host }}
+    - name: Create forensic host
       infinidat.infinibox.infini_host:
         name: "{{ host }}"
         state: present
@@ -52,7 +52,7 @@
         system: "{{ system }}"
       delegate_to: localhost
 
-    - name: Map snapshot {{ snap }} to host {{ host }}
+    - name: Map snapshot to host
       infinidat.infinibox.infini_map:
         host: "{{ host }}"
         volume: "{{ snap }}"
@@ -63,7 +63,7 @@
         system: "{{ system }}"
       delegate_to: localhost
 
-    - name: Add port to host {{ host }}
+    - name: Add port to host
       infinidat.infinibox.infini_port:
         host: "{{ host }}"
         iqns: "{{ host_iqn }}"
@@ -75,7 +75,7 @@
       delegate_to: localhost
 
   ### Forensics Host
-    - name: Connect forensics host {{ host }} to Infinibox {{ ibox }}
+    - name: Connect forensics host to Infinibox
       ansible.builtin.shell: |
         iscsiadm --mode discoverydb --type sendtargets --portal {{ ibox_portal }} --discover
         iscsiadm --mode node --targetname={{ ibox_iqn }} --op update --name=node.session.auth.username --value={{ user }}
@@ -85,27 +85,27 @@
       changed_when: false
       become: true
 
-    # Run forensic tests on snapshot {{ snap }}
-    - name: Forensically test snapshot {{ snap }} is clean using host {{ host }}
+    # Run forensic tests on snapshot
+    - name: Forensically test snapshot is clean using host
       ansible.builtin.shell: |
         true
       changed_when: false
       register: is_snapshot_clean
 
     ### Localhost
-    - name: debug
+    - name: Debug
       ansible.builtin.debug:
         msg: Snapshot {{ snap }} PASSED testing
       when: is_snapshot_clean.rc == 0
       delegate_to: localhost
 
-    - name: debug
+    - name: Debug
       ansible.builtin.debug:
         msg: Snapshot {{ snap }} FAILED testing. Do not use this snapshot.
       when: is_snapshot_clean.rc != 0
       delegate_to: localhost
 
-    - name: Restoring volume {{ volume }} from known clean snapshot {{ snap }}
+    - name: Restoring volume from known clean snapshot
       infinidat.infinibox.infini_vol:
         name: "{{ snap }}"
         state: present
