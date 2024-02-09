@@ -1,5 +1,6 @@
 ---
-- hosts: localhost
+- name: Test remove resources
+  hosts: localhost
   gather_facts: false
   tasks:
 
@@ -37,11 +38,12 @@
         system: "{{ system }}"
 
     - name: POSITIVE test -> Rescan with remove option after removing mapping
-      shell: |
+      ansible.builtin.shell: |
         rescan-scsi-bus.sh --remove
-      become: True
+      become: true
       register: rescan
       failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
+      changed_when: true
 
     - name: IDEMPOTENT test -> Remove mapping of volume from host again
       infinidat.infinibox.infini_map:
