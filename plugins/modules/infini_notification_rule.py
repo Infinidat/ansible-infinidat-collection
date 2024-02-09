@@ -195,7 +195,7 @@ def create_rule(module):
     elif target:
         target_id = find_target_id(module, system)
     else:
-        msg = f"Neither recipients nor target parameters specified"
+        msg = "Neither recipients nor target parameters specified"
         module.fail_json(msg=msg)
 
     json_data["target_id"] = target_id
@@ -232,7 +232,7 @@ def update_rule(module):
     elif target:
         target_id = find_target_id(module, system)
     else:
-        msg = f"Neither recipients nor target parameters specified"
+        msg = "Neither recipients nor target parameters specified"
         module.fail_json(msg=msg)
 
     json_data["target_id"] = target_id
