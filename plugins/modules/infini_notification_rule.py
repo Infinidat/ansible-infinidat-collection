@@ -101,14 +101,20 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 HAS_ARROW = False
 
-from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
-    HAS_INFINISDK,
-    api_wrapper,
-    infinibox_argument_spec,
-    get_system,
-)
-
-
+try:
+    from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+        HAS_INFINISDK,
+        api_wrapper,
+        infinibox_argument_spec,
+        get_system,
+    )
+except ModuleNotFoundError:
+    from infinibox import (  # Used when hacking
+        HAS_INFINISDK,
+        api_wrapper,
+        infinibox_argument_spec,
+        get_system,
+    )
 
 @api_wrapper
 def find_target_id(module, system):
@@ -274,10 +280,10 @@ def handle_absent(module):
 
     rule_id = find_rule_id(module, system)
     if not rule_id:
-        msg = f"Rule of {name} does not exist, deletion operation skipped"
+        msg = f"Rule named {name} not found. Deletion not required."
         changed = False
     else:
-        msg = f"Rule {name} has been deleted"
+        msg = f"Rule named {name} has been deleted"
         changed = True
         if not module.check_mode:
             delete_rule(module)
