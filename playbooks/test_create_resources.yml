@@ -781,4 +781,4 @@
         password: "{{ password }}"
         system: "{{ system }}"
       register: result
-      failed_when: "'require host_name and host_cluster_state' not in  result.msg"
+      failed_when: "'require host_name and host_cluster_state' not in result.msg"
