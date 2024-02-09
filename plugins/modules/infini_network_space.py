@@ -104,20 +104,20 @@ EXAMPLES = r'''
     name: iSCSI
     state: present
     interfaces:
-        - 1680
-        - 1679
-        - 1678
+      - 1680
+      - 1679
+      - 1678
     service: ISCSI_SERVICE
     netmask: 19
     network: 172.31.32.0
     default_gateway: 172.31.63.254
     ips:
-        - 172.31.32.145
-        - 172.31.32.146
-        - 172.31.32.147
-        - 172.31.32.148
-        - 172.31.32.149
-        - 172.31.32.150
+      - 172.31.32.145
+      - 172.31.32.146
+      - 172.31.32.147
+      - 172.31.32.148
+      - 172.31.32.149
+      - 172.31.32.150
     user: admin
     password: secret
     system: ibox001

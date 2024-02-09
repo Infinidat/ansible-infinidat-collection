@@ -63,7 +63,7 @@ EXAMPLES = r'''
   infini_export_client:
     client: 10.0.0.1
     access_mode: RW
-    no_root_squash: yes
+    no_root_squash: true
     export: /data
     state: present  # Default
     user: admin
@@ -74,7 +74,7 @@ EXAMPLES = r'''
   infini_export_client:
     client: "{{ item }}"
     access_mode: RO
-    no_root_squash: no
+    no_root_squash: false
     export: /data
     user: admin
     password: secret

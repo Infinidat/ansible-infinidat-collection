@@ -87,13 +87,13 @@ EXAMPLES = r'''
     client_list:
       - client: 192.168.0.2
         access: RW
-        no_root_squash: True
+        no_root_squash: true
       - client: 192.168.0.100
         access: RO
-        no_root_squash: False
+        no_root_squash: false
       - client: 192.168.0.10-192.168.0.20
         access: RO
-        no_root_squash: False
+        no_root_squash: false
     system: ibox001
     user: admin
     password: secret
