@@ -1,5 +1,6 @@
 ---
-- hosts: localhost
+- name: Test creating snapshots using infini_vol module
+  hosts: localhost
   gather_facts: true  # Required for ansible_date_time
   tasks:
 

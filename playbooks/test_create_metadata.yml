@@ -1,6 +1,7 @@
 ---
 # PSDEV-1108: Playbook for testing creation of metadata resources.
-- hosts: localhost
+- name: Test infini_metadata module
+  hosts: localhost
   gather_facts: false  # Required for ansible_date_time
   tasks:
 

@@ -1,6 +1,7 @@
 ---
 ### Localhost
-- hosts: forensics
+- name: Teardown Infinisafe demo
+  hosts: forensics
   gather_facts: false
   vars:
     network_space: InfiniSafe-Fenced-Network # iSCSI

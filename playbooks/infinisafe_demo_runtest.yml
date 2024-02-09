@@ -1,6 +1,7 @@
 ---
 ### Localhost
-- hosts: forensics
+- name: Run Infinisafe Demo
+  hosts: forensics
   gather_facts: false
   vars:
     network_space: InfiniSafe-Fenced-Network # iSCSI

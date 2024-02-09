@@ -1,5 +1,6 @@
 ---
-- hosts: localhost
+- name: Setup for Infinisafe demo
+  hosts: localhost
   gather_facts: true  # Required for ansible_date_time
   vars:
     network_space: InfiniSafe-Fenced-Network # iSCSI

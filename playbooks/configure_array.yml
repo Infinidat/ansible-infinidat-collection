@@ -1,7 +1,8 @@
 ---
 # PSDEV-1108: Create playbook automating cluster configuration mobility.
 # Create three volumes: vol_nonwriteable, vol_explicitly_writable and vol_writable.
-- hosts: localhost
+- name: Configure an Infinibox Array
+  hosts: localhost
   gather_facts: true  # Required for ansible_date_time
   vars:
     - dataset_default_provisioning: THIN

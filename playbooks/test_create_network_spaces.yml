@@ -1,5 +1,6 @@
 ---
-- hosts: localhost
+- name: Test infini_network_space module
+  hosts: localhost
   gather_facts: false
   vars:
     service_name: iSCSI

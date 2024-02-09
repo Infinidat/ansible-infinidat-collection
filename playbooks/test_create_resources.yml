@@ -1,5 +1,6 @@
 ---
-- hosts: localhost
+- name: Test Create Resources
+  hosts: localhost
   gather_facts: true  # Required for ansible_date_time
   tasks:
 
