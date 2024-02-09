@@ -270,10 +270,10 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_network_space
 # _module_under_test = infini_event
 # _module_under_test = infini_notification_target
-# _module_under_test = infini_notification_rule
+_module_under_test = infini_notification_rule
 # _module_under_test = infini_user
 # _module_under_test = infini_users_repository
-_module_under_test = infini_fs
+# _module_under_test = infini_fs
 # _module_under_test = infini_conig
 # _module_under_test = infini_vol
 # _module_under_test = infini_host
@@ -302,22 +302,19 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
 	@echo "_module_under_test: $(_module_under_test)"
-	cwd=$$(pwd) && \
-	cd $(_ansible_clone) && \
-		JSON_IN="$$cwd/tests/hacking/$(_module_under_test)_$${state}.json" && \
-		if [[ ! -a "$$JSON_IN" ]]; then \
-			>&2 echo "Error: $$JSON_IN not found"; \
-			exit; \
-		fi; \
-		source hacking/env-setup 1> /dev/null 2> /dev/null && \
-		AIC=/home/$$USER/workspace/ansible-infinidat-collection \
-		ANS=/home/$$USER/workspace/ansible \
-		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/modules" \
-		PYTHONPATH="$$PYTHONPATH:$$AIC/plugins/module_utils" \
-		PYTHONPATH="$$PYTHONPATH:$$ANS/lib" \
-		PYTHONPATH="$$PYTHONPATH:$$ANS/hacking/build_library/build_ansible" \
-		$(_python) -m "$(_module_under_test)" "$$JSON_IN" 2>&1 | \
-			grep -v 'Unverified HTTPS request'
+	JSON_IN="./tests/hacking/$(_module_under_test)_$${state}.json" && \
+	if [[ ! -a "$$JSON_IN" ]]; then \
+		>&2 echo "Error: $$JSON_IN not found"; \
+		exit; \
+	fi; \
+	source $(_ansible_clone)/hacking/env-setup 1> /dev/null 2> /dev/null && \
+	ANSIBLE_HOME=/home/$$USER/workspace/ansible \
+	PYTHONPATH="$$PYTHONPATH:./plugins/modules" \
+	PYTHONPATH="$$PYTHONPATH:./plugins/module_utils" \
+	PYTHONPATH="$$PYTHONPATH:$$ANSIBLE_HOME/lib" \
+	PYTHONPATH="$$PYTHONPATH:$$ANSIBLE_HOME/hacking/build_library/build_ansible" \
+	"$(_python)" -m "$(_module_under_test)" "$$JSON_IN" 2>&1 | \
+		grep -v 'Unverified HTTPS request'
 
 _dev-hack-module-jq:  # If module is running to the point of returning json, use this to run it and prettyprint using jq.
 	@$(_make) _dev-hack-module | egrep 'changed|failed' | jq '.'
