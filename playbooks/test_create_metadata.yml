@@ -2,14 +2,12 @@
 # PSDEV-1108: Playbook for testing creation of metadata resources.
 - hosts: localhost
   gather_facts: false  # Required for ansible_date_time
-  collections:
-    - infinidat.infinibox
   tasks:
 
     # Test any object_type
 
     - name: NEGATIVE test -> Attempt to create a volume metadata key without providing a value
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "foo"
         key: "foo"
@@ -24,7 +22,7 @@
         - "'without providing a value' not in metadata_out.msg"
 
     - name: NEGATIVE test -> Attempt to create a system metadata key while incorrectly providing an object_name
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         object_name: "foo" # Error
         key: "foo"
@@ -38,7 +36,7 @@
         - "'object_name for object_type system must not be provided' not in metadata_out.msg"
 
     - name: NEGATIVE test -> Attempt to create a volume metadata key without providing a object_name
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         # object_name: "foo"
         key: "foo"
@@ -53,25 +51,25 @@
 
     # Test pool object_type
 
-    - name: SETUP test -> Delete pool {{ auto_prefix }}pool to clear any metadata
-      infini_pool:
+    - name: SETUP test -> Delete pool to clear any metadata
+      infinidat.infinibox.infini_pool:
         name: "{{ auto_prefix }}pool"
         state: absent
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: SETUP test -> Create pool {{ auto_prefix }}pool
-      infini_pool:
+    - name: SETUP test -> Create pool
+      infinidat.infinibox.infini_pool:
         name: "{{ auto_prefix }}pool"
-        size: 1 TB
+        size: "{{ pool_size }}"
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get pool named {{ auto_prefix }}pool's nonexistent metadata key named poolfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Get pool's nonexistent metadata key named poolfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "pool"
         object_name: "{{ auto_prefix }}pool"
         key: "poolfoo"
@@ -83,8 +81,8 @@
       failed_when:
         - "'Cannot find pool metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create metadata for pool {{ auto_prefix }}pool with key named poolfoo with value poolbar
-      infini_metadata:
+    - name: POSITIVE test -> Create metadata for pool with key named poolfoo with value poolbar
+      infinidat.infinibox.infini_metadata:
         object_type: "pool"
         object_name: "{{ auto_prefix }}pool"
         key: "poolfoo"
@@ -94,8 +92,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Create metadata for pool {{ auto_prefix }}pool with key named poolfoo with value poolbar again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Create metadata for pool with key named poolfoo with value poolbar again
+      infinidat.infinibox.infini_metadata:
         object_type: "pool"
         object_name: "{{ auto_prefix }}pool"
         key: "poolfoo"
@@ -105,8 +103,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat metadata pool {{ auto_prefix }}pool key named poolfoo
-      infini_metadata:
+    - name: POSITIVE test -> Stat metadata pool key named poolfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "pool"
         object_name: "{{ auto_prefix }}pool"
         key: "poolfoo"
@@ -118,8 +116,8 @@
       failed_when:
         - "metadata_out['value'] != 'poolbar' or metadata_out['changed'] != false"
 
-    - name: POSITIVE test -> Delete metadata pool {{ auto_prefix }}pool key named poolfoo
-      infini_metadata:
+    - name: POSITIVE test -> Delete metadata pool key named poolfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "pool"
         object_name: "{{ auto_prefix }}pool"
         key: "poolfoo"
@@ -128,8 +126,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Delete metadata pool {{ auto_prefix }}pool key named poolfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Delete metadata pool key named poolfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "pool"
         object_name: "{{ auto_prefix }}pool"
         key: "poolfoo"
@@ -138,8 +136,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Stat nonexistent metadata pool {{ auto_prefix }}pool key named poolfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Stat nonexistent metadata pool key named poolfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "pool"
         object_name: "{{ auto_prefix }}pool"
         key: "poolfoo"
@@ -153,8 +151,8 @@
 
     # Test vol object_type
 
-    - name: SETUP test -> Delete volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool to clear any metadata
-      infini_vol:
+    - name: SETUP test -> Delete volume in pool to clear any metadata
+      infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
         state: absent
@@ -162,8 +160,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: SETUP test -> Create volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
-      infini_vol:
+    - name: SETUP test -> Create volume in pool
+      infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
         size: 1 GB
@@ -172,8 +170,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get volume named {{ auto_prefix }}vol's nonexistent metadata key named volfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Get volume's nonexistent metadata key named volfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
         key: "volfoo"
@@ -185,8 +183,8 @@
       failed_when:
         - "'Cannot find vol metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create metadata for volume {{ auto_prefix }}vol with key named volfoo with value volbar
-      infini_metadata:
+    - name: POSITIVE test -> Create metadata for volume with key named volfoo with value volbar
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
         key: "volfoo"
@@ -196,8 +194,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Create metadata for volume {{ auto_prefix }}vol with key named volfoo with value volbar again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Create metadata for volume with key named volfoo with value volbar again
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
         key: "volfoo"
@@ -207,8 +205,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat metadata volume {{ auto_prefix }}vol key named volfoo
-      infini_metadata:
+    - name: POSITIVE test -> Stat metadata volume key named volfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
         key: "volfoo"
@@ -220,8 +218,8 @@
       failed_when:
         - "metadata_out['value'] != 'volbar' or metadata_out['changed'] != false"
 
-    - name: POSITIVE test -> Delete metadata volume {{ auto_prefix }}vol key named volfoo
-      infini_metadata:
+    - name: POSITIVE test -> Delete metadata volume key named volfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
         key: "volfoo"
@@ -230,8 +228,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Delete metadata volume {{ auto_prefix }}vol key named volfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Delete metadata volume key named volfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
         key: "volfoo"
@@ -240,8 +238,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Stat nonexistent metadata volume {{ auto_prefix }}vol key named volfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Stat nonexistent metadata volume key named volfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol"
         object_name: "{{ auto_prefix }}vol"
         key: "volfoo"
@@ -255,8 +253,8 @@
 
     # Test vol-snap object_type
 
-    - name: SETUP test -> Delete volume snapshot {{ auto_prefix }}volsnap in pool {{ auto_prefix }}pool to clear any metadata
-      infini_vol:
+    - name: SETUP test -> Delete volume snapshot in pool to clear any metadata
+      infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}volsnap"
         pool: "{{ auto_prefix }}pool"
         volume_type: "snapshot"
@@ -265,8 +263,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Stat nonexistent metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo when snapshot does not exist
-      infini_metadata:
+    - name: NEGATIVE test -> Stat nonexistent metadata volume snapshot key named volsnapfoo when snapshot does not exist
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -278,8 +276,8 @@
       failed_when:
         - "'Volume snapshot named' not in metadata_out.msg or 'not found' not in metadata_out.msg"
 
-    - name: SETUP test -> Create volume {{ auto_prefix }}vol in pool {{ auto_prefix }}pool
-      infini_vol:
+    - name: SETUP test -> Create volume in pool
+      infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
         size: 1 GB
@@ -288,8 +286,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: SETUP test -> Create volume snapshot {{ auto_prefix }}volsnap in pool {{ auto_prefix }}pool
-      infini_vol:
+    - name: SETUP test -> Create volume snapshot in pool
+      infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}volsnap"
         volume_type: "snapshot"
         parent_volume_name: "{{ auto_prefix }}vol"
@@ -298,8 +296,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get volume snapshot named {{ auto_prefix }}vol's nonexistent metadata key named volsnapfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Get volume snapshot's nonexistent metadata key named volsnapfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -311,8 +309,8 @@
       failed_when:
         - "'Cannot find vol-snap metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create metadata for volume snapshot {{ auto_prefix }}volsnap with key named volsnapfoo with value volsnapbar
-      infini_metadata:
+    - name: POSITIVE test -> Create metadata for volume snapshot with key named volsnapfoo with value volsnapbar
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -322,8 +320,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Create metadata for volume snapshot {{ auto_prefix }}volsnap with key named volsnapfoo with value volsnapbar again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Create metadata for volume snapshot with key named volsnapfoo with value volsnapbar again
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -333,8 +331,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo
-      infini_metadata:
+    - name: POSITIVE test -> Stat metadata volume snapshot key named volsnapfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -346,8 +344,8 @@
       failed_when:
         - "metadata_out['value'] != 'volsnapbar' or metadata_out['changed'] != false"
 
-    - name: POSITIVE test -> Delete metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo
-      infini_metadata:
+    - name: POSITIVE test -> Delete metadata volume snapshot key named volsnapfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -356,8 +354,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Delete metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Delete metadata volume snapshot key named volsnapfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -366,8 +364,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Stat nonexistent metadata volume snapshot {{ auto_prefix }}volsnap key named volsnapfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Stat nonexistent metadata volume snapshot key named volsnapfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "vol-snap"
         object_name: "{{ auto_prefix }}volsnap"
         key: "volsnapfoo"
@@ -382,7 +380,7 @@
     # Test system object_type
 
     - name: NEGATIVE test -> Attempt to set system metadata key ui-dataset-base2-units to something other than an boolean
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-base2-units"
         value: "bar"  # Should be a boolean
@@ -395,7 +393,7 @@
         - "'Value must be able to be decoded as a boolean' not in metadata_out.msg"
 
     - name: POSITIVE test -> Delete metadata system key named sysfoo to clear any metadata
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "sysfoo"
         state: "absent"
@@ -404,7 +402,7 @@
         system: "{{ system }}"
 
     - name: NEGATIVE test -> Get nonexistent system metadata key named sysfoo
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "sysfoo"
         state: "stat"
@@ -416,7 +414,7 @@
         - "'Metadata for system with key sysfoo not found' not in metadata_out.msg"
 
     - name: POSITIVE test -> Create metadata system key named sysfoo with value sysbar
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "sysfoo"
         value: "sysbar"
@@ -426,7 +424,7 @@
         system: "{{ system }}"
 
     - name: IDEMPOTENT test -> Create metadata system key named sysfoo with value sysbar again
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "sysfoo"
         value: "sysbar"
@@ -436,7 +434,7 @@
         system: "{{ system }}"
 
     - name: POSITIVE test -> Stat metadata system key named sysfoo
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "sysfoo"
         state: "stat"
@@ -446,7 +444,7 @@
       register: metadata_out
 
     - name: POSITIVE test -> Delete metadata system key named sysfoo
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "sysfoo"
         state: "absent"
@@ -455,7 +453,7 @@
         system: "{{ system }}"
 
     - name: IDEMPOTENT test -> Delete metadata system key named sysfoo again
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "sysfoo"
         state: "absent"
@@ -464,7 +462,7 @@
         system: "{{ system }}"
 
     - name: POSITIVE test -> Stat metadata system key named ui-dataset-default-provisioning
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
         state: "stat"
@@ -473,7 +471,7 @@
         system: "{{ system }}"
 
     - name: POSITIVE test -> Create metadata system key named ui-dataset-default-provisioning with value THICK
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
         value: "THICK"
@@ -483,7 +481,7 @@
         system: "{{ system }}"
 
     - name: POSITIVE test -> Stat metadata system key named ui-dataset-default-provisioning
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
         state: "stat"
@@ -495,7 +493,7 @@
         - "'THICK' != metadata_out['value']"
 
     - name: POSITIVE test -> Create metadata system key named ui-dataset-default-provisioning with value THIN
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
         value: "THIN"
@@ -505,7 +503,7 @@
         system: "{{ system }}"
 
     - name: Negative test -> Attempt to create metadata system key named ui-dataset-default-provisioning with value invalid_value
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-dataset-default-provisioning"
         value: "invalid_value"
@@ -518,7 +516,7 @@
         - "'Cannot create system metadata' not in metadata_out.msg"
 
     - name: POSITIVE test -> Create metadata system key named ui-table-export-limit with value 2000
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-table-export-limit"
         value: 2000
@@ -528,7 +526,7 @@
         system: "{{ system }}"
 
     - name: NEGATIVE test -> Attempt to create metadata system key named ui-table-export-limit with value invalid_value
-      infini_metadata:
+      infinidat.infinibox.infini_metadata:
         object_type: "system"
         key: "ui-table-export-limit"
         value: "invalid_value"
@@ -543,8 +541,8 @@
 
     # Test fs object_type
 
-    - name: SETUP test -> Delete fs {{ auto_prefix }}fs in pool {{ auto_prefix }}pool to clear any metadata
-      infini_fs:
+    - name: SETUP test -> Delete fs to clear any metadata
+      infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs"
         pool: "{{ auto_prefix }}pool"
         state: absent
@@ -552,8 +550,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: SETUP test -> Create fs {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
-      infini_fs:
+    - name: SETUP test -> Create fs
+      infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs"
         pool: "{{ auto_prefix }}pool"
         size: 1 GB
@@ -562,8 +560,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get fs named {{ auto_prefix }}fs's nonexistent metadata key named fsfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Get fs's nonexistent metadata key named fsfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "fs"
         object_name: "{{ auto_prefix }}fs"
         key: "fsfoo"
@@ -575,8 +573,8 @@
       failed_when:
         - "'Cannot find fs metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create fs named {{ auto_prefix }}fs's metadata key named fsfoo with value fsbar
-      infini_metadata:
+    - name: POSITIVE test -> Create fs's metadata key named fsfoo with value fsbar
+      infinidat.infinibox.infini_metadata:
         object_type: "fs"
         object_name: "{{ auto_prefix }}fs"
         key: "fsfoo"
@@ -586,8 +584,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Create fs named {{ auto_prefix }}fs's metadata key named fsfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Create fs's metadata key named fsfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "fs"
         object_name: "{{ auto_prefix }}fs"
         key: "fsfoo"
@@ -599,8 +597,8 @@
 
     # Test fs-snap object_type
 
-    - name: SETUP test -> Delete fs snapshot {{ auto_prefix }}fssnap in pool {{ auto_prefix }}pool to clear any metadata
-      infini_fs:
+    - name: SETUP test -> Delete fs snapshot to clear any metadata
+      infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fssnap"
         pool: "{{ auto_prefix }}pool"
         state: absent
@@ -608,8 +606,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Create fs snapshot {{ auto_prefix }}fsnap of {{ auto_prefix }}fs in pool {{ auto_prefix }}pool but use default fs_type, master, with a parent_fs_name
-      infini_fs:
+    - name: NEGATIVE test -> Create fs snapshot but use default fs_type, master, with a parent_fs_name
+      infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fssnap"
         pool: "{{ auto_prefix }}pool"
         parent_fs_name: "{{ auto_prefix }}fs"
@@ -621,8 +619,8 @@
       failed_when:
         - "'parent_fs_name should not be specified if fs_type is' not in metadata_out.msg"
 
-    - name: SETUP test -> Create fs snapshot {{ auto_prefix }}fsnap of {{ auto_prefix }}fs in pool {{ auto_prefix }}pool
-      infini_fs:
+    - name: SETUP test -> Create fs snapshot
+      infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fssnap"
         pool: "{{ auto_prefix }}pool"
         fs_type: "snapshot"
@@ -632,8 +630,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get fs snapshot named {{ auto_prefix }}fssnap's nonexistent metadata key named fssnapfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Get fs snapshot's nonexistent metadata key named fssnapfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "fs-snap"
         object_name: "{{ auto_prefix }}fssnap"
         key: "fssnapfoo"
@@ -645,8 +643,8 @@
       failed_when:
         - "'Cannot find fs-snap metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar
-      infini_metadata:
+    - name: POSITIVE test -> Create fs snapshot's metadata key named fssnapfoo with value fssnapbar
+      infinidat.infinibox.infini_metadata:
         object_type: "fs-snap"
         object_name: "{{ auto_prefix }}fssnap"
         key: "fssnapfoo"
@@ -656,8 +654,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Create fs snapshot named {{ auto_prefix }}fssnap's metadata key named fssnapfoo with value fssnapbar again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Create fs snapshot's metadata key named fssnapfoo with value fssnapbar again
+      infinidat.infinibox.infini_metadata:
         object_type: "fs-snap"
         object_name: "{{ auto_prefix }}fssnap"
         key: "fssnapfoo"
@@ -669,24 +667,24 @@
 
     # Test cluster object_type
 
-    - name: SETUP test -> Delete cluster {{ auto_prefix }}cluster to clear any metadata
-      infini_cluster:
+    - name: SETUP test -> Delete cluster to clear any metadata
+      infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster"
         state: absent
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: SETUP test -> Create cluster {{ auto_prefix }}cluster
-      infini_cluster:
+    - name: SETUP test -> Create cluster
+      infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster"
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get cluster named {{ auto_prefix }}cluster's nonexistent metadata key named clusterfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Get cluster's nonexistent metadata key named clusterfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "cluster"
         object_name: "{{ auto_prefix }}cluster"
         key: "clusterfoo"
@@ -698,8 +696,8 @@
       failed_when:
         - "'Cannot find cluster metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo
-      infini_metadata:
+    - name: POSITIVE test -> Create cluster's metadata key named clusterfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "cluster"
         object_name: "{{ auto_prefix }}cluster"
         key: "clusterfoo"
@@ -709,8 +707,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Create cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Create cluster's metadata key named clusterfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "cluster"
         object_name: "{{ auto_prefix }}cluster"
         key: "clusterfoo"
@@ -720,8 +718,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Delete cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo
-      infini_metadata:
+    - name: POSITIVE test -> Delete cluster's metadata key named clusterfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "cluster"
         object_name: "{{ auto_prefix }}cluster"
         key: "clusterfoo"
@@ -730,8 +728,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Delete cluster named {{ auto_prefix }}cluster's metadata key named clusterfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Delete cluster's metadata key named clusterfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "cluster"
         object_name: "{{ auto_prefix }}cluster"
         key: "clusterfoo"
@@ -742,24 +740,24 @@
 
     # Test host object_type
 
-    - name: SETUP test -> Delete host {{ auto_prefix }}host in pool {{ auto_prefix }}pool to clear any metadata
-      infini_host:
+    - name: SETUP test -> Delete host to clear any metadata
+      infinidat.infinibox.infini_host:
         name: "{{ auto_prefix }}host"
         state: absent
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: SETUP test -> Create host {{ auto_prefix }}host in pool {{ auto_prefix }}pool
-      infini_host:
+    - name: SETUP test -> Create host
+      infinidat.infinibox.infini_host:
         name: "{{ auto_prefix }}host"
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Get host named {{ auto_prefix }}host's nonexistent metadata key named hostfoo
-      infini_metadata:
+    - name: NEGATIVE test -> Get host's nonexistent metadata key named hostfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "host"
         object_name: "{{ auto_prefix }}host"
         key: "hostfoo"
@@ -771,8 +769,8 @@
       failed_when:
         - "'Cannot find host metadata key' not in metadata_out.msg"
 
-    - name: POSITIVE test -> Create host named {{ auto_prefix }}host's metadata key named hostfoo
-      infini_metadata:
+    - name: POSITIVE test -> Create host's metadata key named hostfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "host"
         object_name: "{{ auto_prefix }}host"
         key: "hostfoo"
@@ -782,8 +780,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Create host named {{ auto_prefix }}host's metadata key named hostfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Create host's metadata key named hostfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "host"
         object_name: "{{ auto_prefix }}host"
         key: "hostfoo"
@@ -793,8 +791,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Delete host named {{ auto_prefix }}host's metadata key named hostfoo
-      infini_metadata:
+    - name: POSITIVE test -> Delete host's metadata key named hostfoo
+      infinidat.infinibox.infini_metadata:
         object_type: "host"
         object_name: "{{ auto_prefix }}host"
         key: "hostfoo"
@@ -803,8 +801,8 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: IDEMPOTENT test -> Delete host named {{ auto_prefix }}host's metadata key named hostfoo again
-      infini_metadata:
+    - name: IDEMPOTENT test -> Delete host's metadata key named hostfoo again
+      infinidat.infinibox.infini_metadata:
         object_type: "host"
         object_name: "{{ auto_prefix }}host"
         key: "hostfoo"

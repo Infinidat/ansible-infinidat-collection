@@ -300,8 +300,8 @@
     - name: Create pools
       infinidat.infinibox.infini_pool:
         name: "{{ item }}"
-        size: 10GB
-        vsize: 10GB
+        size: "{{ pool_size }}"
+        vsize: "{{ pool_size }}"
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
