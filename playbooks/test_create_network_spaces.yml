@@ -1,16 +1,14 @@
 ---
 - hosts: localhost
   gather_facts: false
-  collections:
-    - infinidat.infinibox
   vars:
-    name: iSCSI
+    service_name: iSCSI
     service: ISCSI_SERVICE
   tasks:
 
-    - name: POSITIVE test -> Create {{ service }} network space named {{ name }}
-      infini_network_space:
-        name: "{{ name }}"
+    - name: POSITIVE test -> Create network space
+      infinidat.infinibox.infini_network_space:
+        name: "{{ service_name }}"
         state: present
         interfaces:
           - 1680
@@ -34,13 +32,13 @@
         system: "{{ system }}"
       register: create_out
 
-    - name: debug
+    - name: Debug
       ansible.builtin.debug:
         var: create_out
 
-    - name: POSITIVE test -> Stat {{ service }} network space named {{ name }}
-      infini_network_space:
-        name: "{{ name }}"
+    - name: POSITIVE test -> Stat network space named
+      infinidat.infinibox.infini_network_space:
+        name: "{{ service_name }}"
         state: stat
         user: "{{ user }}"
         password: "{{ password }}"
