@@ -2,14 +2,12 @@
 # PSDEV-1108: Playbook for testing creation of metadata resources.
 - hosts: localhost
   gather_facts: false  # Required for ansible_date_time
-  collections:
-    - infinidat.infinibox
   tasks:
 
     # Test any object_type
 
     - name: Set compression setting to true
-      infini_config:
+      infinidat.infinibox.infini_config:
         config_group: "mgmt"
         key: "pool.compression_enabled_default"
         value: false
@@ -18,12 +16,12 @@
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
-    - name: debug
-      debug:
+    - name: Debug
+      ansible.builtin.debug:
         var: metadata_out
 
     - name: Check current compression setting
-      infini_config:
+      infinidat.infinibox.infini_config:
         config_group: "mgmt"
         key: "pool.compression_enabled_default"
         state: "stat"
@@ -31,13 +29,13 @@
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
-    - name: debug
-      debug:
+    - name: Debug
+      ansible.builtin.debug:
         var: metadata_out
 
 
     - name: Check 2 base
-      infini_config:
+      infinidat.infinibox.infini_config:
         config_group: "mgmt"
         key: "mgmt.is_decimal_capacity_converter" # True for Base 10, False for Base 2
         state: "stat"
@@ -45,20 +43,20 @@
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
-    - name: debug
-      debug:
+    - name: Debug
+      ansible.builtin.debug:
         var: metadata_out
 
     - name: Set Dataset capacity unit to Base 2
-      infini_config:
+      infinidat.infinibox.infini_config:
         config_group: "mgmt"
         key: "mgmt.is_decimal_capacity_converter" # True for Base 10, False for Base 2
-        value: False
+        value: false
         state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       register: metadata_out
-    - name: debug
-      debug:
+    - name: Debug
+      ansible.builtin.debug:
         var: metadata_out
