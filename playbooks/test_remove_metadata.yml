@@ -1,6 +1,7 @@
 ---
 # PSDEV-1108: Playbook for testing cleanup of metadata resources.
-- hosts: localhost
+- name: Clean up test of infini_metadata
+  hosts: localhost
   gather_facts: false  # Required for ansible_date_time
 
   tasks:
