@@ -62,7 +62,7 @@ EXAMPLES = r'''
       - "00:00:00:00:00:00:00"
       - "11:11:11:11:11:11:11"
     iqns:
-        - "iqn.yyyy-mm.reverse-domain:unique-string"
+      - "iqn.yyyy-mm.reverse-domain:unique-string"
     system: ibox01
     user: admin
     password: secret

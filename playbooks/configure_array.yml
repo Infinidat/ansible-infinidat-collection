@@ -3,48 +3,48 @@
 # Create three volumes: vol_nonwriteable, vol_explicitly_writable and vol_writable.
 - name: Configure an Infinibox Array
   hosts: localhost
-  gather_facts: true  # Required for ansible_date_time
-  vars:
-    - dataset_default_provisioning: THIN
-    - use_base2_units: true
-    - table_export_limit: 3000
-    - admin_user_name: admin
-    - admin_user_password: 123456
-    - admin_user_email: dev.mgmt@infinidat.com
-    - pool_admin_user_name: Commvault
-    - pool_admin_user_password: 123456
-    - pool_admin_user_email: dohlemacher@infinidat.com
-    - ldap_name: PSUS_ANSIBLE_ad
-    - setup_alerting_emails: ["dohlemacher@infinidat.com"]
-    - prod_alerting_emails: ["dohlemacher@infinidat.com"]
-    - alerting_event_levels: ["INFO", "WARNING", "ERROR", "CRITICAL"]
-    - alerting_includes: []
-    - alerting_excludes: ["EVENT_FLOOD", "USER_LOGIN_SUCCESS", "USER_LOGGED_OUT"]
-    - syslogs: # A list of syslog dictionaries
-        - target_name: syslog1_target
-          rule_name: syslog1
-          protocol: SYSLOG
-          host: 172.31.88.158
-          port: 514
-          facility: LOCAL7
-          transport: UDP
-          post_test: true # Not a real test if using UDP
-        - target_name: syslog2_target
-          rule_name: syslog2
-          protocol: SYSLOG
-          host: 172.31.88.158
-          port: 515
-          facility: LOCAL7
-          transport: UDP
-          post_test: true
-        - target_name: graylog_target
-          rule_name: graylog
-          protocol: SYSLOG
-          host: 172.31.77.214
-          port: 1514
-          facility: LOCAL7
-          transport: UDP
-          post_test: true
+  gather_facts: false
+    # vars:
+    #   - dataset_default_provisioning: THIN
+    #   - use_base2_units: true
+    #   - table_export_limit: 3000
+    #   - admin_user_name: admin
+    #   - admin_user_password: 123456
+    #   - admin_user_email: dev.mgmt@infinidat.com
+    #   - pool_admin_user_name: Commvault
+    #   - pool_admin_user_password: 123456
+    #   - pool_admin_user_email: dohlemacher@infinidat.com
+    #   - ldap_name: PSUS_ANSIBLE_ad
+    #   - setup_alerting_emails: ["dohlemacher@infinidat.com"]
+    #   - prod_alerting_emails: ["dohlemacher@infinidat.com"]
+    #   - alerting_event_levels: ["INFO", "WARNING", "ERROR", "CRITICAL"]
+    #   - alerting_includes: []
+    #   - alerting_excludes: ["EVENT_FLOOD", "USER_LOGIN_SUCCESS", "USER_LOGGED_OUT"]
+    #   - syslogs:  # A list of syslog dictionaries
+    #       - target_name: syslog1_target
+    #         rule_name: syslog1
+    #         protocol: SYSLOG
+    #         host: 172.31.88.158
+    #         port: 514
+    #         facility: LOCAL7
+    #         transport: UDP
+    #         post_test: true  # Not a real test if using UDP
+    #       - target_name: syslog2_target
+    #         rule_name: syslog2
+    #         protocol: SYSLOG
+    #         host: 172.31.88.158
+    #         port: 515
+    #         facility: LOCAL7
+    #         transport: UDP
+    #         post_test: true
+    #       - target_name: graylog_target
+    #         rule_name: graylog
+    #         protocol: SYSLOG
+    #         host: 172.31.77.214
+    #         port: 1514
+    #         facility: LOCAL7
+    #         transport: UDP
+    #         post_test: true
   tasks:
     - name: Configuration
       ansible.builtin.debug:
@@ -236,7 +236,7 @@
         port: "{{ item.port }}"
         facility: "{{ item.facility }}"
         transport: "{{ item.transport }}"
-        post_test: "{{ item.post_test }}" # Force a dummy event for notification to be posted
+        post_test: "{{ item.post_test }}"  # Force a dummy event for notification to be posted
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
@@ -280,7 +280,7 @@
         # rate_limit: 8
         # mtu: 1500
         # async_only: true
-        ips: # IPs borrowed from https://labs.infinidat.com/gdc/systems/psus-vbox-aws44-1/ip/
+        ips:  # IPs borrowed from https://labs.infinidat.com/gdc/systems/psus-vbox-aws44-1/ip/
           - 172.20.50.111
           - 172.20.50.70
           - 172.20.49.243
@@ -293,11 +293,10 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-#
-#    - name: TODO by David - Configure Infinimentrics - Add Infinibox
-#      ansible.builtin.debug:
-#        msg: (9) Add Infinibox to Infinimetrics
-#
+    # - name: TODO by David - Configure Infinimetrics - Add Infinibox
+    #   ansible.builtin.debug:
+    #     msg: (9) Add Infinibox to Infinimetrics
+
     - name: Create pools
       infinidat.infinibox.infini_pool:
         name: "{{ item }}"

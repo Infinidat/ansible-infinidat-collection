@@ -105,7 +105,7 @@ EXAMPLES = r"""
     name: foo
     # volume_type: master  # Default
     size: 1TB
-    thin_provision: yes
+    thin_provision: true
     pool: bar
     state: present
     user: admin
