@@ -26,7 +26,7 @@ Bug Fixes
 Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
 * psdev-1138: Add infini_sso module. Allow SSO configuration.
-* psdev-1151: Add infini_fiber_channel_switch module. Allow renaming of FC switches.
+* psdev-1151: Add infini_fibre_channel_switch module. Allow renaming of FC switches.
 * psdev-1148: Add infini_certificate module. Allow uploading SSL certificates.
 * psdev-1045: Add infini_event module. Allow posting of custom events.
 * Add infini_config module.

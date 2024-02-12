@@ -10,22 +10,31 @@
 All Infindat InfiniBoxes are supported.
 
 ## Prerequisites
-- Ansible 2.12 or newer
-- InfiniSDK 151.1.1 or newer.
+- Ansible 2.14 or newer
+- InfiniSDK 225.1.1 or newer
+- Python 3.6 or newer. This is a prerequisite of Infinidat's infinisdk Python module.
 
 ## Modules
+- infini_certificate: Configure a SSL certificate.
 - infini_cluster: Creates, deletes or modifies host clusters.
-- infini_export_client: Creates, deletes or modifys NFS client(s) for existing exports.
+- infini_config: Modify an Infinibox configuration.
 - infini_export: Creates, deletes or modifies NFS exports.
+- infini_export_client: Creates, deletes or modifys NFS client(s) for existing exports.
+- infini_fibre_channel_switch: Rename a fibre channel switch.
 - infini_fs: Creates, deletes or modifies filesystems.
 - infini_host: Creates, deletes or modifies hosts.
 - infini_map: Creates or deletes mappings of volumes to hosts.
 - infini_metadata: Creates or deletes metadata for various Infinidat objects.
+- infini_metadata: Manage Infinibox object metadata (keys and values).
 - infini_network_space: Creates or deletes network spaces.
+- infini_notification_rule: Configure notification rules.
+- infini_notification_target: Configure notification targets.
 - infini_pool: Creates, deletes or modifies pools.
-- infini_port: Adds or deletes fiber channel or iSCSI ports to hosts.
+- infini_port: Adds or deletes fibre channel or iSCSI ports to hosts.
+- infini_sso: Configure a single-sign-on (SSO) certificate.
 - infini_user: Creates, deletes or modifies an InfiniBox user.
 - infini_users_repositories: Creates, deletes, or modifies LDAP and AD Infinibox configurations.
+- infini_users_repository: Configure Active directory (AD) and Lightweight Directory Access Protocol (LDAP).
 - infini_vol: Creates, deletes or modifies a volume.
 
 Most modules also implement a "stat" state.  This is used to gather information, aka status, for the resource without making any changes to it.
