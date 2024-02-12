@@ -1,6 +1,6 @@
 namespace: "infinidat"
 name: "infinibox"
-version: "1.4.1"
+version: "1.4.2"
 readme: "README.md"
 authors:
   - "Infinidat <partners.infi@infinidat.com>"
@@ -13,8 +13,8 @@ tags:
   - array
   - cloud
   - fiber
-  - fiber_channel
-  - fiberchannel
+  - fibre_channel
+  - fibrechannel
   - hostpowertools
   - ibox
   - infinibox
@@ -36,9 +36,10 @@ build_ignore:
   - '*.swp'
   - '*.tar.gz'
   - '*.un~'
-  - './collections'
-  - './venv*'
+  - 'collections'
+  - 'venv/'
   - 'Session.vim'
   - 'ibox_vars/iboxCICD.yml'
   - 'vault_password.txt'
   - 'scripts/'
+  - 'plugins/modules/infini_infinimetrics.py'

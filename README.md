@@ -25,7 +25,6 @@ All Infindat InfiniBoxes are supported.
 - infini_host: Creates, deletes or modifies hosts.
 - infini_map: Creates or deletes mappings of volumes to hosts.
 - infini_metadata: Creates or deletes metadata for various Infinidat objects.
-- infini_metadata: Manage Infinibox object metadata (keys and values).
 - infini_network_space: Creates or deletes network spaces.
 - infini_notification_rule: Configure notification rules.
 - infini_notification_target: Configure notification targets.
