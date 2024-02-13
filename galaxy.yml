@@ -1,12 +1,12 @@
 namespace: "infinidat"
 name: "infinibox"
-version: "1.4.2"
+version: "1.4.3"
 readme: "README.md"
 authors:
   - "Infinidat <partners.infi@infinidat.com>"
   - "David Ohlemacher"
   - "Gregory Shulov"
-description: "A set of Ansible modules that allow simple, but powerful, idempotent interactions with Infinidat InfiniBoxes."
+description: "A set of Ansible modules that allow simple, but powerful, idempotent interactions with Infinidat Infiniboxes."
 license:
   - "GPL-3.0-or-later"
 tags:
@@ -36,6 +36,11 @@ build_ignore:
   - '*.swp'
   - '*.tar.gz'
   - '*.un~'
+  - '*.pem'
+  - '*.csr'
+  - '.ropeproject'
+  - '.pytest_cache'
+  - 'Makefile*'
   - 'collections'
   - 'venv/'
   - 'Session.vim'
