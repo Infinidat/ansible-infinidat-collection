@@ -3,6 +3,33 @@ Change Log
 ==========
 
 -------------------
+v1.4.4 (2024-02-TBD)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Feature Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1178: Add infini_infinimetrics module. Allows adding an Infinibox to Infinimetrics
+
+-------------------
+v1.4.3 (2024-02-13)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1150: Update galaxy.yml for publication on Automation Hub.
+
+-------------------
+v1.4.2 (2024-02-12)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1150: Update galaxy.yml for publication on Automation Hub.
+
+-------------------
 v1.4.1 (2024-02-06)
 -------------------
 
@@ -10,7 +37,6 @@ v1.4.1 (2024-02-06)
 Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
 * Require Ansible >= 2.14.0
-* psdev-1178: Add infini_infinimetrics moduile. Allows add an Infinibox to Infinimetrics.
 
 -------------------
 v1.4.0 (2024-02-05)
