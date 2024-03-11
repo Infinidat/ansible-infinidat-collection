@@ -67,6 +67,9 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
+import requests
+import re
+
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
@@ -103,33 +106,37 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Handle the present state parameter """
-    certificate_file_name = module.params['certificate_file_name']
-    path = "system/certificates"
-    system = get_system(module)
-
-    with open(certificate_file_name, 'rb') as cert_file:
-        try:
-            try:
-                files = {'file': cert_file}
-            except FileNotFoundError:
-                module.fail_json(msg=f"Cannot find SSL certificate file named {certificate_file_name}")
-            except Exception as err:  # pylint: disable=broad-exception-caught
-                module.fail_json(msg=f"Cannot open SSL certificate file named {certificate_file_name}: {err}")
-            cert_result = system.api.post(path=path, files=files).get_result()
-        except APICommandFailed as err:
-            msg = f"Cannot upload cert: {err}"
-            module.fail_json(msg=msg)
-
-    cert_serial = cert_result['certificate']['serial_number']
-    cert_issued_by_cn = cert_result['certificate']['issued_by']['CN']
-    cert_issued_to_cn = cert_result['certificate']['issued_to']['CN']
+    csrfmiddlewaretoken = login_get_csrfmiddlewaretoken(module)
     result = dict(
         changed=True,
-        msg="System SSL certificate uploaded successfully. "
-        f"Certificate S/N {cert_serial} issued by CN {cert_issued_by_cn} to CN {cert_issued_to_cn}"
+        msg="Logged into Infinimetrics {module.paramsget('imx_system')}"
     )
-    result = merge_two_dicts(result, cert_result)
+    # result = merge_two_dicts(result, cert_result)
     module.exit_json(**result)
+
+
+def login_get_csrfmiddlewaretoken(module):
+    """ Log into a IMX using credentials. Return csrfmiddlewaretoken or None. """
+    path = f"https://{module.params.get('imx_system')}/auth/login/"
+    payload = {
+            'username': module.params.get('imx_user', None),
+            'password': module.params.get('imx_password', None),
+            }
+    headers = None
+    files = None
+    response = requests.request("GET", path, headers=headers, data=payload, files=files, verify=False)
+
+    # Find the csrfmiddleware token
+    token = None
+    for line_bytes in response.iter_lines():
+        line = str(line_bytes)
+        # Example of line searched for:
+        # <input type="hidden" name="csrfmiddlewaretoken" value="VUe6...m5Nl7y">'
+        result = re.search(r'"csrfmiddlewaretoken" value="(\w+)"', line)
+        if result:
+            token = result.group(1)
+            break
+    return token
 
 
 def handle_absent(module):
@@ -171,7 +178,9 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            infinimetrics_system=dict(required=True),
+            imx_system=dict(required=True),
+            imx_user=dict(required=True),
+            imx_password=dict(required=True, no_log=True),
             state=dict(default="present", choices=["stat", "present", "absent"]),
         )
     )

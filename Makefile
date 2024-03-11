@@ -270,7 +270,8 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_network_space
 # _module_under_test = infini_event
 # _module_under_test = infini_notification_target
-_module_under_test = infini_notification_rule
+# _module_under_test = infini_notification_rule
+_module_under_test = infini_infinimetrics
 # _module_under_test = infini_user
 # _module_under_test = infini_users_repository
 # _module_under_test = infini_fs

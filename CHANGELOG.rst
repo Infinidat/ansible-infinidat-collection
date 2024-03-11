@@ -9,7 +9,12 @@ v1.4.4 (2024-02-TBD)
 ^^^^^^^^^^^^^^^^^^^^
 Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
-* psdev-1178: Add infini_infinimetrics module. Allows adding an Infinibox to Infinimetrics
+* psdev-1178: Add infini_infinimetrics module. Allows adding an Infinibox to Infinimetrics.
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1188: Refactor CICD to use Infinibox 2503.
 
 -------------------
 v1.4.3 (2024-02-13)
