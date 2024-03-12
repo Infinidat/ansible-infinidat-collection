@@ -106,17 +106,21 @@ def handle_stat(module):
 
 def handle_present(module):
     """ Handle the present state parameter """
-    csrfmiddlewaretoken = login_get_csrfmiddlewaretoken(module)
+    imx_session = requests.session()
+    csrfmiddlewaretoken = imx_login_get(module, imx_session)
+    imx_login_post(module, imx_session, csrfmiddlewaretoken)
+    csrfmiddlewaretoken = imx_system_edit(module, imx_session, csrfmiddlewaretoken)
+    imx_system_delete(module, imx_session, csrfmiddlewaretoken)
     result = dict(
         changed=True,
-        msg="Logged into Infinimetrics {module.paramsget('imx_system')}"
+        msg=f"Logged into Infinimetrics {module.params.get('imx_system')}"
     )
     # result = merge_two_dicts(result, cert_result)
     module.exit_json(**result)
 
 
-def login_get_csrfmiddlewaretoken(module):
-    """ Log into a IMX using credentials. Return csrfmiddlewaretoken or None. """
+def imx_login_get(module, imx_session):
+    """ Log into an IMX (GET) using credentials. Return csrfmiddlewaretoken or None. """
     path = f"https://{module.params.get('imx_system')}/auth/login/"
     payload = {
             'username': module.params.get('imx_user', None),
@@ -124,7 +128,7 @@ def login_get_csrfmiddlewaretoken(module):
             }
     headers = None
     files = None
-    response = requests.request("GET", path, headers=headers, data=payload, files=files, verify=False)
+    response = imx_session.get(path, headers=headers, data=payload, files=files, verify=False)
 
     # Find the csrfmiddleware token
     token = None
@@ -137,6 +141,49 @@ def login_get_csrfmiddlewaretoken(module):
             token = result.group(1)
             break
     return token
+
+
+def imx_login_post(module, imx_session, token):
+    """ Log into an IMX (POST) using credentials. Provide csrfmiddlewaretoken. """
+    path = f"https://{module.params.get('imx_system')}/auth/login/"
+    payload = {
+            'username': module.params.get('imx_user', None),
+            'password': module.params.get('imx_password', None),
+            'csrfmiddlewaretoken': token,
+            }
+    headers = {
+            'referer': f'https://{module.params.get("imx_system")}',
+            }
+    files = None
+    response = imx_session.post(path, headers=headers, data=payload, files=files, verify=False)
+
+
+def imx_system_edit(module, imx_session, token):
+    imx_system = module.params.get('imx_system')
+    serial = module.params.get('ibox_serial')
+    path = f"https://{imx_system}/system/{serial}/edit/"
+    response = imx_session.get(path, verify=False)
+    token = None
+    for line_bytes in response.iter_lines():
+        line = str(line_bytes)
+        # Example of line searched for:
+        # <input type="hidden" name="csrfmiddlewaretoken" value="Y2cPY4DLeQqrlY5UosApVDZq24qS8BPhYgpJkaLQCm3HTp8OWTijibaTUT4IoqSF">
+        result = re.search(r'"csrfmiddlewaretoken" value="(\w+)"', line)
+        if result:
+            token = result.group(1)
+            break
+    return token
+
+
+def imx_system_delete(module, imx_session, token):
+    imx_system = module.params.get('imx_system')
+    serial = module.params.get('ibox_serial')
+    path = f"https://{imx_system}/system/{serial}/remove/"
+    headers = {
+            'X-CSRFToken': token,
+            'referer': f'https://{imx_system}/',
+            }
+    response = imx_session.delete(path, headers=headers, verify=False)
 
 
 def handle_absent(module):
@@ -178,6 +225,7 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
+            ibox_serial=dict(required=True),
             imx_system=dict(required=True),
             imx_user=dict(required=True),
             imx_password=dict(required=True, no_log=True),
