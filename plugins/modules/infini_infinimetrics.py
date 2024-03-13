@@ -30,11 +30,10 @@ options:
     description:
       - Registers the Infinibox with Infinimetrics, when using state present.
       - For state absent, the Infinibox is deregistered from Infinimetrics.
-      - State stat shows the registration status of the Infinibox with Infinimetrics.
     type: str
     required: false
     default: present
-    choices: [ "stat", "present", "absent" ]
+    choices: [ "present", "absent" ]
 extends_documentation_fragment:
     - infinibox
 """
@@ -48,18 +47,10 @@ EXAMPLES = r"""
     password: secret
     system: ibox001
 
-- name: Show registration status of IBOX with Infinimetrics
-  infini_infinimetrics:
-    infinimetrics_system: infinimetrics
-    state: present
-    user: admin
-    password: secret
-    system: ibox001
-
 - name: Deregister IBOX from Infinimetrics
   infini_infinimetrics:
     infinimetrics_system: infinimetrics
-    state: present
+    state: absent
     user: admin
     password: secret
     system: ibox001
@@ -158,10 +149,24 @@ def imx_system_add(module, imx_session, token):
             }
     response = imx_session.post(path, headers=headers, data=data, verify=False)
 
+    # Check that the IBOX was added or was previously added.
+    # Search for one of:
+    #   - 'The system is already monitored'
+    #   - add_progress url
+    if ("The system is already" not in response.text or "monitored" not in response.text) \
+            and (f"/system/{ibox_serial}/add_progress" not in response.text):
+        msg = f"Cannot remove Infinibox {ibox_url} from infinimetrics {imx_system}. Text returned: {response.text}"
+        module.fail_json(msg=msg)
+
+    if "add_progress" in response.text:
+        return True
+    return False  # Previously added
+
 
 def imx_system_delete(module, imx_session, token):
     imx_system = module.params.get('imx_system')
     serial = module.params.get('ibox_serial')
+    ibox_url = module.params.get('ibox_url')
     path = f"https://{imx_system}/system/{serial}/remove/"
     headers = {
             'X-CSRFToken': token,
@@ -169,39 +174,31 @@ def imx_system_delete(module, imx_session, token):
             }
     response = imx_session.delete(path, headers=headers, verify=False)
 
-
-def handle_stat(module):
-    """ Handle the stat state parameter """
-    infinimetrics_system = module.params['infinimetrics_system']
-    infinibox_system = module.params['system']
-    path = "system/certificates"
-    system = get_system(module)
-    try:
-        cert_result = system.api.get(path=path).get_result()[0]
-    except APICommandFailed:
-        msg = f"Cannot stat infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system}"
+    # Check that the IBOX was removed or was previously removed
+    # In response.return_code, search for 200
+    if response.status_code not in [200]:
+        msg = f"Cannot remove Infinibox {ibox_url} from infinimetrics {imx_system}. Status code: {response.status_code}"
         module.fail_json(msg=msg)
-    result = dict(
-        changed=False,
-        msg="Infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system} found"
-    )
-    result = merge_two_dicts(result, cert_result)
-    module.exit_json(**result)
 
 
 def handle_present(module):
     """ Handle the present state parameter """
     imx_system = module.params.get('imx_system')
-    serial = module.params.get('ibox_serial')
+    ibox_url = module.params.get('ibox_url')
 
     imx_session = requests.session()
     csrfmiddlewaretoken = imx_login_get(module, imx_session)
     imx_login_post(module, imx_session, csrfmiddlewaretoken)
     csrfmiddlewaretoken = imx_system_edit(module, imx_session, csrfmiddlewaretoken)
-    imx_system_add(module, imx_session, csrfmiddlewaretoken)
+    is_newly_added = imx_system_add(module, imx_session, csrfmiddlewaretoken)
+
+    if is_newly_added:
+        msg=f"Infinibox {ibox_url} added to Infinimetrics {imx_system}"
+    else:
+        msg=f"Infinibox {ibox_url} previously added to Infinimetrics {imx_system}"
     result = dict(
         changed=True,
-        msg=f"Infinibox serial {serial} added to Infinimetrics {imx_system}"
+        msg = msg,
     )
     module.exit_json(**result)
 
@@ -227,9 +224,7 @@ def execute_state(module):
     """Handle states"""
     state = module.params["state"]
     try:
-        if state == "stat":
-            handle_stat(module)
-        elif state == "present":
+        if state == "present":
             handle_present(module)
         elif state == "absent":
             handle_absent(module)
@@ -252,7 +247,7 @@ def main():
             imx_system=dict(required=True),
             imx_user=dict(required=True),
             imx_password=dict(required=True, no_log=True),
-            state=dict(default="present", choices=["stat", "present", "absent"]),
+            state=dict(default="present", choices=["present", "absent"]),
         )
     )
 
