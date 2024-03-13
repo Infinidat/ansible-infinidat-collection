@@ -85,40 +85,6 @@ except ImportError:
     HAS_INFINISDK = False
 
 
-def handle_stat(module):
-    """ Handle the stat state parameter """
-    infinimetrics_system = module.params['infinimetrics_system']
-    infinibox_system = module.params['system']
-    path = "system/certificates"
-    system = get_system(module)
-    try:
-        cert_result = system.api.get(path=path).get_result()[0]
-    except APICommandFailed:
-        msg = f"Cannot stat infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system}"
-        module.fail_json(msg=msg)
-    result = dict(
-        changed=False,
-        msg="Infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system} found"
-    )
-    result = merge_two_dicts(result, cert_result)
-    module.exit_json(**result)
-
-
-def handle_present(module):
-    """ Handle the present state parameter """
-    imx_session = requests.session()
-    csrfmiddlewaretoken = imx_login_get(module, imx_session)
-    imx_login_post(module, imx_session, csrfmiddlewaretoken)
-    csrfmiddlewaretoken = imx_system_edit(module, imx_session, csrfmiddlewaretoken)
-    imx_system_delete(module, imx_session, csrfmiddlewaretoken)
-    result = dict(
-        changed=True,
-        msg=f"Logged into Infinimetrics {module.params.get('imx_system')}"
-    )
-    # result = merge_two_dicts(result, cert_result)
-    module.exit_json(**result)
-
-
 def imx_login_get(module, imx_session):
     """ Log into an IMX (GET) using credentials. Return csrfmiddlewaretoken or None. """
     path = f"https://{module.params.get('imx_system')}/auth/login/"
@@ -146,16 +112,15 @@ def imx_login_get(module, imx_session):
 def imx_login_post(module, imx_session, token):
     """ Log into an IMX (POST) using credentials. Provide csrfmiddlewaretoken. """
     path = f"https://{module.params.get('imx_system')}/auth/login/"
-    payload = {
-            'username': module.params.get('imx_user', None),
-            'password': module.params.get('imx_password', None),
+    data = {
             'csrfmiddlewaretoken': token,
+            'password': module.params.get('imx_password', None),
+            'username': module.params.get('imx_user', None),
             }
     headers = {
             'referer': f'https://{module.params.get("imx_system")}',
             }
-    files = None
-    response = imx_session.post(path, headers=headers, data=payload, files=files, verify=False)
+    response = imx_session.post(path, headers=headers, data=data, verify=False)
 
 
 def imx_system_edit(module, imx_session, token):
@@ -175,6 +140,25 @@ def imx_system_edit(module, imx_session, token):
     return token
 
 
+def imx_system_add(module, imx_session, token):
+    imx_system = module.params.get('imx_system')
+    ibox_readonly_user = module.params.get('ibox_readonly_user')
+    ibox_readonly_password = module.params.get('ibox_readonly_password')
+    ibox_serial = module.params.get('ibox_serial')
+    ibox_url = module.params.get('ibox_url')
+    path = f"https://{imx_system}/system/add/"
+    headers = {
+            'referer': f'https://{imx_system}/',
+            }
+    data = {
+            'csrfmiddlewaretoken': token,
+            'api_url': ibox_url,
+            'api_username': ibox_readonly_user,
+            'api_password': ibox_readonly_password,
+            }
+    response = imx_session.post(path, headers=headers, data=data, verify=False)
+
+
 def imx_system_delete(module, imx_session, token):
     imx_system = module.params.get('imx_system')
     serial = module.params.get('ibox_serial')
@@ -186,20 +170,56 @@ def imx_system_delete(module, imx_session, token):
     response = imx_session.delete(path, headers=headers, verify=False)
 
 
-def handle_absent(module):
-    """ Handle the absent state parameter. """
-    path = "system/certificates/generate_self_signed?approved=true"
+def handle_stat(module):
+    """ Handle the stat state parameter """
+    infinimetrics_system = module.params['infinimetrics_system']
+    infinibox_system = module.params['system']
+    path = "system/certificates"
     system = get_system(module)
     try:
-        cert_result = system.api.post(path=path).get_result()
-    except APICommandFailed as err:
-        msg = f"Cannot clear SSL certificate: {err}"
+        cert_result = system.api.get(path=path).get_result()[0]
+    except APICommandFailed:
+        msg = f"Cannot stat infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system}"
         module.fail_json(msg=msg)
     result = dict(
-        changed=True,
-        msg="System SSL certificate cleared and a self signed certificate was installed successfully"
+        changed=False,
+        msg="Infinimetrics {infinimetrics_system} registered Infinibox {infinibox_system} found"
     )
     result = merge_two_dicts(result, cert_result)
+    module.exit_json(**result)
+
+
+def handle_present(module):
+    """ Handle the present state parameter """
+    imx_system = module.params.get('imx_system')
+    serial = module.params.get('ibox_serial')
+
+    imx_session = requests.session()
+    csrfmiddlewaretoken = imx_login_get(module, imx_session)
+    imx_login_post(module, imx_session, csrfmiddlewaretoken)
+    csrfmiddlewaretoken = imx_system_edit(module, imx_session, csrfmiddlewaretoken)
+    imx_system_add(module, imx_session, csrfmiddlewaretoken)
+    result = dict(
+        changed=True,
+        msg=f"Infinibox serial {serial} added to Infinimetrics {imx_system}"
+    )
+    module.exit_json(**result)
+
+
+def handle_absent(module):
+    """ Handle the absent state parameter. """
+    imx_system = module.params.get('imx_system')
+    serial = module.params.get('ibox_serial')
+
+    imx_session = requests.session()
+    csrfmiddlewaretoken = imx_login_get(module, imx_session)
+    imx_login_post(module, imx_session, csrfmiddlewaretoken)
+    csrfmiddlewaretoken = imx_system_edit(module, imx_session, csrfmiddlewaretoken)
+    imx_system_delete(module, imx_session, csrfmiddlewaretoken)
+    result = dict(
+        changed=True,
+        msg=f"Infinibox serial {serial} removed from Infinimetrics {imx_system}"
+    )
     module.exit_json(**result)
 
 
@@ -226,6 +246,9 @@ def main():
     argument_spec.update(
         dict(
             ibox_serial=dict(required=True),
+            ibox_url=dict(required=False),
+            ibox_readonly_user=dict(required=False),
+            ibox_readonly_password=dict(required=False, no_log=True),
             imx_system=dict(required=True),
             imx_user=dict(required=True),
             imx_password=dict(required=True, no_log=True),
