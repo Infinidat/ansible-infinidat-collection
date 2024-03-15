@@ -194,12 +194,15 @@ def handle_present(module):
 
     if is_newly_added:
         msg=f"Infinibox {ibox_url} added to Infinimetrics {imx_system}"
+        changed = True
     else:
         msg=f"Infinibox {ibox_url} previously added to Infinimetrics {imx_system}"
+        changed = False
+
     result = dict(
-        changed=True,
-        msg = msg,
-    )
+            changed=changed,
+            msg = msg,
+            )
     module.exit_json(**result)
 
 
