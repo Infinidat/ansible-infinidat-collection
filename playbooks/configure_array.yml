@@ -77,32 +77,32 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Configure Single Sign On (SSO)
-      infinidat.infinibox.infini_sso:
-        issuer: http://www.okta.com/exkra32oyyU6KCUCk2p7
-        name: OKTA
-        sign_on_url: https://infinidat.okta.com/app/infinidat_ibox2503_1/exkrwdi7dmXSKdC4l2p7/sso/saml
-        signed_assertion: false
-        signed_response: false
-        signing_certificate: "{{ sso_signing_certificate }}"
-        enabled: true
-        state: "present"
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
+          # - name: Configure Single Sign On (SSO)
+          #   infinidat.infinibox.infini_sso:
+          #     issuer: http://www.okta.com/exkra32oyyU6KCUCk2p7
+          #     name: OKTA
+          #     sign_on_url: https://infinidat.okta.com/app/infinidat_ibox2503_1/exkrwdi7dmXSKdC4l2p7/sso/saml
+          #     signed_assertion: false
+          #     signed_response: false
+          #     signing_certificate: "{{ sso_signing_certificate }}"
+          #     enabled: true
+          #     state: "present"
+          #     user: "{{ user }}"
+          #     password: "{{ password }}"
+          #     system: "{{ system }}"
 
-    - name: Stat Single Sign On (SSO)
-      infinidat.infinibox.infini_sso:
-        name: OKTA
-        state: stat
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: sso_stat
+          # - name: Stat Single Sign On (SSO)
+          #   infinidat.infinibox.infini_sso:
+          #     name: OKTA
+          #     state: stat
+          #     user: "{{ user }}"
+          #     password: "{{ password }}"
+          #     system: "{{ system }}"
+          #   register: sso_stat
 
-    - name: Show sso_stat
-      ansible.builtin.debug:
-        var: sso_stat
+          # - name: Show sso_stat
+          #   ansible.builtin.debug:
+          #     var: sso_stat
 
     - name: Enable compression
       infinidat.infinibox.infini_config:
@@ -293,9 +293,70 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    # - name: TODO by David - Configure Infinimetrics - Add Infinibox
-    #   ansible.builtin.debug:
-    #     msg: (9) Add Infinibox to Infinimetrics
+    - name: Configure infinimetrics readonly user
+      infinidat.infinibox.infini_user:
+        user_name: "{{ ibox_readonly_user }}"
+        user_email: "{{ ibox_readonly_email }}"
+        user_password: "{{ admin_user_password }}"
+        user_role: "read_only"
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Remove Infinibox from Infinimetrics
+      infinidat.infinibox.infini_infinimetrics:
+        ibox_serial: "{{ ibox_serial }}"
+        imx_system: "{{ imx_system }}"
+        imx_user: "{{ imx_user }}"
+        imx_password: "{{ imx_password }}"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Remove Infinibox from Infinimetrics again to test idempotency
+      infinidat.infinibox.infini_infinimetrics:
+        ibox_serial: "{{ ibox_serial }}"
+        imx_system: "{{imx_system}}"
+        imx_user: "{{ imx_user }}"
+        imx_password: "{{ imx_password }}"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Add Infinibox to Infinimetrics
+      infinidat.infinibox.infini_infinimetrics:
+        ibox_serial: "{{ ibox_serial }}"
+        ibox_url: "{{ ibox_url }}"
+        ibox_readonly_user: "{{ ibox_readonly_user }}"
+        ibox_readonly_password: "{{ ibox_readonly_password }}"
+        imx_system: "{{imx_system}}"
+        imx_user: "{{ imx_user }}"
+        imx_password: "{{ imx_password }}"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Pause 25 seconds to allow IMX to reflect addition of Infinibox
+      ansible.builtin.pause:
+        seconds: 25
+
+    - name: Add Infinibox to Infinimetrics again to test idempotency
+      infinidat.infinibox.infini_infinimetrics:
+        ibox_serial: "{{ ibox_serial }}"
+        ibox_url: "{{ ibox_url }}"
+        ibox_readonly_user: "{{ ibox_readonly_user }}"
+        ibox_readonly_password: "{{ ibox_readonly_password }}"
+        imx_system: "{{imx_system}}"
+        imx_user: "{{ imx_user }}"
+        imx_password: "{{ imx_password }}"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 
     - name: Create pools
       infinidat.infinibox.infini_pool:

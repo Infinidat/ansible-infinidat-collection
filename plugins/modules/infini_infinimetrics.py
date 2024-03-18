@@ -21,15 +21,44 @@ description:
     - Create (present state) or remove (absent state) an Infinibox registration on an Infinimetrics.
 author: David Ohlemacher (@ohlemacher)
 options:
-  infinimetrics_system:
+  ibox_serial:
+    description:
+      - Infinibox serial number.
+    type: str
+    required: true
+  ibox_url:
+    description: Infinibox DNS resolvable hostname or IPv4 address.
+    type: str
+    required: false
+  ibox_readonly_user:
+    description:
+      - Read only Infinibox user name.
+    type: str
+    required: false
+  ibox_readonly_password:
+    description:
+      - Read only Infinibox user password.
+    type: str
+    required: false
+  imx_system:
     description:
       - Infinimetrics hostname or IPv4 Address.
+    type: str
+    required: true
+  imx_user:
+    description:
+      - Infinimetrics user name.
+    type: str
+    required: true
+  imx_password:
+    description:
+      - Infinimetrics user password.
     type: str
     required: true
   state:
     description:
       - Registers the Infinibox with Infinimetrics, when using state present.
-      - For state absent, the Infinibox is deregistered from Infinimetrics.
+      - For state absent, the Infinibox is disabled on Infinimetrics and will no longer appear on the Infinimetrics UI. Existing Infinibox data is not purged from Infinimetrics. Purging may be executed using the Infinimetrics CLI tool.
     type: str
     required: false
     default: present
@@ -64,6 +93,7 @@ import re
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
+    api_wrapper,
     merge_two_dicts,
     get_system,
     infinibox_argument_spec,
@@ -76,18 +106,8 @@ except ImportError:
     HAS_INFINISDK = False
 
 
-def imx_login_get(module, imx_session):
-    """ Log into an IMX (GET) using credentials. Return csrfmiddlewaretoken or None. """
-    path = f"https://{module.params.get('imx_system')}/auth/login/"
-    payload = {
-            'username': module.params.get('imx_user', None),
-            'password': module.params.get('imx_password', None),
-            }
-    headers = None
-    files = None
-    response = imx_session.get(path, headers=headers, data=payload, files=files, verify=False)
-
-    # Find the csrfmiddleware token
+def find_csrfmiddleware_token(response):
+    """Search for csrfmiddlewaretoken in the response lines. Return token or None."""
     token = None
     for line_bytes in response.iter_lines():
         line = str(line_bytes)
@@ -100,9 +120,26 @@ def imx_login_get(module, imx_session):
     return token
 
 
-def imx_login_post(module, imx_session, token):
-    """ Log into an IMX (POST) using credentials. Provide csrfmiddlewaretoken. """
+@api_wrapper
+def imx_login(module, imx_session):
+    """ Log into an IMX (GET and POST) using credentials. """
     path = f"https://{module.params.get('imx_system')}/auth/login/"
+
+    # Use GET to get a token
+    payload = {
+            'username': module.params.get('imx_user', None),
+            'password': module.params.get('imx_password', None),
+            }
+    get_response = imx_session.get(path, data=payload, verify=False)
+    status_code = get_response.status_code
+    if status_code not in [200]:
+        text = get_response.text
+        msg = f"Cannot add Infinibox {ibox_url} to Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
+        module.fail_json(msg=msg)
+
+    token = find_csrfmiddleware_token(get_response)
+
+    # Use POST provide token
     data = {
             'csrfmiddlewaretoken': token,
             'password': module.params.get('imx_password', None),
@@ -112,26 +149,13 @@ def imx_login_post(module, imx_session, token):
             'referer': f'https://{module.params.get("imx_system")}',
             }
     response = imx_session.post(path, headers=headers, data=data, verify=False)
+    if response.status_code not in [200, 201]:
+        msg = f"Cannot log into Infinimetrics {imx_system}. Status code: {response.status_code}. Text returned: {response.text}"
+        module.fail_json(msg=msg)
 
 
-def imx_system_edit(module, imx_session, token):
-    imx_system = module.params.get('imx_system')
-    serial = module.params.get('ibox_serial')
-    path = f"https://{imx_system}/system/{serial}/edit/"
-    response = imx_session.get(path, verify=False)
-    token = None
-    for line_bytes in response.iter_lines():
-        line = str(line_bytes)
-        # Example of line searched for:
-        # <input type="hidden" name="csrfmiddlewaretoken" value="Y2cPY4DLeQqrlY5UosApVDZq24qS8BPhYgpJkaLQCm3HTp8OWTijibaTUT4IoqSF">
-        result = re.search(r'"csrfmiddlewaretoken" value="(\w+)"', line)
-        if result:
-            token = result.group(1)
-            break
-    return token
-
-
-def imx_system_add(module, imx_session, token):
+@api_wrapper
+def imx_system_add(module, imx_session):
     imx_system = module.params.get('imx_system')
     ibox_readonly_user = module.params.get('ibox_readonly_user')
     ibox_readonly_password = module.params.get('ibox_readonly_password')
@@ -141,13 +165,30 @@ def imx_system_add(module, imx_session, token):
     headers = {
             'referer': f'https://{imx_system}/',
             }
+
+    # Use GET to get a token
+    get_response = imx_session.get(path, headers=headers, verify=False)
+    status_code = get_response.status_code
+    if status_code not in [200]:
+        text = get_response.text
+        msg = f"Cannot add Infinibox {ibox_url} to Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
+        module.fail_json(msg=msg)
+
+    get_token = find_csrfmiddleware_token(get_response)
+
+    # Use POST provide token
     data = {
-            'csrfmiddlewaretoken': token,
             'api_url': ibox_url,
             'api_username': ibox_readonly_user,
             'api_password': ibox_readonly_password,
+            'csrfmiddlewaretoken': get_token,
             }
     response = imx_session.post(path, headers=headers, data=data, verify=False)
+    status_code = response.status_code
+    text = response.text
+    if status_code not in [200, 201]:
+        msg = f"Cannot add Infinibox {ibox_url} to Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
+        module.fail_json(msg=msg)
 
     # Check that the IBOX was added or was previously added.
     # Search for one of:
@@ -155,29 +196,48 @@ def imx_system_add(module, imx_session, token):
     #   - add_progress url
     if ("The system is already" not in response.text or "monitored" not in response.text) \
             and (f"/system/{ibox_serial}/add_progress" not in response.text):
-        msg = f"Cannot remove Infinibox {ibox_url} from infinimetrics {imx_system}. Text returned: {response.text}"
+        msg = f"Cannot add Infinibox {ibox_url} to Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
         module.fail_json(msg=msg)
 
     if "add_progress" in response.text:
-        return True
+        return True  # Just added now
     return False  # Previously added
 
 
-def imx_system_delete(module, imx_session, token):
+@api_wrapper
+def imx_system_delete(module, imx_session):
     imx_system = module.params.get('imx_system')
     serial = module.params.get('ibox_serial')
     ibox_url = module.params.get('ibox_url')
+    path = f"https://{imx_system}/system/{serial}/edit/"
+    headers = {
+            'referer': f'https://{imx_system}/',
+            }
+
+    # Use GET to get a token
+    get_response = imx_session.get(path, headers=headers, verify=False)
+    status_code = get_response.status_code
+    if status_code not in [200]:
+        text = get_response.text
+        msg = f"Cannot remove Infinibox {ibox_url} from Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
+        module.fail_json(msg=msg)
+
+    get_token = find_csrfmiddleware_token(get_response)
+
+
     path = f"https://{imx_system}/system/{serial}/remove/"
     headers = {
-            'X-CSRFToken': token,
+            'X-CSRFToken': get_token,
             'referer': f'https://{imx_system}/',
             }
     response = imx_session.delete(path, headers=headers, verify=False)
 
     # Check that the IBOX was removed or was previously removed
     # In response.return_code, search for 200
-    if response.status_code not in [200]:
-        msg = f"Cannot remove Infinibox {ibox_url} from infinimetrics {imx_system}. Status code: {response.status_code}"
+    status_code = response.status_code
+    if status_code not in [200, 201]:
+        text = response.text
+        msg = f"Cannot remove Infinibox {serial} from infinimetrics {imx_system}. Status code: {status_code}, Text returned: {text}"
         module.fail_json(msg=msg)
 
 
@@ -187,10 +247,8 @@ def handle_present(module):
     ibox_url = module.params.get('ibox_url')
 
     imx_session = requests.session()
-    csrfmiddlewaretoken = imx_login_get(module, imx_session)
-    imx_login_post(module, imx_session, csrfmiddlewaretoken)
-    csrfmiddlewaretoken = imx_system_edit(module, imx_session, csrfmiddlewaretoken)
-    is_newly_added = imx_system_add(module, imx_session, csrfmiddlewaretoken)
+    imx_login(module, imx_session)
+    is_newly_added = imx_system_add(module, imx_session)
 
     if is_newly_added:
         msg=f"Infinibox {ibox_url} added to Infinimetrics {imx_system}"
@@ -212,13 +270,11 @@ def handle_absent(module):
     serial = module.params.get('ibox_serial')
 
     imx_session = requests.session()
-    csrfmiddlewaretoken = imx_login_get(module, imx_session)
-    imx_login_post(module, imx_session, csrfmiddlewaretoken)
-    csrfmiddlewaretoken = imx_system_edit(module, imx_session, csrfmiddlewaretoken)
-    imx_system_delete(module, imx_session, csrfmiddlewaretoken)
+    imx_login(module, imx_session)
+    imx_system_delete(module, imx_session)
     result = dict(
         changed=True,
-        msg=f"Infinibox serial {serial} removed from Infinimetrics {imx_system}"
+        msg=f"Infinibox serial {serial} has been removed from Infinimetrics {imx_system}"
     )
     module.exit_json(**result)
 
@@ -238,15 +294,39 @@ def execute_state(module):
         system.logout()
 
 
+def verify_params(module, req_params):
+    """ Verify that required params are provided """
+    missing_req_params = []
+    for req_param in req_params:
+        if not module.params[req_param]:
+            missing_req_params.append(req_param)
+    if missing_req_params:
+        state = module.params["state"]
+        msg = f"Cannot handle state {state} due to missing parameters: {missing_req_params}"
+        module.fail_json(msg=msg)
+
+
+def check_options(module):  # pylint: disable=too-many-branches
+    """ Check option logic """
+    state = module.params['state']
+
+    if state == 'present':
+        req_params = ["ibox_url", "ibox_readonly_user", "ibox_readonly_password"]
+        verify_params(module, req_params)
+    elif state == 'absent':
+        pass
+    else:
+        module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
+
 def main():
     """ Main """
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
             ibox_serial=dict(required=True),
-            ibox_url=dict(required=False),
-            ibox_readonly_user=dict(required=False),
-            ibox_readonly_password=dict(required=False, no_log=True),
+            ibox_url=dict(required=False, default=None),
+            ibox_readonly_user=dict(required=False, default=None),
+            ibox_readonly_password=dict(required=False, no_log=True, default=None),
             imx_system=dict(required=True),
             imx_user=dict(required=True),
             imx_password=dict(required=True, no_log=True),
@@ -258,6 +338,8 @@ def main():
 
     if not HAS_INFINISDK:
         module.fail_json(msg=missing_required_lib("infinisdk"))
+
+    check_options(module)
 
     execute_state(module)
 
