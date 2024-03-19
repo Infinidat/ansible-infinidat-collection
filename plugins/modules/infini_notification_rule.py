@@ -56,6 +56,14 @@ options:
     elements: str
     required: false
     default: []
+  recipient_target_name:
+    description:
+      - When creating a rule using recipients, a notification target is required.
+      - Usually, this target is named "customer-smtp".
+      - If this is not the case, use this variable to specifiy another name.
+    type: str
+    required: false
+    default: customer-smtp
   target:
     description:
       - Notification target
@@ -115,6 +123,23 @@ except ModuleNotFoundError:
         infinibox_argument_spec,
         get_system,
     )
+
+
+@api_wrapper
+def find_recipient_target_name_id(module, system):
+    """ Find the ID of the target by name """
+    target = module.params["recipient_target_name"]
+    path = f"notifications/targets?name={target}&fields=id"
+    api_result = system.api.get(
+        path=path
+    )
+    if len(api_result.get_json()['result']) > 0:
+        result = api_result.get_json()['result'][0]
+        target_id = result['id']
+    else:
+        msg = f"Cannot find an ID for recipient_target_name {target}"
+        module.fail_json(msg=msg)
+    return target_id
 
 
 @api_wrapper
@@ -190,15 +215,13 @@ def create_rule(module):
         target_parameters = {
             "recipients": recipients
         }
-        target_id = 3  # Target ID for sending to recipients
+        json_data["target_id"] = find_recipient_target_name_id(module, system)  # Target ID for sending to recipients
         json_data["target_parameters"] = target_parameters
     elif target:
-        target_id = find_target_id(module, system)
+        json_data["target_id"] = find_target_id(module, system)
     else:
         msg = "Neither recipients nor target parameters specified"
         module.fail_json(msg=msg)
-
-    json_data["target_id"] = target_id
 
     system.api.post(path=path, data=json_data)
 
@@ -215,6 +238,8 @@ def update_rule(module):
     exclude_events = module.params["exclude_events"]
     recipients = module.params["recipients"]
     target = module.params["target"]
+    rule_id = find_rule_id(module, system)
+    path = f"notifications/rules/{rule_id}"
 
     json_data = {
         "name": name,
@@ -227,17 +252,14 @@ def update_rule(module):
         target_parameters = {
             "recipients": recipients
         }
-        target_id = 3  # Target ID for sending to recipients
+        json_data["target_id"] = find_recipient_target_name_id(module, system)  # Target ID for sending to recipients
         json_data["target_parameters"] = target_parameters
     elif target:
-        target_id = find_target_id(module, system)
+        json_data["target_id"] = find_target_id(module, system)
     else:
         msg = "Neither recipients nor target parameters specified"
         module.fail_json(msg=msg)
 
-    json_data["target_id"] = target_id
-    rule_id = find_rule_id(module, system)
-    path = f"notifications/rules/{rule_id}"
     system.api.put(path=path, data=json_data)
 
 
@@ -342,6 +364,7 @@ def main():
             "include_events": {"required": False, "default": [], "type": "list", "elements": "str"},
             "exclude_events": {"required": False, "default": [], "type": "list", "elements": "str"},
             "recipients": {"required": False, "default": [], "type": "list", "elements": "str"},
+            "recipient_target_name": {"required": False, "default": "customer-smtp", "type": "str"},
             "target": {"required": False, "type": "str", "default": None},
             "state": {"default": "present", "choices": ["stat", "present", "absent"]},
         }
