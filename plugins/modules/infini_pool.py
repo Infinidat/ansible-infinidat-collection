@@ -59,6 +59,18 @@ options:
     required: false
     default: yes
     type: bool
+  physical_capacity_warning:
+    description:
+      - Capacity, in percent, for a warning notification.
+    required: false
+    type: int
+    default: 80
+  physical_capacity_critical:
+    description:
+      - Capacity, in percent, for a critical notification.
+    required: false
+    type: int
+    default: 90
 
 notes:
   - Infinibox Admin level access is required for pool modifications
@@ -123,16 +135,22 @@ def create_pool(module, system):
     vsize = module.params['vsize']
     ssd_cache = module.params['ssd_cache']
     compression = module.params['compression']
+    physical_capacity_warning = module.params['physical_capacity_warning']
+    physical_capacity_critical = module.params['physical_capacity_critical']
 
     if not module.check_mode:
         if not size and not vsize:
-            pool = system.pools.create(name=name, physical_capacity=Capacity('1TB'), virtual_capacity=Capacity('1TB'))
+            pool = system.pools.create(name=name, physical_capacity=Capacity('1TB'), virtual_capacity=Capacity('1TB'),
+                                       physical_capacity_warning=physical_capacity_warning, physical_capacity_critical=physical_capacity_critical)
         elif size and not vsize:
-            pool = system.pools.create(name=name, physical_capacity=Capacity(size), virtual_capacity=Capacity(size))
+            pool = system.pools.create(name=name, physical_capacity=Capacity(size), virtual_capacity=Capacity(size),
+                                       physical_capacity_warning=physical_capacity_warning, physical_capacity_critical=physical_capacity_critical)
         elif not size and vsize:
-            pool = system.pools.create(name=name, physical_capacity=Capacity('1TB'), virtual_capacity=Capacity(vsize))
+            pool = system.pools.create(name=name, physical_capacity=Capacity('1TB'), virtual_capacity=Capacity(vsize),
+                                       physical_capacity_warning=physical_capacity_warning, physical_capacity_critical=physical_capacity_critical)
         else:
-            pool = system.pools.create(name=name, physical_capacity=Capacity(size), virtual_capacity=Capacity(vsize))
+            pool = system.pools.create(name=name, physical_capacity=Capacity(size), virtual_capacity=Capacity(vsize),
+                                       physical_capacity_warning=physical_capacity_warning, physical_capacity_critical=physical_capacity_critical)
         # Default value of ssd_cache is True. Disable ssd caching if False
         if not ssd_cache:
             pool.update_ssd_enabled(ssd_cache)
@@ -150,8 +168,9 @@ def update_pool(module, pool):
 
     size = module.params['size']
     vsize = module.params['vsize']
-    # ssd_cache = module.params['ssd_cache']
+    ssd_cache = module.params['ssd_cache']
     compression = module.params['compression']
+
 
     # Roundup the capacity to mimic Infinibox behaviour
     if size:
@@ -168,15 +187,29 @@ def update_pool(module, pool):
                 pool.update_virtual_capacity(virtual_capacity)
             changed = True
 
-    # if pool.is_ssd_enabled() != ssd_cache:
-    #     if not module.check_mode:
-    #         pool.update_ssd_enabled(ssd_cache)
-    #     changed = True
+    if pool.is_ssd_enabled() != ssd_cache:
+        if not module.check_mode:
+            pool.update_ssd_enabled(ssd_cache)
+        changed = True
 
     if pool.is_compression_enabled() != compression:
         if not module.check_mode:
             pool.update_compression_enabled(compression)
-        changed = True
+            changed = True
+
+    physical_capacity_critical = module.params.get('physical_capacity_critical')
+    existing_physical_capacity_critical = pool.get_physical_capacity_critical()
+    if physical_capacity_critical != existing_physical_capacity_critical:
+        if not module.check_mode:
+            pool.update_physical_capacity_critical(physical_capacity_critical)
+            changed = True
+
+    physical_capacity_warning = module.params.get('physical_capacity_warning')
+    existing_physical_capacity_warning = pool.get_physical_capacity_warning()
+    if physical_capacity_warning != existing_physical_capacity_warning:
+        if not module.check_mode:
+            pool.update_physical_capacity_warning(physical_capacity_warning)
+            changed = True
 
     if changed:
         msg = 'Pool updated'
@@ -206,12 +239,22 @@ def handle_stat(module):
     # print('fields: {0}'.format(fields))
     free_physical_capacity = fields.get('free_physical_capacity', None)
     pool_id = fields.get('id', None)
+    physical_capacity_warning = pool.get_physical_capacity_warning()
+    physical_capacity_critical = pool.get_physical_capacity_critical()
+    physical_capacity = pool.get_physical_capacity()
+    virtual_capacity = pool.get_virtual_capacity()
 
     result = dict(
         changed=False,
         free_physical_capacity=str(free_physical_capacity),
+        physical_capacity_warning=physical_capacity_warning,
+        physical_capacity_critical=physical_capacity_critical,
+        physical_capacity=str(physical_capacity),
+        virtual_capacity=str(virtual_capacity),
+        ssd_cache=pool.is_ssd_enabled(),
+        compression_enabled=pool.is_compression_enabled(),
         id=pool_id,
-        msg='Pool stat found'
+        msg='Pool stat found',
     )
     module.exit_json(**result)
 
@@ -267,6 +310,8 @@ def main():
             vsize=dict(),
             ssd_cache=dict(type='bool', default=True),
             compression=dict(type='bool', default=True),
+            physical_capacity_warning=dict(type=int, default=80),
+            physical_capacity_critical=dict(type=int, default=90),
         )
     )
 

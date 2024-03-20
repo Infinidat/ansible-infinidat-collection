@@ -77,32 +77,32 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-          # - name: Configure Single Sign On (SSO)
-          #   infinidat.infinibox.infini_sso:
-          #     issuer: http://www.okta.com/exkra32oyyU6KCUCk2p7
-          #     name: OKTA
-          #     sign_on_url: https://infinidat.okta.com/app/infinidat_ibox2503_1/exkrwdi7dmXSKdC4l2p7/sso/saml
-          #     signed_assertion: false
-          #     signed_response: false
-          #     signing_certificate: "{{ sso_signing_certificate }}"
-          #     enabled: true
-          #     state: "present"
-          #     user: "{{ user }}"
-          #     password: "{{ password }}"
-          #     system: "{{ system }}"
+    - name: Configure Single Sign On (SSO)
+      infinidat.infinibox.infini_sso:
+        issuer: http://www.okta.com/exkra32oyyU6KCUCk2p7
+        name: OKTA
+        sign_on_url: https://infinidat.okta.com/app/infinidat_ibox2503_1/exkrwdi7dmXSKdC4l2p7/sso/saml
+        signed_assertion: false
+        signed_response: false
+        signing_certificate: "{{ sso_signing_certificate }}"
+        enabled: true
+        state: "present"
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
 
-          # - name: Stat Single Sign On (SSO)
-          #   infinidat.infinibox.infini_sso:
-          #     name: OKTA
-          #     state: stat
-          #     user: "{{ user }}"
-          #     password: "{{ password }}"
-          #     system: "{{ system }}"
-          #   register: sso_stat
+    - name: Stat Single Sign On (SSO)
+      infinidat.infinibox.infini_sso:
+        name: OKTA
+        state: stat
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: sso_stat
 
-          # - name: Show sso_stat
-          #   ansible.builtin.debug:
-          #     var: sso_stat
+    - name: Show sso_stat
+      ansible.builtin.debug:
+        var: sso_stat
 
     - name: Enable compression
       infinidat.infinibox.infini_config:
@@ -360,25 +360,31 @@
 
     - name: Create pools
       infinidat.infinibox.infini_pool:
-        name: "{{ item }}"
-        size: "{{ pool_size }}"
-        vsize: "{{ pool_size }}"
+        name: "{{ item.name }}"
+        size: "{{ item.size }}"
+        vsize: "{{ item.vsize }}"
+        physical_capacity_warning: "{{ item.physical_capacity_warning }}"
+        physical_capacity_critical: "{{ item.physical_capacity_critical }}"
         state: present
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
       loop:
-        - pool-a
-        - pool-b
-        - pool-c
+        - { name: 'CDRFS',       size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '100', physical_capacity_critical: '100'}
+        - { name: 'HNS',         size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
+        - { name: 'PHYSICAL',    size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
+        - { name: 'POWER',       size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
+        - { name: 'RECLAIM',     size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
+        - { name: 'VIRTUAL',     size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
+        - { name: 'VIRTUAL_REP', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
 
-    - name: Set up pool admin user for pool
+    - name: Set up pool admin user for CDRFS pool
       infinidat.infinibox.infini_user:
         user_name: "{{ pool_admin_user_name }}"
         user_email: "{{ pool_admin_user_email }}"
         user_password: "{{ pool_admin_user_password }}"
         user_role: "pool_admin"
-        user_pool: "pool-a"
+        user_pool: "CDRFS"
         state: "present"
         user: "{{ user }}"
         password: "{{ password }}"

@@ -264,23 +264,24 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_finish)
 
 ##@ Hacking
-# _module_under_test = infini_sso
-# _module_under_test = infini_fibre_channel_switch
 # _module_under_test = infini_certificate
-# _module_under_test = infini_network_space
-# _module_under_test = infini_event
-# _module_under_test = infini_notification_target
-# _module_under_test = infini_notification_rule
-_module_under_test = infini_infinimetrics
-# _module_under_test = infini_user
-# _module_under_test = infini_users_repository
-# _module_under_test = infini_fs
-# _module_under_test = infini_conig
-# _module_under_test = infini_vol
-# _module_under_test = infini_host
 # _module_under_test = infini_cluster
+# _module_under_test = infini_conig
+# _module_under_test = infini_event
+# _module_under_test = infini_fibre_channel_switch
+# _module_under_test = infini_fs
+# _module_under_test = infini_host
+# _module_under_test = infini_infinimetrics
 # _module_under_test = infini_map
 # _module_under_test = infini_metadata
+# _module_under_test = infini_network_space
+# _module_under_test = infini_notification_rule
+# _module_under_test = infini_notification_target
+_module_under_test = infini_pool
+# _module_under_test = infini_sso
+# _module_under_test = infini_user
+# _module_under_test = infini_users_repository
+# _module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@echo "HACK - Creating hacking module links"
