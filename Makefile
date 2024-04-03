@@ -37,10 +37,10 @@ _install_path_local 	= $$HOME/.ansible/collections
 _requirements-file  	= requirements.txt
 _requirements-dev-file  = requirements-dev.txt
 _user               	= psus-gitlab-cicd
-_password_file      	= vault_password
-_password           	= $$(cat vault_password.txt)
+_password_file      	= vault_password.txt
+_password           	= $$(cat $(_passwordOne must e_file)
 _ibox_url              ?= ibox1521
-_extra_vars            ?= @../ibox_vars/iboxCICD.yaml
+_extra_vars            ?= ibox_vars/iboxCICD.yaml
 _infinishell_creds  	= --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               	= /bin/bash
 _ansible_clone      	= /home/$$USER/workspace/ansible
@@ -155,7 +155,7 @@ _test_playbook:
 			$$ask_become_pass \
 			-vv \
 			--inventory "inventory" \
-			--extra-vars "$(_extra_vars)" \
+			--extra-vars "@../$(_extra_vars)" \
 			--vault-password-file ../vault_password.txt \
 			"$$playbook_name"; \
 	cd -
@@ -277,8 +277,8 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_network_space
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_notification_target
-_module_under_test = infini_pool
-# _module_under_test = infini_sso
+# _module_under_test = infini_pool
+_module_under_test = infini_sso
 # _module_under_test = infini_user
 # _module_under_test = infini_users_repository
 # _module_under_test = infini_vol
@@ -445,7 +445,7 @@ infinishell-network-space-iscsi-delete:  ## Delete a network space using infinis
 		| egrep 'deleted|No such network space';
 	@echo -e $(_finish)
 
-##@ Certificates
+##@ Certificates and Credentials
 create-cert:  ## Create a self signed SSL certificate for use with an Infinibox.
 	@# Ref: https://wiki.infinidat.com/pages/viewpage.action?pageId=45624136
 	@# Ref: https://support.infinidat.com/hc/en-us/articles/10106396511133-Communicating-with-InfiniBox-using-an-SSL-certificate
@@ -470,3 +470,5 @@ create-cert:  ## Create a self signed SSL certificate for use with an Infinibox.
 	echo "== Creating $$CONCAT containing both" && \
 	cat "$$CERT" "$$KEY" > "$$CONCAT"
 
+edit-extra-vars:  ## Edit the extra vars file using ansible vault. One must exit ansible-vault to write changes.
+	@ansible-vault edit --vault-password-file "$(_password_file)" "$(_extra_vars)"
