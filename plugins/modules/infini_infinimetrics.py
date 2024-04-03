@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# pylint: disable=invalid-name,use-dict-literal,line-too-long,wrong-import-position
+# pylint: disable=invalid-name,use-dict-literal,line-too-long,wrong-import-position,too-many-locals
 
 # Copyright: (c) 2024, Infinidat <info@infinidat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -87,23 +87,16 @@ EXAMPLES = r"""
 
 # RETURN = r''' # '''
 
-import requests
 import re
+import requests
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     api_wrapper,
-    merge_two_dicts,
     get_system,
     infinibox_argument_spec,
 )
-
-HAS_INFINISDK = True
-try:
-    from infinisdk.core.exceptions import APICommandFailed
-except ImportError:
-    HAS_INFINISDK = False
 
 
 def find_csrfmiddleware_token(response):
@@ -123,7 +116,9 @@ def find_csrfmiddleware_token(response):
 @api_wrapper
 def imx_login(module, imx_session):
     """ Log into an IMX (GET and POST) using credentials. """
-    path = f"https://{module.params.get('imx_system')}/auth/login/"
+    ibox_url = module.params.get('ibox_url')
+    imx_system = module.params.get('imx_system')
+    path = f"https://{imx_system}/auth/login/"
 
     # Use GET to get a token
     payload = {
@@ -156,6 +151,7 @@ def imx_login(module, imx_session):
 
 @api_wrapper
 def imx_system_add(module, imx_session):
+    """ Add an Infinibox to an Infinimetrics using an imx_session """
     imx_system = module.params.get('imx_system')
     ibox_readonly_user = module.params.get('ibox_readonly_user')
     ibox_readonly_password = module.params.get('ibox_readonly_password')
@@ -206,6 +202,7 @@ def imx_system_add(module, imx_session):
 
 @api_wrapper
 def imx_system_delete(module, imx_session):
+    """ Remove an Infinibox from an Infinimetrics using an imx_session """
     imx_system = module.params.get('imx_system')
     serial = module.params.get('ibox_serial')
     ibox_url = module.params.get('ibox_url')
@@ -335,9 +332,6 @@ def main():
     )
 
     module = AnsibleModule(argument_spec, supports_check_mode=True)
-
-    if not HAS_INFINISDK:
-        module.fail_json(msg=missing_required_lib("infinisdk"))
 
     check_options(module)
 

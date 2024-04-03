@@ -89,7 +89,7 @@ endif
 pylint:
 	@echo -e $(_begin)
 	cd plugins/modules && \
-		pylint infini_network_space.py
+		pylint "$(_module_under_test).py"
 	cd -
 	@echo -e $(_finish)
 
@@ -278,10 +278,10 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_notification_target
 # _module_under_test = infini_pool
-_module_under_test = infini_sso
+# _module_under_test = infini_sso
 # _module_under_test = infini_user
 # _module_under_test = infini_users_repository
-# _module_under_test = infini_vol
+_module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@echo "HACK - Creating hacking module links"

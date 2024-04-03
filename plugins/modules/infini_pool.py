@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# pylint: disable=invalid-name,use-dict-literal,line-too-long,wrong-import-position
+# pylint: disable=invalid-name,use-dict-literal,line-too-long,wrong-import-position,too-many-branches
 
 """This module creates, deletes or modifies pools on Infinibox."""
 
