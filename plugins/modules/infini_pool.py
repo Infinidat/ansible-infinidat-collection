@@ -171,7 +171,6 @@ def update_pool(module, pool):
     ssd_cache = module.params['ssd_cache']
     compression = module.params['compression']
 
-
     # Roundup the capacity to mimic Infinibox behaviour
     if size:
         physical_capacity = Capacity(size).roundup(6 * 64 * KiB)
@@ -310,8 +309,8 @@ def main():
             vsize=dict(),
             ssd_cache=dict(type='bool', default=True),
             compression=dict(type='bool', default=True),
-            physical_capacity_warning=dict(type=int, default=80),
-            physical_capacity_critical=dict(type=int, default=90),
+            physical_capacity_warning=dict(type='int', default=80),
+            physical_capacity_critical=dict(type='int', default=90),
         )
     )
 
