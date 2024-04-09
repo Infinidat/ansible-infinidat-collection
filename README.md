@@ -12,17 +12,19 @@ All Infindat InfiniBoxes are supported.
 ## Prerequisites
 - Ansible 2.14 or newer
 - InfiniSDK 225.1.1 or newer
-- Python 3.6 or newer. This is a prerequisite of Infinidat's infinisdk Python module.
+- Python 3.6 or newer. This is a prerequisite of Infinidat's infiniSDK Python module.
 
 ## Modules
 - infini_certificate: Configure a SSL certificate.
 - infini_cluster: Creates, deletes or modifies host clusters.
 - infini_config: Modify an Infinibox configuration.
+- infini_event: Post events.
 - infini_export: Creates, deletes or modifies NFS exports.
 - infini_export_client: Creates, deletes or modifys NFS client(s) for existing exports.
 - infini_fibre_channel_switch: Rename a fibre channel switch.
 - infini_fs: Creates, deletes or modifies filesystems.
 - infini_host: Creates, deletes or modifies hosts.
+- infini_infinimetrics: Add or remove an Infinibox from an Infinimetrics.
 - infini_map: Creates or deletes mappings of volumes to hosts.
 - infini_metadata: Creates or deletes metadata for various Infinidat objects.
 - infini_network_space: Creates or deletes network spaces.
@@ -32,7 +34,6 @@ All Infindat InfiniBoxes are supported.
 - infini_port: Adds or deletes fibre channel or iSCSI ports to hosts.
 - infini_sso: Configure a single-sign-on (SSO) certificate.
 - infini_user: Creates, deletes or modifies an InfiniBox user.
-- infini_users_repositories: Creates, deletes, or modifies LDAP and AD Infinibox configurations.
 - infini_users_repository: Configure Active directory (AD) and Lightweight Directory Access Protocol (LDAP).
 - infini_vol: Creates, deletes or modifies a volume.
 
@@ -60,8 +61,13 @@ Example playbooks are included in the collection:
     - test_remove_map_cluster.yml: Removes resouces created by its cohort.
 
 - Playbooks for testing snapshotting:
+    - test_create_snapshots.yml: Creates snapshots.
+    - test_remove_snapshots.yml: Removes created snapshots.
 
-These two playbooks serve as a reference to the use of the modules. These exercise all modules demonstrating normal usage, idempotency and error conditions. Individual module documentation is available via `ansible-doc`.
+- Playbooks for Infinibox configuration:
+    - configure_array.yml: Configures many aspects of an Infinibox.
+
+The two test playbooks also serve as a reference to the use of the modules. These exercise many modules demonstrating normal usage, idempotency and error conditions. Individual module documentation is available via `ansible-doc`.
 
 ### Example Usage
 Install the collection and cd into the collection's infi/ directory.  Create an ibox yaml file in ibox_vars/.  Use the example yaml file as a reference.
