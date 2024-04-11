@@ -3,13 +3,29 @@ Change Log
 ==========
 
 -------------------
-v1.4.4 (2024-02-TBD)
+v1.4.5 (2024-04-11)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* Update CHANGELOG.
+
+-------------------
+v1.4.4 (2024-04-09)
 -------------------
 
 ^^^^^^^^^^^^^^^^^^^^
 Feature Enhancements
 ^^^^^^^^^^^^^^^^^^^^
 * psdev-1178: Add infini_infinimetrics module. Allows adding an Infinibox to Infinimetrics.
+* psdev-1108: Extend configure_array example playbook to further demonstrate extensive customization of an Infinibox using Ansible.
+* psdev-1222: Add pool threshold alarm setting support to infini_pool.
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* psdev-1221: Fix infini_notification_rule. Find the correct target ID when using a recipient. The ID cannot be assumed to be 3.
 
 ^^^^^^^^^^^^^^^^^^^^
 Project Enhancements

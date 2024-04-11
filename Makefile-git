@@ -3,6 +3,13 @@
 _GIT_TAG = v$(_version)
 
 ##@ Releases
+.PHONY: _test-changelog
+_test-changelog:  # Search for TBD in changelog file to help ensure it has been updated.
+	@if [ ! -z $$(grep --ignore-case --fixed-strings "TBD" "CHANGELOG.rst") ]; then \
+		>&2 echo "TBD found in CHANGELOG.rst"; \
+		exit 1; \
+	fi
+
 .PHONY: _test-git-porcelain-clean
 _test-git-porcelain-clean:
 	@# Test that source is committed to git. Sometimes it is convenient to disable this.
@@ -57,6 +64,7 @@ _test-git-tag-remote-and-local-match:
 releasable:   ## Test that the project is git clean and therefore may be used for a release.
 	@echo -e $(_begin)
 	@echo "git tag: $(_GIT_TAG)"
+	@$(_make) _test-changelog
 	@$(_make) _test-git-porcelain-clean
 	@$(_make) _test-git-cherry
 	@$(_make) _test-git-tag-exists
