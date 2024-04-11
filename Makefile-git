@@ -4,8 +4,9 @@ _GIT_TAG = v$(_version)
 
 ##@ Releases
 .PHONY: _test-changelog
-_test-changelog:  # Search for TBD in changelog file to help ensure it has been updated.
-	@if [ ! -z $$(grep --ignore-case --fixed-strings "TBD" "CHANGELOG.rst") ]; then \
+_test-changelog:
+	@# Search for TBD in changelog file to help ensure it has been updated.
+	@if [ ! -z "$$(grep --ignore-case --fixed-strings "TBD" "CHANGELOG.rst")" ]; then \
 		>&2 echo "TBD found in CHANGELOG.rst"; \
 		exit 1; \
 	fi
