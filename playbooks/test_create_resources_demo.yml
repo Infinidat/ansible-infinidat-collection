@@ -1,23 +1,10 @@
 ---
-- name: Test Create Resources
+- name: Test Create Resources Demo
   hosts: localhost
   gather_facts: true  # Required for ansible_date_time
   tasks:
 
-    - name: NEGATIVE test -> Create file system under a pool that does not exist
-      infinidat.infinibox.infini_fs:
-        name: "{{ auto_prefix }}fs"
-        size: 1GB
-        pool: "{{ auto_prefix }}pool_missing"
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "'pool_missing' not in result.msg"
-      when: not ansible_check_mode
-
-    - name: POSITIVE test -> Create pool
+    - name: Create pool
       infinidat.infinibox.infini_pool:
         name: "{{ auto_prefix }}pool"
         size: "{{ pool_size }}"
@@ -27,15 +14,20 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat pool
+    - name: Stat pool
       infinidat.infinibox.infini_pool:
         name: "{{ auto_prefix }}pool"
         state: stat
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      register: pool_stat
 
-    - name: POSITIVE test -> Create default THIN file system
+    - name: DEBUG test -> Show pool stat
+      ansible.builtin.debug:
+        msg: stat - {{ pool_stat }}
+
+    - name: Create default THIN file system
       # See IBox settings: Dataset default provisioning.
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_default"
@@ -46,7 +38,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat file system
+    - name: Stat file system
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_default"
         size: 1GB
@@ -61,7 +53,7 @@
       ansible.builtin.debug:
         msg: stat - {{ def_stat }}
 
-    - name: POSITIVE test -> Create THICK file system
+    - name: Create THICK file system
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_thick"
         size: 1GB
@@ -72,7 +64,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create THIN file system
+    - name: Create THIN file system
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs"
         size: 1GB
@@ -83,7 +75,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Change THIN file system to THICK provisioning
+    - name: Change THIN file system to THICK provisioning
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs"
         size: 1GB
@@ -94,7 +86,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Change THICK file system back to THIN provisioning
+    - name: Change THICK file system back to THIN provisioning
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs"
         size: 1GB
@@ -105,7 +97,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat file system
+    - name: Stat file system
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs"
         pool: "{{ auto_prefix }}pool"
@@ -119,7 +111,7 @@
       ansible.builtin.debug:
         var: output
 
-    - name: POSITIVE test -> Stat file system that matches serial number
+    - name: Stat file system that matches serial number
       infinidat.infinibox.infini_fs:
         serial: "{{ output.serial }}"
         pool: "{{ auto_prefix }}pool"
@@ -133,7 +125,7 @@
       ansible.builtin.debug:
         var: stat_out
 
-    - name: POSITIVE test -> Create file system snapshot
+    - name: Create file system snapshot
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_snap"
         pool: "{{ auto_prefix }}pool"
@@ -144,7 +136,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Restore parent file system from snapshot
+    - name: Restore parent file system from snapshot
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_snap"
         pool: "{{ auto_prefix }}pool"
@@ -164,7 +156,7 @@
     # collections list at the top of this file.
     # One must use a FQCN for filters such as
     # infinidat.infinibox.delta_time.
-    - name: POSITIVE test -> Create snapshot from file system. Lock for 2 minutes.
+    - name: Create snapshot from file system. Lock for 2 minutes.
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_snap_locked"
         pool: "{{ auto_prefix }}pool"
@@ -178,7 +170,7 @@
       vars:
         fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    - name: POSITIVE test -> Extend lock to 3 minutes without refresh
+    - name: Extend lock to 3 minutes without refresh
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_snap_locked"
         pool: "{{ auto_prefix }}pool"
@@ -193,56 +185,13 @@
       vars:
         fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    - name: NEGATIVE test -> Attempt to extend file system snapshot lock without refresh on a file system snapshot that does not exist.
-      infinidat.infinibox.infini_fs:
-        name: "{{ auto_prefix }}fs_snap_locked_missing"
-        pool: "{{ auto_prefix }}pool"
-        state: present
-        fs_type: snapshot
-        parent_fs_name: "{{ auto_prefix }}fs"
-        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=3) }}"
-        snapshot_lock_only: true
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "not result.msg | regex_search('Snapshot does not exist. Cannot comply')"
-      vars:
-        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    - name: NEGATIVE test -> Attempt to create file system snapshot locked for 31 days. Exceeds 30 day maximum lock time enforced by infini_fs module (not API)
-      infinidat.infinibox.infini_fs:
-        name: "{{ auto_prefix }}fs_snap_locked_too_long"
-        pool: "{{ auto_prefix }}pool"
-        state: present
-        fs_type: snapshot
-        parent_fs_name: "{{ auto_prefix }}fs"
-        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(days=31) }}"
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "not result.msg | regex_search('snapshot_lock_expires_at exceeds.*days in the future')"
-      vars:
-        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
-
-    - name: NEGATIVE test -> Attempt to remove locked file system snapshot
-      infinidat.infinibox.infini_fs:
-        name: "{{ auto_prefix }}fs_snap_locked"
-        pool: "{{ auto_prefix }}pool"
-        state: absent
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "'Cannot delete snapshot. Locked' not in result.msg"
-
-    - name: POSITIVE test -> Wait for lock on file system to expire
+    - name: Wait for lock on file system to expire
       ansible.builtin.pause:
         seconds: 181
         prompt: Waiting for {{ auto_prefix }}fs_snap_locked to expire
 
-    - name: POSITIVE test -> Remove file system snapshot with expired lock
+    - name: Remove file system snapshot with expired lock
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_snap_locked"
         pool: "{{ auto_prefix }}pool"
@@ -251,7 +200,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Export file system
+    - name: Export file system
       infinidat.infinibox.infini_export:
         name: "/{{ auto_prefix }}export"
         filesystem: "{{ auto_prefix }}fs"
@@ -264,7 +213,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat file system export
+    - name: Stat file system export
       infinidat.infinibox.infini_export:
         name: "/{{ auto_prefix }}export"
         filesystem: "{{ auto_prefix }}fs"
@@ -273,23 +222,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Export file system that does not exist
-      infinidat.infinibox.infini_export:
-        name: "/{{ auto_prefix }}export_missing"
-        filesystem: "{{ auto_prefix }}fs_missing"
-        client_list:
-          - client: "*"
-            access: "RO"
-            no_root_squash: true
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "not result.msg | regex_search('File system.*not found')"
-      when: not ansible_check_mode
-
-    - name: POSITIVE test -> Create export client for export
+    - name: Create export client for export
       infinidat.infinibox.infini_export_client:
         export: "/{{ auto_prefix }}export"
         client: "20.20.20.20"
@@ -299,36 +232,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    # TODO - stat export client
-
-    - name: NEGATIVE test -> Create export client for export that does not exist
-      infinidat.infinibox.infini_export_client:
-        export: "/{{ auto_prefix }}export_missing"
-        client: 20.20.20.20
-        state: present
-        access_mode: "RO"
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "not result.msg | regex_search('Export.*not found')"
-      when: not ansible_check_mode
-
-    - name: NEGATIVE test -> Create volume under pool that does not exist
-      infinidat.infinibox.infini_vol:
-        name: "{{ auto_prefix }}vol_in_pool_missing"
-        size: 1GB
-        pool: "{{ auto_prefix }}pool_missing"
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "'Pool not found' not in result.msg"
-      # failed_when: "'pool_missing' not in result.msg"
-      when: not ansible_check_mode
-
-    - name: POSITIVE test -> Create thin volume in existing pool
+    - name: Create thin volume in existing pool
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol"
         size: 1GB
@@ -338,7 +242,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create thick volume under pool
+    - name: Create thick volume under pool
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol_thick"
         size: 1GB
@@ -350,7 +254,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat volume under pool
+    - name: Stat volume under pool
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol"
         pool: "{{ auto_prefix }}pool"
@@ -360,7 +264,7 @@
         system: "{{ system }}"
       register: output
 
-    - name: POSITIVE test -> Stat vol serial number
+    - name: Stat vol serial number
       infinidat.infinibox.infini_vol:
         state: stat
         serial: "{{ output.serial }}"
@@ -373,7 +277,7 @@
       ansible.builtin.debug:
         var: stat_out
 
-    - name: POSITIVE test -> Create snapshot from volume
+    - name: Create snapshot from volume
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol_snap"
         state: present
@@ -391,7 +295,7 @@
     # collections list at the top of this file.
     # One must use a FQCN for filters such as
     # infinidat.infinibox.delta_time.
-    - name: POSITIVE test -> Create and lock for 5 minutes snapshot from volume
+    - name: Create and lock for 5 minutes snapshot from volume
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol_snap_locked"
         state: present
@@ -404,7 +308,7 @@
       vars:
         fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    - name: POSITIVE test -> Extend lock to 6 minutes for without refresh
+    - name: Extend lock to 6 minutes for without refresh
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol_snap_locked"
         state: present
@@ -418,53 +322,12 @@
       vars:
         fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    - name: NEGATIVE test -> Attempt to extend lock without refresh on a snapshot that does not exist.
-      infinidat.infinibox.infini_vol:
-        name: "{{ auto_prefix }}vol_snap_locked_missing"
-        state: present
-        volume_type: snapshot
-        parent_volume_name: "{{ auto_prefix }}vol"
-        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(minutes=6) }}"
-        snapshot_lock_only: true
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "not result.msg | regex_search('Snapshot does not exist. Cannot comply')"
-      vars:
-        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
-
-    - name: NEGATIVE test -> Attempt to create snapshot locked for 31 days, 31 days exceeds 30 day maximum lock time enforced by infini_vol module (not API)
-      infinidat.infinibox.infini_vol:
-        name: "{{ auto_prefix }}vol_snap_locked_too_long"
-        state: present
-        volume_type: snapshot
-        parent_volume_name: "{{ auto_prefix }}vol"
-        snapshot_lock_expires_at: "{{ ansible_date_time.iso8601_micro | to_datetime(fmt) | infinidat.infinibox.delta_time(days=31) }}"
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "not result.msg | regex_search('snapshot_lock_expires_at exceeds.*days in the future')"
-      vars:
-        fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
-
-    - name: NEGATIVE test -> Attempt to remove locked volume snapshot
-      infinidat.infinibox.infini_vol:
-        name: "{{ auto_prefix }}vol_snap_locked"
-        state: absent
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "'Cannot delete snapshot. Locked' not in result.msg"
-
-    - name: POSITIVE test -> Wait for lock on volume to expire
+    - name: Wait for lock on volume to expire
       ansible.builtin.pause:
         seconds: 181
         prompt: Waiting for {{ auto_prefix }}vol_snap_locked to expire
 
-    - name: POSITIVE test -> Remove snapshot with expired lock
+    - name: Remove snapshot with expired lock
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol_snap_locked"
         state: absent
@@ -472,7 +335,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create host
+    - name: Create host
       infinidat.infinibox.infini_host:
         name: "{{ auto_prefix }}host"
         state: present
@@ -481,7 +344,7 @@
         system: "{{ system }}"
 
     # Second host used for testing infini_cluster
-    - name: POSITIVE test -> Create second host
+    - name: Create second host
       infinidat.infinibox.infini_host:
         name: "{{ auto_prefix }}host2"
         state: present
@@ -489,7 +352,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat host
+    - name: Stat host
       infinidat.infinibox.infini_host:
         name: "{{ auto_prefix }}host"
         state: stat
@@ -497,7 +360,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Add one wwns port to host
+    - name: Add one wwns port to host
       infinidat.infinibox.infini_port:
         host: PSUS_ANSIBLE_host
         state: present
@@ -508,7 +371,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Add a second wwn port plus two iscsi ports to host
+    - name: Add a second wwn port plus two iscsi ports to host
       infinidat.infinibox.infini_port:
         host: PSUS_ANSIBLE_host
         state: present
@@ -521,7 +384,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat ports on host
+    - name: Stat ports on host
       infinidat.infinibox.infini_port:
         host: PSUS_ANSIBLE_host
         state: stat
@@ -529,7 +392,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat host after ports added
+    - name: Stat host after ports added
       infinidat.infinibox.infini_host:
         name: "{{ auto_prefix }}host"
         state: stat
@@ -537,19 +400,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE test -> Map volume to host that does not exist
-      infinidat.infinibox.infini_map:
-        host: "{{ auto_prefix }}host_missing"
-        volume: "{{ auto_prefix }}vol"
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "not result.msg | regex_search('Neither host.*nor cluster.*found')"
-      when: not ansible_check_mode
-
-    - name: POSITIVE test -> Map volume to host
+    - name: Map volume to host
       infinidat.infinibox.infini_map:
         host: "{{ auto_prefix }}host"
         volume: "{{ auto_prefix }}vol"
@@ -558,7 +409,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Rescan after mapping
+    - name: Rescan after mapping
       ansible.builtin.shell: |
         rescan-scsi-bus.sh
       become: true
@@ -566,7 +417,7 @@
       failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
       changed_when: true
 
-    - name: POSITIVE test -> Stat map of volume to host
+    - name: Stat map of volume to host
       infinidat.infinibox.infini_map:
         host: "{{ auto_prefix }}host"
         volume: "{{ auto_prefix }}vol"
@@ -575,7 +426,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Remove mapping of volume from host
+    - name: Remove mapping of volume from host
       infinidat.infinibox.infini_map:
         host: "{{ auto_prefix }}host"
         volume: "{{ auto_prefix }}vol"
@@ -584,7 +435,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Rescan with remove option after removing mapping
+    - name: Rescan with remove option after removing mapping
       ansible.builtin.shell: |
         rescan-scsi-bus.sh --remove
       become: true
@@ -592,7 +443,7 @@
       failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
       changed_when: true
 
-    - name: POSITIVE test -> Map volume to host using lun 0
+    - name: Map volume to host using lun 0
       infinidat.infinibox.infini_map:
         host: "{{ auto_prefix }}host"
         volume: "{{ auto_prefix }}vol"
@@ -602,7 +453,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Rescan after mapping
+    - name: Rescan after mapping
       ansible.builtin.shell: |
         rescan-scsi-bus.sh
       become: true
@@ -610,7 +461,7 @@
       failed_when: "rescan.rc != 0 and 'not found' not in rescan.stderr"
       changed_when: true
 
-    - name: POSITIVE test -> Stat map of volume to host using lun 0
+    - name: Stat map of volume to host using lun 0
       infinidat.infinibox.infini_map:
         host: "{{ auto_prefix }}host"
         volume: "{{ auto_prefix }}vol"
@@ -629,7 +480,7 @@
       tags:
         - dev
 
-    - name: POSITIVE test -> Create user with pool_admin role managing pool
+    - name: Create user with pool_admin role managing pool
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         user_email: "{{ auto_prefix }}pool_admin_user@example.com"
@@ -642,7 +493,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Disable user
+    - name: Disable user
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         user_email: "{{ auto_prefix }}pool_admin_user@example.com"
@@ -655,7 +506,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Stat disabled user
+    - name: Stat disabled user
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         state: stat
@@ -663,7 +514,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Reset password for user
+    - name: Reset password for user
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         user_password: "secret_new"
@@ -672,7 +523,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create user with admin role
+    - name: Create user with admin role
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}admin_user"
         user_email: "{{ auto_prefix }}admin_user@example.com"
@@ -684,7 +535,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create user with read_only role
+    - name: Create user with read_only role
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}read_only_user"
         user_email: "{{ auto_prefix }}read_only_user@example.com"
@@ -696,7 +547,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create cluster with zero hosts
+    - name: Create cluster with zero hosts
       infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster_zero_hosts"
         state: present
@@ -704,7 +555,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Create cluster with two hosts
+    - name: Create cluster with two hosts
       infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster"
         cluster_hosts:
@@ -717,7 +568,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Remove host from cluster. Leave second host in cluster.
+    - name: Remove host from cluster. Leave second host in cluster.
       infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster"
         cluster_hosts:
@@ -730,7 +581,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: POSITIVE test -> Re-add host to cluster. Remove second host.
+    - name: Re-add host to cluster. Remove second host.
       infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster"
         cluster_hosts:
@@ -742,43 +593,3 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-
-    - name: IDEMPOTENT test -> Re-add host to cluster again. Remove second host again.
-      infinidat.infinibox.infini_cluster:
-        name: "{{ auto_prefix }}cluster"
-        cluster_hosts:
-          - host_name: "{{ auto_prefix }}host"
-            host_cluster_state: present
-          - host_name: "{{ auto_prefix }}host2"
-            host_cluster_state: absent
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-
-    - name: NEGATIVE test -> Attempt to add host to cluster with missing host_cluster_state key and value
-      infinidat.infinibox.infini_cluster:
-        name: "{{ auto_prefix }}cluster"
-        cluster_hosts:
-          - host_name: "{{ auto_prefix }}host"
-            # host_cluster_state: present
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "'require host_name and host_cluster_state' not in result.msg"
-
-    - name: NEGATIVE test -> Attempt to add host to cluster with an unsupported key and value
-      infinidat.infinibox.infini_cluster:
-        name: "{{ auto_prefix }}cluster"
-        cluster_hosts:
-          - host_name: "{{ auto_prefix }}host"
-            host_cluster_state: present
-            host_unknown_key: unknown_value
-        state: present
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: result
-      failed_when: "'require host_name and host_cluster_state' not in result.msg"
