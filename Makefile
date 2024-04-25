@@ -144,13 +144,13 @@ _test_playbook:
 	@# See DEV_README.md
 	@# vault_pass env var must be exported.
 	cd playbooks && \
-		export ANSIBLE_LIBRARY=$$HOME/workspace/ansible-infinidat-collection/playbooks/plugins/modules; \
-		export ANSIBLE_MODULE_UTILS=$$HOME/workspace/ansible-infinidat-collection/plugins/module_utils; \
 		if [ ! -e "../vault_password.txt" ]; then \
 			echo "Please add your vault password to vault_password.txt"; \
 			exit 1; \
 		fi; \
-		ansible-galaxy collection install --force "$${PWD}"; \
+		echo "Installing collection..."; \
+		ansible-galaxy collection install --force "$${PWD}/.."; \
+		echo "Running playbook..."; \
 		ansible-playbook \
 			$$ask_become_pass \
 			-vv \
@@ -165,9 +165,19 @@ test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
 	ask_become_pass="-K" playbook_name=test_create_resources.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
-test-remove-resources:  ## Run full removal  test suite as run by Gitlab CICD.
+test-remove-resources:  ## Run full removal test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
 	ask_become_pass="-K" playbook_name=test_remove_resources.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
+test-create-resources-demo:  ## Run stripped down verion of creation test suite. Use for demos.
+	@echo -e $(_begin)
+	ask_become_pass="-K" playbook_name=test_create_resources_demo.yml $(_make) _test_playbook
+	@echo -e $(_finish)
+
+test-remove-resources-demo:  ## Run stripped down version of removal test suite. Use for demos.
+	@echo -e $(_begin)
+	ask_become_pass="-K" playbook_name=test_remove_resources_demo.yml $(_make) _test_playbook
 	@echo -e $(_finish)
 
 test-create-snapshots:  ## Test creating immutable snapshots.
