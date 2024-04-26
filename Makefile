@@ -38,8 +38,8 @@ _requirements-file  	= requirements.txt
 _requirements-dev-file  = requirements-dev.txt
 _user               	= psus-gitlab-cicd
 _password_file      	= vault_password.txt
-_password           	= $$(cat $(_passwordOne must e_file)
-_ibox_url              ?= ibox1521
+_password           	= $$(cat vault_password.txt)
+_ibox_url              ?= ibox2503
 _extra_vars            ?= ibox_vars/iboxCICD.yaml
 _infinishell_creds  	= --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               	= /bin/bash
@@ -52,16 +52,16 @@ _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py
 include Makefile-git
 
 ##@ General
-setup: ## Setup Python requirements.
+setup: _test-venv _test-ubuntu  ## Setup Python requirements.
 	@# Install pbr early to prevent errors with flux and gossip install.
 	@# e.g. distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('pbr>=3.0')
 	$(_python) -m ensurepip && \
-	$(_python) -m pip install --user --upgrade pip && \
-	$(_python) -m pip install --user --upgrade ansible ansible-lint pbr pdbpp && \
-	$(_python) -m pip install --user --upgrade --requirement $(_requirements-file) && \
-	$(_python) -m pip install --user --upgrade --requirement $(_requirements-dev-file) && \
+	$(_python) -m pip install --upgrade pip && \
+	$(_python) -m pip install --upgrade ansible ansible-lint pbr pdbpp && \
+	$(_python) -m pip install --upgrade --requirement $(_requirements-file) && \
+	$(_python) -m pip install --upgrade --requirement $(_requirements-dev-file) && \
 	curl -s https://repo.infinidat.com/setup/main-stable | sudo sh - && \
-	sudo yum install -y infinishell && \
+	sudo apt install -y infinishell && \
 	which ansible || (echo "Ansible not found. May need $$HOME/.local/bin in PATH"; exit 1)
 
 _check-vars:
@@ -81,8 +81,8 @@ version: _check-vars  ## Show versions.
 
 _test-venv:
 	@# Test that a venv is activated
-ifdef VIRTUAL_ENV
-	@echo "Error: Virtual environment set"
+ifndef VIRTUAL_ENV
+	@echo "Error: Virtual environment not set"
 	exit 1
 endif
 
@@ -108,6 +108,14 @@ setup-galaxy: _test-venv
 		chmod +x jq && \
 		sudo mv jq /usr/local/bin && \
 	echo "jq and spruce are installed"
+
+_test-ubuntu:
+	@if [ 'Ubuntu' = "$$(lsb_release -is)" ]; then \
+		:; \
+	else \
+		echo "Error: Not running Ubuntu"; \
+		exit 1; \
+	fi
 
 galaxy-collection-build: ## Build the collection.
 	@echo -e $(_begin)
@@ -138,11 +146,10 @@ galaxy-collection-install-locally:  ## Download and install from local tar file.
 	ansible-galaxy collection install --force $(_namespace)-$(_name)-$(_version).tar.gz --collections-path $(_install_path_local)
 	@echo -e $(_finish)
 
-##@ Playbooks Testing
-_test_playbook:
+##@ Playbook Testing
+_test-playbook: _test-venv
 	@# Run a playbook specified by an envvar.
-	@# See DEV_README.md
-	@# vault_pass env var must be exported.
+	@# See README-DEV.md
 	cd playbooks && \
 		if [ ! -e "../vault_password.txt" ]; then \
 			echo "Please add your vault password to vault_password.txt"; \
@@ -162,115 +169,115 @@ _test_playbook:
 
 test-create-resources:  ## Run full creation test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=test_create_resources.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_create_resources.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-remove-resources:  ## Run full removal test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=test_remove_resources.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_remove_resources.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-create-resources-demo:  ## Run stripped down verion of creation test suite. Use for demos.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=test_create_resources_demo.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_create_resources_demo.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-remove-resources-demo:  ## Run stripped down version of removal test suite. Use for demos.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=test_remove_resources_demo.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_remove_resources_demo.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-create-snapshots:  ## Test creating immutable snapshots.
 	@echo -e $(_begin)
-	playbook_name=test_create_snapshots.yml $(_make) _test_playbook
+	playbook_name=test_create_snapshots.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-remove-snapshots:  ## Test removing immutable snapshots (teardown).
 	@echo -e $(_begin)
-	playbook_name=test_remove_snapshots.yml $(_make) _test_playbook
+	playbook_name=test_remove_snapshots.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-create-net-spaces: dev-install-modules-to-local-collection  ## Test creating network spaces.
 	@echo -e $(_begin)
-	playbook_name=test_create_network_spaces.yml $(_make) _test_playbook
+	playbook_name=test_create_network_spaces.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-remove-net-spaces:  ## Test removing net spaces (teardown).
 	@echo -e $(_begin)
-	playbook_name=test_remove_network_spaces.yml $(_make) _test_playbook
+	playbook_name=test_remove_network_spaces.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-create-map-cluster:  ## Run full creation test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
-	playbook_name=test_create_map_cluster.yml $(_make) _test_playbook
+	playbook_name=test_create_map_cluster.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-remove-map-cluster:  ## Run full removal  test suite as run by Gitlab CICD.
 	@echo -e $(_begin)
-	playbook_name=test_remove_map_cluster.yml $(_make) _test_playbook
+	playbook_name=test_remove_map_cluster.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-create-volumes:  ## Run volume creation tests.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=test_create_volumes.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_create_volumes.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-remove-volumes:  ## Run volume removal tests.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=test_remove_volumes.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=test_remove_volumes.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-create-metadata:  ## Run metadata creation tests.
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
-	ask_become_pass="" playbook_name=test_create_metadata.yml $(_make) _test_playbook
+	ask_become_pass="" playbook_name=test_create_metadata.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-remove-metadata:  ## Run metadata removal tests.
 	@echo -e $(_begin)
-	ask_become_pass="" playbook_name=test_remove_metadata.yml $(_make) _test_playbook
+	ask_become_pass="" playbook_name=test_remove_metadata.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-config:  ## Run config tests
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
-	ask_become_pass="" playbook_name=test_config_sample.yml $(_make) _test_playbook
+	ask_become_pass="" playbook_name=test_config_sample.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 test-notification-rules:  ## Run notification rule tests
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
-	ask_become_pass="" playbook_name=test_notification_rules_sample.yml $(_make) _test_playbook
+	ask_become_pass="" playbook_name=test_notification_rules_sample.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 ##@ Solution Examples
 configure-array:  ## Configure an Infinibox.
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
-	ask_become_pass="" playbook_name=configure_array.yml $(_make) _test_playbook
+	ask_become_pass="" playbook_name=configure_array.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 # deconfigure-array:  ## Remove some Infinibox configureations set by the ibox-configure recipe.
 # 	@echo -e $(_begin)
 # 	ansible-galaxy collection install --force "$${PWD}"
-# 	ask_become_pass="" playbook_name=deconfigure_array.yml $(_make) _test_playbook
+# 	ask_become_pass="" playbook_name=deconfigure_array.yml $(_make) _test-playbook
 # 	@echo -e $(_finish)
 
 ##@ Infinisafe Demo
 
 infinisafe-demo-setup:  ## Setup infinisafe demo.
 	@echo -e $(_begin)
-	playbook_name=infinisafe_demo_setup.yml $(_make) _test_playbook
+	playbook_name=infinisafe_demo_setup.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 infinisafe-demo-runtest:  ## Run tests on infinisafe demo snapshot on forensics host.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=infinisafe_demo_runtest.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=infinisafe_demo_runtest.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 	@echo -e $(_begin)
-	ask_become_pass="-K" playbook_name=infinisafe_demo_teardown.yml $(_make) _test_playbook
+	ask_become_pass="-K" playbook_name=infinisafe_demo_teardown.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
 ##@ Hacking
@@ -418,6 +425,8 @@ test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install
 
 ##@ IBox
 infinishell:  ## Run infinishell.
+	@# Infinishell will not work correctly within tmux if the TERM is not set.
+	@echo "To watch events: event.watch username="$(_user)" exclude=USER_LOGGED_OUT,USER_LOGIN_SUCCESS,USER_LOGIN_FAILURE,REQUEST_AUTHENTICATION_FAILURE tail_length=20"
 	@TERM=xterm infinishell $(_infinishell_creds) --json
 
 infinishell-json:  # Run infinishell with JSON output.
