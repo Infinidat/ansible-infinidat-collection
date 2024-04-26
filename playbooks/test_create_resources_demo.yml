@@ -41,7 +41,6 @@
     - name: Stat file system
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_default"
-        size: 1GB
         pool: "{{ auto_prefix }}pool"
         state: stat
         user: "{{ user }}"
@@ -148,7 +147,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: DEBUG test -> Find the current date-time. Time marks when the playbook gathered facts
+    - name: Find the current date-time. Time marks when the playbook gathered facts
       ansible.builtin.debug:
         var: ansible_date_time.iso8601_micro
 
@@ -232,6 +231,15 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
+    - name: Remove thin volume in existing pool. Next task would fail if vol is resized larger
+      infinidat.infinibox.infini_vol:
+        name: "{{ auto_prefix }}vol"
+        pool: "{{ auto_prefix }}pool"
+        state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: Create thin volume in existing pool
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol"
@@ -241,6 +249,29 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+
+    - name: Resize thin volume larger
+      infinidat.infinibox.infini_vol:
+        name: "{{ auto_prefix }}vol"
+        size: 2GB
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: NEGATIVE Test -> Resize thin volume smaller
+      infinidat.infinibox.infini_vol:
+        name: "{{ auto_prefix }}vol"
+        size: 1GB
+        pool: "{{ auto_prefix }}pool"
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+      register: smaller_result
+      failed_when: >
+        ("volume size cannot be reduced" not in smaller_result.msg)
 
     - name: Create thick volume under pool
       infinidat.infinibox.infini_vol:
