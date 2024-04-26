@@ -1,5 +1,6 @@
 # Infinidat's Ansible Collection Development
 
+## RHEL 8.9 Only
 Installing Ansible using pip from within a venv caused an error much later in the dev process.  When installing a collection built in this environment this error occurred:
 ```
 $ make galaxy-collection-install-locally
@@ -17,5 +18,8 @@ Therefor using a venv is not recommended.  Instead use the following that will i
 $ python3 -m pip install --user ansible
 $ export PATH=/home/stack/.local/bin:$PATH
 ```
+The boolean logic in the '_test-venv' recipe may need to be inverted if not using a venv.
 
+## Ubuntu
+Using a venv works as expected and is recommended.
 
