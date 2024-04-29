@@ -49,7 +49,7 @@ function summarize {
         # Replace ansible variable with value
         # Strip task name
         # Align POSITIVE and NEGATIVE test with IDEMPOTENT test
-        printf "$(grep "^  - name:" "$f" \
+        printf "$(grep "^ *- name:" "$f" \
             | sed \
                 -e 's?- name: ??' \
                 -e 's?{{ auto_prefix }}?PSUS_ANSIBLE_?g' \
