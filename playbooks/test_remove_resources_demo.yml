@@ -4,6 +4,15 @@
   gather_facts: false
   tasks:
 
+    - name: Post a demo start event
+      infinidat.infinibox.infini_event:
+        description_template: "Test Remove Resources Demo is beginning"
+        level: INFO
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: Remove cluster
       infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster_zero_hosts"
@@ -156,6 +165,15 @@
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: Post a demo complete event
+      infinidat.infinibox.infini_event:
+        description_template: "Test Remove Resources Demo has completed"
+        level: INFO
+        state: present
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
