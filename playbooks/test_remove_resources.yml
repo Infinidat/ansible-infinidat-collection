@@ -4,6 +4,15 @@
   gather_facts: false
   tasks:
 
+    - name: POSITIVE test -> Post a CICD start event
+      infinidat.infinibox.infini_event:
+        description_template: "Test Remove Resources CICD beginning"
+        level: INFO
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: POSITIVE test -> Remove cluster
       infinidat.infinibox.infini_cluster:
         name: "{{ auto_prefix }}cluster_zero_hosts"
@@ -237,6 +246,15 @@
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         state: absent
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Post a CICD complete event
+      infinidat.infinibox.infini_event:
+        description_template: "Test Remove Resources CICD complete"
+        level: INFO
+        state: present
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
