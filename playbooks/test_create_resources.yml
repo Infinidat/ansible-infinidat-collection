@@ -4,6 +4,15 @@
   gather_facts: true  # Required for ansible_date_time
   tasks:
 
+    - name: POSITIVE test -> Post a CICD start event
+      infinidat.infinibox.infini_event:
+        description_template: "Test Create Resources CICD beginning"
+        level: INFO
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
     - name: NEGATIVE test -> Create file system under a pool that does not exist
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs"
@@ -782,3 +791,12 @@
         system: "{{ system }}"
       register: result
       failed_when: "'require host_name and host_cluster_state' not in result.msg"
+
+    - name: POSITIVE test -> Post a CICD complete event
+      infinidat.infinibox.infini_event:
+        description_template: "Test Create Resources CICD complete"
+        level: INFO
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
