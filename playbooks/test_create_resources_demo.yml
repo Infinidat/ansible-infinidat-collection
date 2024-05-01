@@ -32,7 +32,7 @@
         system: "{{ system }}"
       register: pool_stat
 
-    - name: DEBUG test -> Show pool stat
+    - name: Show pool stat
       ansible.builtin.debug:
         msg: stat - {{ pool_stat }}
 
@@ -57,7 +57,7 @@
         system: "{{ system }}"
       register: def_stat
 
-    - name: DEBUG test -> Show file system stat
+    - name: Show file system stat
       ansible.builtin.debug:
         msg: stat - {{ def_stat }}
 
@@ -115,7 +115,7 @@
         system: "{{ system }}"
       register: output
 
-    - name: DEBUG test -> Show file system stat
+    - name: Show file system stat
       ansible.builtin.debug:
         var: output
 
@@ -129,7 +129,7 @@
         system: "{{ system }}"
       register: stat_out
 
-    - name: DEBUG test -> Show file system stat
+    - name: Show file system stat
       ansible.builtin.debug:
         var: stat_out
 
@@ -313,7 +313,7 @@
         system: "{{ system }}"
       register: stat_out
 
-    - name: DEBUG test -> Show volume stat with serial number
+    - name: Show volume stat with serial number
       ansible.builtin.debug:
         var: stat_out
 
@@ -327,7 +327,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: DEBUG test -> Find the current date-time. Time marks when the playbook gathered facts.
+    - name: Find the current date-time. Time marks when the playbook gathered facts.
       ansible.builtin.debug:
         var: ansible_date_time.iso8601_micro
 
