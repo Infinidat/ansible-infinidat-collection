@@ -1,12 +1,14 @@
 ---
-- name: Test remove resources
+- name: Test Remove Resources
   hosts: localhost
   gather_facts: false
+  vars:
+    event_prefix: "AIC CICD ->"
   tasks:
 
     - name: POSITIVE test -> Post a CICD start event
       infinidat.infinibox.infini_event:
-        description_template: "Test Remove Resources CICD beginning"
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} is beginning"
         level: INFO
         state: present
         user: "{{ user }}"
@@ -252,7 +254,7 @@
 
     - name: POSITIVE test -> Post a CICD complete event
       infinidat.infinibox.infini_event:
-        description_template: "Test Remove Resources CICD complete"
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} has completed"
         level: INFO
         state: present
         user: "{{ user }}"

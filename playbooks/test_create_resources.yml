@@ -2,11 +2,13 @@
 - name: Test Create Resources
   hosts: localhost
   gather_facts: true  # Required for ansible_date_time
+  vars:
+    event_prefix: "AIC CICD ->"
   tasks:
 
-    - name: POSITIVE test -> Post a CICD start event
+    - name: POSITIVE test -> Post CICD start event
       infinidat.infinibox.infini_event:
-        description_template: "Test Create Resources CICD beginning"
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} is beginning"
         level: INFO
         state: present
         user: "{{ user }}"
@@ -795,6 +797,15 @@
     - name: POSITIVE test -> Post a CICD complete event
       infinidat.infinibox.infini_event:
         description_template: "Test Create Resources CICD complete"
+        level: INFO
+        state: present
+        user: "{{ user }}"
+        password: "{{ password }}"
+        system: "{{ system }}"
+
+    - name: POSITIVE test -> Post CICD complete event
+      infinidat.infinibox.infini_event:
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} has completed"
         level: INFO
         state: present
         user: "{{ user }}"

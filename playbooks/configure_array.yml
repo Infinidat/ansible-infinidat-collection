@@ -1,9 +1,12 @@
 ---
 # PSDEV-1108: Create playbook automating cluster configuration mobility.
-# Create three volumes: vol_nonwriteable, vol_explicitly_writable and vol_writable.
 - name: Configure an Infinibox Array
   hosts: localhost
   gather_facts: false
+  vars_prompt:
+    - name: ad_changes_enabled
+      prompt: Enter true to setup Active Directory?
+      private: false
   tasks:
     - name: Configuration
       ansible.builtin.debug:
@@ -120,6 +123,7 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      when: ad_changes_enabled | bool
 
     - name: Test user login using Active Directory credentials
       infinidat.infinibox.infini_user:
@@ -363,11 +367,12 @@
 
     - name: Install SSL certificate
       infinidat.infinibox.infini_certificate:
-        certificate_file_name: /home/stack/workspace/ansible-infinidat-collection/signed-certificate-with-pkey.pem
+        certificate_file_name: ../signed-certificate-with-pkey.pem
         state: "present"
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      when: false
 
     - name: Pause for a short period since the SSL certificate was updated
       ansible.builtin.pause:
