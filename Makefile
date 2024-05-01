@@ -254,7 +254,7 @@ test-notification-rules:  ## Run notification rule tests
 configure-array:  ## Configure an Infinibox.
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
-	ask_become_pass="" playbook_name=configure_array.yml $(_make) _test-playbook
+	_extra_vars="ibox_vars/vibox.yaml" ask_become_pass="" playbook_name="configure_array.yml" $(_make) _test-playbook
 	@echo -e $(_finish)
 
 # deconfigure-array:  ## Remove some Infinibox configureations set by the ibox-configure recipe.

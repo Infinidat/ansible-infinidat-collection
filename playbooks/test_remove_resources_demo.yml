@@ -1,12 +1,14 @@
 ---
-- name: Test remove resources
+- name: Test Remove Resources Demo
   hosts: localhost
   gather_facts: false
+  vars:
+    event_prefix: "RBC DEMO ->"
   tasks:
 
     - name: Post a demo start event
       infinidat.infinibox.infini_event:
-        description_template: "Test Remove Resources Demo is beginning"
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} is beginning"
         level: INFO
         state: present
         user: "{{ user }}"
@@ -171,7 +173,7 @@
 
     - name: Post a demo complete event
       infinidat.infinibox.infini_event:
-        description_template: "Test Remove Resources Demo has completed"
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} has completed"
         level: INFO
         state: present
         user: "{{ user }}"

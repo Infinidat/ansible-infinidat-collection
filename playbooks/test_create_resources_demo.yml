@@ -2,11 +2,13 @@
 - name: Test Create Resources Demo
   hosts: localhost
   gather_facts: true  # Required for ansible_date_time
+  vars:
+    event_prefix: "RBC DEMO ->"
   tasks:
 
     - name: Post a demo start event
       infinidat.infinibox.infini_event:
-        description_template: "Test Create Resources Demo is beginning"
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} is beginning"
         level: INFO
         state: present
         user: "{{ user }}"
@@ -94,45 +96,6 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: Change THICK file system back to THIN provisioning
-      infinidat.infinibox.infini_fs:
-        name: "{{ auto_prefix }}fs"
-        size: 1GB
-        pool: "{{ auto_prefix }}pool"
-        state: present
-        thin_provision: true
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-
-    - name: Stat file system
-      infinidat.infinibox.infini_fs:
-        name: "{{ auto_prefix }}fs"
-        pool: "{{ auto_prefix }}pool"
-        state: stat
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: output
-
-    - name: Show file system stat
-      ansible.builtin.debug:
-        var: output
-
-    - name: Stat file system that matches serial number
-      infinidat.infinibox.infini_fs:
-        serial: "{{ output.serial }}"
-        pool: "{{ auto_prefix }}pool"
-        state: stat
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: stat_out
-
-    - name: Show file system stat
-      ansible.builtin.debug:
-        var: stat_out
-
     - name: Create file system snapshot
       infinidat.infinibox.infini_fs:
         name: "{{ auto_prefix }}fs_snap"
@@ -192,7 +155,6 @@
         system: "{{ system }}"
       vars:
         fmt: "%Y-%m-%dT%H:%M:%S.%fZ"
-
 
     - name: Wait for lock on file system to expire
       ansible.builtin.pause:
@@ -269,7 +231,7 @@
         password: "{{ password }}"
         system: "{{ system }}"
 
-    - name: NEGATIVE Test -> Resize thin volume smaller
+    - name: Resize thin volume smaller
       infinidat.infinibox.infini_vol:
         name: "{{ auto_prefix }}vol"
         size: 1GB
@@ -293,29 +255,6 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
-
-    - name: Stat volume under pool
-      infinidat.infinibox.infini_vol:
-        name: "{{ auto_prefix }}vol"
-        pool: "{{ auto_prefix }}pool"
-        state: stat
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: output
-
-    - name: Stat vol serial number
-      infinidat.infinibox.infini_vol:
-        state: stat
-        serial: "{{ output.serial }}"
-        user: "{{ user }}"
-        password: "{{ password }}"
-        system: "{{ system }}"
-      register: stat_out
-
-    - name: Show volume stat with serial number
-      ansible.builtin.debug:
-        var: stat_out
 
     - name: Create snapshot from volume
       infinidat.infinibox.infini_vol:
@@ -636,7 +575,7 @@
 
     - name: Post a demo complete event
       infinidat.infinibox.infini_event:
-        description_template: "Test Create Resources Demo has completed"
+        description_template: "{{ event_prefix }} {{ ansible_play_name }} has completed"
         level: INFO
         state: present
         user: "{{ user }}"
