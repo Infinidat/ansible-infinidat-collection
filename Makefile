@@ -8,6 +8,7 @@
 ### Dependencies ###
 # - jq: https://stedolan.github.io/jq/
 # - spruce: https://github.com/geofffranks/spruce
+# - ansible: git@github.com:ansible/ansible.git
 
 ### environment ###
 # Include an env file with secrets.  This exposes the secrets
@@ -18,6 +19,7 @@
 # The key only needs to be valid to use target galaxy-colletion-publish.
 # Getting a token:
 # https://galaxy.ansible.com/ui/token/
+#
 
 _env = ~/.ssh/ansible-galaxy.sh
 include $(_env)
@@ -380,7 +382,7 @@ dev-hack-module-test-jq:  ## Hack testing with multiple recipes.
 	$(_make) dev-hack-module-stat-jq
 
 ##@ Test Module
-_module = infini_network_space.py
+_module = infini_event.py
 
 find-default-module-path:  ## Find module path.
 	ansible-config list | spruce json | jq '.DEFAULT_MODULE_PATH.default' | sed 's?"??g'
