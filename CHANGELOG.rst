@@ -9,7 +9,7 @@ v1.4.6 (2024-04-26)
 ^^^^^^^^^^^^^^^^^^^^
 Project Enhancements
 ^^^^^^^^^^^^^^^^^^^^
-* TBD
+* Add test_create_resources_demo and test_remove_resources_demo playbooks.
 
 -------------------
 v1.4.5 (2024-04-11)
