@@ -555,6 +555,13 @@ def handle_absent(module):
     module.exit_json(changed=changed, msg=msg)
 
 
+def handle_search(module):
+    """Make metadata search"""
+    changed = False
+    msg = "Search not implemented"
+    module.exit_json(changed=changed, msg=msg)
+
+
 def execute_state(module):
     """Determine which state function to execute and do so"""
     state = module.params["state"]
@@ -565,6 +572,8 @@ def execute_state(module):
             handle_present(module)
         elif state == "absent":
             handle_absent(module)
+        elif state == "search":
+            handle_search(module)
         else:
             module.fail_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
