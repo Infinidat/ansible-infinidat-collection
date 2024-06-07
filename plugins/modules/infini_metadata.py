@@ -500,6 +500,56 @@ def delete_metadata(module):  # pylint: disable=too-many-return-statements
     return changed
 
 
+@api_wrapper
+def search_metadata(module):
+    """ Get metadata about a pool """
+    # TODO - support pagination
+    system = get_system(module)
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    value = module.params["value"]
+
+    is_appended = False
+    path = f"metadata"
+
+    # Assemble rest path
+    if object_type or object_name or key or value:
+        path += "?"
+
+    if object_type:
+        if is_appended:
+            path += "&"
+        path += f"object_type={object_type}"
+        is_appended = True
+    if object_name:
+        if is_appended:
+            path += "&"
+        path += f"object_name={object_name}"
+        is_appended = True
+    if key:
+        if is_appended:
+            path += "&"
+        path += f"key={key}"
+        is_appended = True
+    if value:
+        if is_appended:
+            path += "&"
+        path += f"value={value}"
+        is_appended = True
+
+    try:
+        metadata = system.api.get(path=path)
+    except APICommandFailed:
+        if not disable_fail:
+            module.fail_json(
+                f"Cannot search metadata for object_type '{object_type}', object_name '{object_name}', key '{key}', value '{value}'"
+            )
+
+    result = metadata.get_result()
+    return result
+
+
 def handle_stat(module):
     """Return metadata stat"""
     object_type = module.params["object_type"]
@@ -557,9 +607,14 @@ def handle_absent(module):
 
 def handle_search(module):
     """Make metadata search"""
-    changed = False
-    msg = "Search not implemented"
-    module.exit_json(changed=changed, msg=msg)
+    result = {}
+    result["changed"] = False
+    result["objects"] = search_metadata(module)
+    msg = "No objects found"
+    if len(result["objects"]):
+        msg = "Objects found"
+    result["msg"] = msg
+    module.exit_json(**result)
 
 
 def execute_state(module):
@@ -579,6 +634,7 @@ def execute_state(module):
     finally:
         system = get_system(module)
         system.logout()
+
 
 def fail_if_missing_required_param(module, param, is_inverting_logic=False):
     """Fail with bad params"""
