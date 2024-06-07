@@ -124,7 +124,7 @@ HAS_CAPACITY = False
 
 @api_wrapper
 def get_metadata_vol(module, disable_fail):
-    """ Get metadata about a volume """
+    """Get metadata about a volume"""
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -151,7 +151,7 @@ def get_metadata_vol(module, disable_fail):
 
 @api_wrapper
 def get_metadata_fs(module, disable_fail):
-    """ Get metadata about a fs """
+    """Get metadata about a fs"""
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -178,7 +178,7 @@ def get_metadata_fs(module, disable_fail):
 
 @api_wrapper
 def get_metadata_host(module, disable_fail):
-    """ Get metadata about a host """
+    """Get metadata about a host"""
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -205,7 +205,7 @@ def get_metadata_host(module, disable_fail):
 
 @api_wrapper
 def get_metadata_cluster(module, disable_fail):
-    """ Get metadata about a cluster """
+    """Get metadata about a cluster"""
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -232,7 +232,7 @@ def get_metadata_cluster(module, disable_fail):
 
 @api_wrapper
 def get_metadata_fssnap(module, disable_fail):
-    """ Get metadata about a fs snapshot """
+    """Get metadata about a fs snapshot"""
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -259,7 +259,7 @@ def get_metadata_fssnap(module, disable_fail):
 
 @api_wrapper
 def get_metadata_pool(module, disable_fail):
-    """ Get metadata about a pool """
+    """Get metadata about a pool"""
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -286,7 +286,7 @@ def get_metadata_pool(module, disable_fail):
 
 @api_wrapper
 def get_metadata_volsnap(module, disable_fail):
-    """ Get metadata for a volume snapshot """
+    """Get metadata for a volume snapshot"""
     system = get_system(module)
     object_type = module.params["object_type"]
     object_name = module.params["object_name"]
@@ -305,7 +305,9 @@ def get_metadata_volsnap(module, disable_fail):
                     f"Volume snapshot {object_name} key {key} not found"
                 )
     elif not disable_fail:
-        msg = f"Volume snapshot named {object_name} not found. Cannot stat its metadata."
+        msg = (
+            f"Volume snapshot named {object_name} not found. Cannot stat its metadata."
+        )
         module.fail_json(msg=msg)
 
     return metadata
@@ -424,9 +426,7 @@ def put_metadata(module):  # pylint: disable=too-many-statements
         path = f"metadata/{volsnap.id}"
 
     # Create json data
-    data = {
-        key: value
-    }
+    data = {key: value}
 
     # Put
     system.api.put(path=path, data=data)
@@ -502,7 +502,7 @@ def delete_metadata(module):  # pylint: disable=too-many-return-statements
 
 @api_wrapper
 def search_metadata(module):
-    """ Get metadata about a pool """
+    """Get metadata about a pool"""
     # TODO - support pagination
     system = get_system(module)
     object_type = module.params["object_type"]
@@ -511,7 +511,7 @@ def search_metadata(module):
     value = module.params["value"]
 
     # Assemble rest path
-    path = f"metadata?page_size=1000"
+    path = "metadata?page_size=1000"
     if object_type:
         path += f"&object_type={object_type}"
     if object_name:
@@ -520,14 +520,13 @@ def search_metadata(module):
         path += f"&key={key}"
     if value:
         path += f"&value={value}"
-        is_appended = True
 
     try:
         metadata = system.api.get(path=path)
     except APICommandFailed:
         module.fail_json(
             f"Cannot search metadata for object_type '{object_type}', object_name '{object_name}', key '{key}', value '{value}'"
-            )
+        )
 
     result = metadata.get_result()
     return result
@@ -639,7 +638,9 @@ def check_and_convert_system_keys_values(module):
 
         # Check object_name is None
         if object_name:
-            module.fail_json("An object_name for object_type system must not be provided.")
+            module.fail_json(
+                "An object_name for object_type system must not be provided."
+            )
 
         # Handle special system metadata keys
         if key == "ui-dataset-default-provisioning":
@@ -665,17 +666,14 @@ def check_and_convert_system_keys_values(module):
                 )
 
         # Convert integer string to int
-        if key in [
-            "ui-bulk-volume-zero-padding",
-            "ui-table-export-limit"
-        ]:
+        if key in ["ui-bulk-volume-zero-padding", "ui-table-export-limit"]:
             try:
                 module.params["value"] = json.loads(value.lower())
             except json.decoder.JSONDecodeError:
                 module.fail_json(
                     f"Cannot create {object_type} metadata for key {key}. "
                     f"Value must be of type integer. Invalid value: {value}."
-                    )
+                )
 
 
 def check_options(module):
@@ -695,22 +693,41 @@ def check_options(module):
             fail_if_missing_required_param(module, req_param)
     elif state == "search":
         if not key and not value:
-            module.fail_json("The state 'search' requires either a key or value parameter to search for")
+            module.fail_json(
+                "The state 'search' requires either a key or value parameter to search for"
+            )
     else:
         module.fail_json(f"The state '{state}' is not supported")
 
 
 def main():
-    """ Main """
+    """Main"""
     argument_spec = infinibox_argument_spec()
 
     argument_spec.update(
         {
-            "object_type": {"required": False, "default": None, "choices": ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap", None]},
+            "object_type": {
+                "required": False,
+                "default": None,
+                "choices": [
+                    "cluster",
+                    "fs",
+                    "fs-snap",
+                    "host",
+                    "pool",
+                    "system",
+                    "vol",
+                    "vol-snap",
+                    None,
+                ],
+            },
             "object_name": {"required": False, "default": None},
-            "key": {"required": False, "no_log": False},
+            "key": {"required": False, "default": None},
             "value": {"required": False, "default": None, "no_log": True},
-            "state": {"required": True, "choices": ["stat", "present", "absent", "search"]},
+            "state": {
+                "required": True,
+                "choices": ["stat", "present", "absent", "search"],
+            },
         }
     )
 
