@@ -18,7 +18,8 @@ module: infini_metadata
 version_added: 2.13.0
 short_description:  Create, Delete or Modify metadata on Infinibox
 description:
-    - This module creates, deletes or modifies metadata on Infinibox.
+    - This module creates, deletes or modifies metadata on Infinibox. It can
+    also search for objects by metadata key and object type.
     - Deleting metadata by object, without specifying a key, is not implemented for any object_type (e.g. DELETE api/rest/metadata/system).
     - This would delete all metadata belonging to the object. Instead delete each key explicitely using its key name.
 author: David Ohlemacher (@ohlemacher)
@@ -46,11 +47,11 @@ options:
     required: false
   state:
     description:
-      - Creates/Modifies metadata when present or removes when absent.
+      - Creates, modifies, removes or searches for metadata.
     type: str
     required: false
     default: present
-    choices: [ "stat", "present", "absent" ]
+    choices: [ "stat", "present", "absent", "search" ]
 
 extends_documentation_fragment:
     - infinibox
@@ -59,26 +60,39 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 - name: Create new metadata key foo with value bar
   infini_metadata:
-    name: foo
-    key: bar
+    object_name: test-vol
+    object_type: vol
+    key: foo
+    value: bar
     state: present
     user: admin
     password: secret
     system: ibox001
 - name: Stat metadata key named foo
   infini_metadata:
-    name: foo
+    object_name: test-vol
     state: stat
     user: admin
     password: secret
     system: ibox001
-- name: Remove metadata keyn named foo
-  infini_vol:
-    name: foo_snap
+- name: Remove metadata key named foo
+  infini_metadata:
+    object_name: test-vol
+    object_type: vol,
+    key: foo
     state: absent
     user: admin
     password: secret
     system: ibox001
+- name: Search for objects that have a metadata key named foo with value bar
+  infini_metadata:
+    key: foo
+    value: bar
+    state: search
+    user: admin
+    password: secret
+    system: ibox001
+
 """
 
 # RETURN = r''' # '''
@@ -557,94 +571,85 @@ def execute_state(module):
         system = get_system(module)
         system.logout()
 
+def fail_if_missing_required_param(module, param, is_inverting_logic=False):
+    """Fail with bad params"""
+    state = module.params["state"]
+    if is_inverting_logic and module.params[param]:
+        module.fail_json(f"Parameter '{param}' cannot be provided for state '{state}'")
+    elif not module.params[param]:
+        module.fail_json(f"Parameter '{param}' is required for state '{state}'")
+
+
+def check_and_convert_system_keys_values(module):
+    """object_type system key values may need type conversions"""
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
+    key = module.params["key"]
+    value = module.params["value"]
+    # Check system object_type
+    if object_type == "system":
+
+        # Check object_name is None
+        if object_name:
+            module.fail_json("An object_name for object_type system must not be provided.")
+
+        # Handle special system metadata keys
+        if key == "ui-dataset-default-provisioning":
+            values = ["THICK", "THIN"]
+            if value not in values:
+                module.fail_json(
+                    f"Cannot create {object_type} metadata for key {key}. "
+                    f"Value must be one of {values}. Invalid value: {value}."
+                )
+
+        # Convert bool string to bool
+        if key in [
+            "ui-dataset-base2-units",
+            "ui-feedback-dialog",
+            "ui-feedback-form",
+        ]:
+            try:
+                module.params["value"] = json.loads(value.lower())
+            except json.decoder.JSONDecodeError:
+                module.fail_json(
+                    f"Cannot create {object_type} metadata for key {key}. "
+                    f"Value must be able to be decoded as a boolean. Invalid value: {value}."
+                )
+
+        # Convert integer string to int
+        if key in [
+            "ui-bulk-volume-zero-padding",
+            "ui-table-export-limit"
+        ]:
+            try:
+                module.params["value"] = json.loads(value.lower())
+            except json.decoder.JSONDecodeError:
+                module.fail_json(
+                    f"Cannot create {object_type} metadata for key {key}. "
+                    f"Value must be of type integer. Invalid value: {value}."
+                    )
+
 
 def check_options(module):
     """Verify module options are sane"""
     state = module.params["state"]
-    object_type = module.params["object_type"]
-    object_name = module.params["object_name"]
-
-    # Check object_type
-    object_types = [
-        "cluster",
-        "fs",
-        "fs-snap",
-        "host",
-        "pool",
-        "system",
-        "vol",
-        "vol-snap",
-    ]
-    if object_type not in object_types:
-        module.fail_json(
-            f"Cannot create {object_type} metadata. Object type must be one of {object_types}"
-        )
-
-    # Check object_name
-    if object_type == "system":
-        if object_name:
-            module.fail_json("An object_name for object_type system must not be provided.")
-    else:
-        if not object_name:
-            module.fail_json(
-                f"The name of the {object_type} must be provided as object_name."
-            )
-
     key = module.params["key"]
-    if not key:
-        module.fail_json(f"Cannot create a {object_type} metadata key without providing a key name")
+    value = module.params["value"]
 
-    if state == "stat":
-        pass
-    elif state == "present":
-        # Check value
-        key = module.params["key"]
-        value = module.params["value"]
-        if not value:
-            module.fail_json(
-                f"Cannot create a {object_type} metadata key {key} without providing a value"
-            )
-        # Check system object_type
-        if object_type == "system":
-            if key == "ui-dataset-default-provisioning":
-                values = ["THICK", "THIN"]
-                if value not in values:
-                    module.fail_json(
-                        f"Cannot create {object_type} metadata for key {key}. "
-                        f"Value must be one of {values}. Invalid value: {value}."
-                    )
-
-            # Convert bool string to bool
-            if key in [
-                "ui-dataset-base2-units",
-                "ui-feedback-dialog",
-                "ui-feedback-form",
-            ]:
-                try:
-                    module.params["value"] = json.loads(value.lower())
-                except json.decoder.JSONDecodeError:
-                    module.fail_json(
-                        f"Cannot create {object_type} metadata for key {key}. "
-                        f"Value must be able to be decoded as a boolean. Invalid value: {value}."
-                    )
-
-            # Convert integer string to int
-            if key in [
-                "ui-bulk-volume-zero-padding",
-                "ui-table-export-limit"
-            ]:
-                try:
-                    module.params["value"] = json.loads(value.lower())
-                except json.decoder.JSONDecodeError:
-                    module.fail_json(
-                        f"Cannot create {object_type} metadata for key {key}. "
-                        f"Value must be of type integer. Invalid value: {value}."
-                    )
-
-    elif state == "absent":
-        pass
+    if state == "present":
+        req_params = ["object_name", "object_type", "key", "value"]
+        for req_param in req_params:
+            fail_if_missing_required_param(module, req_param)
+        check_and_convert_system_keys_values(module)
+    elif state in ["stat", "absent"]:
+        req_params = ["object_name", "object_type", "key"]
+        for req_param in req_params:
+            fail_if_missing_required_param(module, req_param)
+    elif state == "search":
+        if not key and not value:
+            module.fail_json("The state 'search' requires either a key or value parameter to search for")
     else:
-        module.fail_json(f"Invalid state '{state}' provided")
+        module.fail_json(f"The state '{state}' is not supported")
 
 
 def main():
@@ -653,11 +658,11 @@ def main():
 
     argument_spec.update(
         {
-            "object_type": {"required": True, "choices": ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap"]},
+            "object_type": {"required": False, "default": None, "choices": ["cluster", "fs", "fs-snap", "host", "pool", "system", "vol", "vol-snap", None]},
             "object_name": {"required": False, "default": None},
-            "key": {"required": True, "no_log": False},
-            "value": {"required": False, "default": None},
-            "state": {"default": "present", "choices": ["stat", "present", "absent"]},
+            "key": {"required": False, "no_log": False},
+            "value": {"required": False, "default": None, "no_log": True},
+            "state": {"required": True, "choices": ["stat", "present", "absent", "search"]},
         }
     )
 
