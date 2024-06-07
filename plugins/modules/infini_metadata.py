@@ -510,40 +510,23 @@ def search_metadata(module):
     key = module.params["key"]
     value = module.params["value"]
 
-    is_appended = False
-    path = f"metadata"
-
     # Assemble rest path
-    if object_type or object_name or key or value:
-        path += "?"
-
+    path = f"metadata?page_size=1000"
     if object_type:
-        if is_appended:
-            path += "&"
-        path += f"object_type={object_type}"
-        is_appended = True
+        path += f"&object_type={object_type}"
     if object_name:
-        if is_appended:
-            path += "&"
-        path += f"object_name={object_name}"
-        is_appended = True
+        path += f"&object_name={object_name}"
     if key:
-        if is_appended:
-            path += "&"
-        path += f"key={key}"
-        is_appended = True
+        path += f"&key={key}"
     if value:
-        if is_appended:
-            path += "&"
-        path += f"value={value}"
+        path += f"&value={value}"
         is_appended = True
 
     try:
         metadata = system.api.get(path=path)
     except APICommandFailed:
-        if not disable_fail:
-            module.fail_json(
-                f"Cannot search metadata for object_type '{object_type}', object_name '{object_name}', key '{key}', value '{value}'"
+        module.fail_json(
+            f"Cannot search metadata for object_type '{object_type}', object_name '{object_name}', key '{key}', value '{value}'"
             )
 
     result = metadata.get_result()
