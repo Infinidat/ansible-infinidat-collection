@@ -292,7 +292,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_host
 # _module_under_test = infini_infinimetrics
 # _module_under_test = infini_map
-# _module_under_test = infini_metadata
+_module_under_test = infini_metadata
 # _module_under_test = infini_network_space
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_notification_target
@@ -300,7 +300,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_sso
 # _module_under_test = infini_user
 # _module_under_test = infini_users_repository
-_module_under_test = infini_vol
+# _module_under_test = infini_vol
 
 dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow module hacking.
 	@echo "HACK - Creating hacking module links"
@@ -314,12 +314,12 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 	done
 	@echo "HACK - Creating hacking module_utils links $(_module_utilities)"
 	@ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$(_ansible_clone)/lib/ansible/module_utils/infinibox.py" && \
-	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$${HOME}/.local/lib/$(_python)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils/infinibox.py" && \
+	echo ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$${HOME}/.local/lib/$(_python)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils/infinibox.py" && \
 	echo "HACK - Linking module_utils to ansible site-packages to allow changes to be used for dev" && \
 	echo "HACK - Site packages: $$HOME/.local/lib/$(_python)/site-packages/ansible_collections/infinidat" && \
-	utils_path="$$HOME/.local/lib/$(_python)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils" && \
-	mv "$$utils_path/infinibox.py" "$$utils_path/infinibox_orig.py" && \
-	ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$$utils_path/infinibox.py"
+	echo utils_path="$$HOME/.local/lib/$(_python)/site-packages/ansible_collections/infinidat/infinibox/plugins/module_utils" && \
+	echo mv "$$utils_path/infinibox.py" "$$utils_path/infinibox_orig.py" && \
+	echo ln --force --symbolic "$$(pwd)/plugins/module_utils/infinibox.py" "$$utils_path/infinibox.py"
 
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
 	@echo "_module_under_test: $(_module_under_test)"
@@ -351,6 +351,12 @@ dev-hack-module-present:  ## Hack present.
 
 dev-hack-module-present-jq:  ## Hack present with jq.
 	@state=present $(_make) _dev-hack-module-jq
+
+dev-hack-module-search:  ## Hack search.
+	@state=search $(_make) _dev-hack-module
+
+dev-hack-module-search-jq:  ## Hack search with jq.
+	@state=search $(_make) _dev-hack-module-jq
 
 dev-hack-module-absent:  ## Hack absent.
 	@state=absent $(_make) _dev-hack-module
