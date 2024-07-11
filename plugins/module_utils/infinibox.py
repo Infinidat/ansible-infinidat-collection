@@ -38,7 +38,7 @@ except Exception:
 import pickle
 from functools import wraps
 from os import environ
-from os import path
+from os import remove, path
 from datetime import datetime
 
 HAS_URLLIB3 = True
@@ -84,6 +84,7 @@ def infinibox_argument_spec():
         user=dict(required=True),
         password=dict(required=True, no_log=True),
         stay_logged_in=dict(required=False, type=bool, default=False),
+        stay_logged_in_minutes=dict(required=False, type=int, default=5),
     )
 
 
@@ -109,12 +110,39 @@ def get_infinibox_pickle_name(module):
     return pickle_name
 
 
+def delete_aged_creds_file(module):
+    """Delete creds file if the file age is greater than a limit.
+    Return False if not deleted, True if deleted.
+    """
+    file_path = get_infinibox_pickle_name(module)
+    n_minutes = module.params["stay_logged_in_minutes"]
+    try:
+        file_mod_time = path.getmtime(file_path)
+        file_mod_date = datetime.fromtimestamp(file_mod_time)
+        current_time = datetime.now()
+        time_diff = current_time - file_mod_date
+        if time_diff.total_seconds() > n_minutes * 60:
+            remove(file_path)
+            print(f"Deleted file older than {n_minutes} minutes: {file_path}")
+            return True
+        else:
+            print(f"File {file_path} is not older than {n_minutes} minutes")
+            return False
+    except FileNotFoundError:
+        print(f"The file {file_path} does not exist")
+        return True
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return True
+
+
 def load_creds_from_file(module):
     """Load credentials from pickle file"""
     global INFINIBOX_SYSTEM  # pylint: disable=global-statement
     saved_creds = None
+    is_creds_removed = delete_aged_creds_file(module)
     stay_logged_in = module.params.get("stay_logged_in", None)
-    if stay_logged_in and not INFINIBOX_SYSTEM:
+    if not is_creds_removed and stay_logged_in and not INFINIBOX_SYSTEM:
         try:
             with open(get_infinibox_pickle_name(module), "rb") as file:
                 saved_creds = pickle.load(file)
