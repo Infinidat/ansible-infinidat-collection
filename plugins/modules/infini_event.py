@@ -76,6 +76,7 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     HAS_INFINISDK,
     infinibox_argument_spec,
     get_system,
+    execute_state_cleanup,
 )
 
 
@@ -113,8 +114,7 @@ def execute_state(module):
         else:
             module.exit_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
-        system = get_system(module)
-        system.logout()
+        execute_state_cleanup(module)
 
 
 def main():

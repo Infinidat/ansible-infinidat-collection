@@ -286,13 +286,13 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_certificate
 # _module_under_test = infini_cluster
 # _module_under_test = infini_conig
-# _module_under_test = infini_event
+_module_under_test = infini_event
 # _module_under_test = infini_fibre_channel_switch
 # _module_under_test = infini_fs
 # _module_under_test = infini_host
 # _module_under_test = infini_infinimetrics
 # _module_under_test = infini_map
-_module_under_test = infini_metadata
+# _module_under_test = infini_metadata
 # _module_under_test = infini_network_space
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_notification_target
