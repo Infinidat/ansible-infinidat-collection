@@ -25,6 +25,23 @@ options:
       - Infinibox User password.
     type: str
     required: true
+  stay_logged_in:
+    description:
+      - If True, persist API session to disk.
+      - Load the session on subsequent module calls.
+      - Persisted sessions are only usable for stay_logged_in_minutes.
+    type: bool
+    required: false
+    default: false
+  stay_logged_in_minutes:
+    description:
+      - Number of minutes for which a persisted session may be reused.
+      - After this time, the session data will be deleted.
+      - The time should be shorter than the IBOX session timeout time.
+    type: int
+    required: false
+    default: 5
+
 notes:
   - This module requires infinisdk python library
   - You must set INFINIBOX_USER and INFINIBOX_PASSWORD environment variables
