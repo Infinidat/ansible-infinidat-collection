@@ -81,8 +81,8 @@ def infinibox_argument_spec():
     """Return standard base dictionary used for the argument_spec argument in AnsibleModule"""
     return dict(
         system=dict(required=True),
-        user=dict(required=True),
-        password=dict(required=True, no_log=True),
+        user=dict(required=False, default=None),
+        password=dict(required=False, default=None, no_log=True),
         stay_logged_in=dict(required=False, type=bool, default=False),
         stay_logged_in_minutes=dict(required=False, type=int, default=5),
     )
@@ -123,37 +123,37 @@ def delete_aged_creds_file(module):
         time_diff = current_time - file_mod_date
         if time_diff.total_seconds() > n_minutes * 60:
             remove(file_path)
-            print(f"Deleted file older than {n_minutes} minutes: {file_path}")
+            # print(f"Deleted file older than {n_minutes} minutes: {file_path}")
             return True
         else:
-            print(f"File {file_path} is not older than {n_minutes} minutes")
+            # print(f"File {file_path} is not older than {n_minutes} minutes")
             return False
     except FileNotFoundError:
-        print(f"The file {file_path} does not exist")
+        # print(f"The file {file_path} does not exist")
         return True
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return True
+        msg = f"An unexpected error occurred while deleting credentials file {file_path}: {e}"
+        module.fail_json(msg=msg)
 
 
 def load_creds_from_file(module):
     """Load credentials from pickle file"""
     global INFINIBOX_SYSTEM  # pylint: disable=global-statement
-    saved_creds = None
+    loaded_creds = None
     is_creds_removed = delete_aged_creds_file(module)
     stay_logged_in = module.params.get("stay_logged_in", None)
     if not is_creds_removed and stay_logged_in and not INFINIBOX_SYSTEM:
         try:
             with open(get_infinibox_pickle_name(module), "rb") as file:
-                saved_creds = pickle.load(file)
-            print(f"Loaded pickled credentials")
+                loaded_creds = pickle.load(file)
+            # print(f"Loaded pickled credentials")
         except FileNotFoundError:
-            print(f"Cannot find pickled credentials file")
+            # print(f"Cannot find pickled credentials file")
             pass
         except Exception as err:
-            print(f"Error loading pickles credentials file: {err}")
+            # print(f"Error loading pickles credentials file: {err}")
             pass
-    return saved_creds
+    return loaded_creds
 
 
 def save_creds_to_file(module):
@@ -161,11 +161,19 @@ def save_creds_to_file(module):
     global INFINIBOX_SYSTEM  # pylint: disable=global-statement
     stay_logged_in = module.params.get("stay_logged_in", None)
     if stay_logged_in and INFINIBOX_SYSTEM:
+        # Remove existing file to ensure the creation time is updated
+        file_path = get_infinibox_pickle_name(module)
+        try:
+            remove(file_path)
+            # print(f"Removed old pickled credentials")
+        except FileNotFoundError:
+            pass
+
         saved_creds = INFINIBOX_SYSTEM.api.save_credentials()
-        print(f"Saving pickled credentials: {saved_creds}")
+        # print(f"Saving pickled credentials: {saved_creds}")
         with open(get_infinibox_pickle_name(module), "wb") as file:
             pickle.dump(saved_creds, file)
-        print("Saved pickled credentials")
+        # print("Saved pickled credentials")
 
 
 @api_wrapper
@@ -340,7 +348,6 @@ def get_host(module, system):
 def get_cluster(module, system):
     """Find a cluster by the name specified in the module"""
     cluster = None
-    # print("dir:", dir(system))
 
     for a_cluster in system.host_clusters.to_list():
         a_cluster_name = a_cluster.get_name()

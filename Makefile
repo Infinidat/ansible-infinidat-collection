@@ -252,6 +252,12 @@ test-notification-rules:  ## Run notification rule tests
 	ask_become_pass="" playbook_name=test_notification_rules_sample.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
+test-persist_api_session:  ## Run tasks that use IBOX API session data that is persisted to disk.
+	@echo -e $(_begin)
+	ansible-galaxy collection install --force "$${PWD}"
+	ask_become_pass="" playbook_name=test_persist_api_session.yml $(_make) _test-playbook
+	@echo -e $(_finish)
+
 ##@ Solution Examples
 configure-array:  ## Configure an Infinibox.
 	@echo -e $(_begin)
