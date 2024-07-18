@@ -77,6 +77,20 @@ def api_wrapper(func):
     return __wrapper
 
 
+def infinibox_api_post(module, path, data):
+    """If the stay_logged_in_minutes is less then the equivalent setting on the IBOX, a session file
+    may be used that will then fail on the IBOX.  If the happens, the SDK will try to login, but
+    will not have credentials and fail with a TypeError. Catch that error.
+    """
+    system = get_system(module)
+    try:
+        system.api.post(path=path, data=data)
+    except TypeError:
+        msg = "Infinibox POST communication failed. Check credentials or stay_logged_in_minutes setting."
+        module.fail_json(msg=msg)
+    module.exit_json(changed=True, msg="Event posted")
+
+
 def infinibox_argument_spec():
     """Return standard base dictionary used for the argument_spec argument in AnsibleModule"""
     return dict(
