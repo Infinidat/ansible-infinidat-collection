@@ -74,9 +74,10 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
-    infinibox_argument_spec,
-    get_system,
     execute_state_cleanup,
+    get_system,
+    infinibox_api_post,
+    infinibox_argument_spec,
 )
 
 
@@ -99,7 +100,7 @@ def handle_present(module):
         "level": level,
         "visibility": visibility,
     }
-    system.api.post(path=path, data=json_data)
+    infinibox_api_post(module, path, json_data)
     module.exit_json(changed=True, msg="Event posted")
 
 
