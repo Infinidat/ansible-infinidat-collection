@@ -77,18 +77,46 @@ def api_wrapper(func):
     return __wrapper
 
 
-def infinibox_api_post(module, path, data):
-    """If the stay_logged_in_minutes is less then the equivalent setting on the IBOX, a session file
+@api_wrapper
+def infinibox_api_get(module, path, fail_msg=None):
+    """
+    Call system.api.get.
+    If the stay_logged_in_minutes is less then the equivalent setting on the IBOX, a session file
     may be used that will then fail on the IBOX.  If the happens, the SDK will try to login, but
     will not have credentials and fail with a TypeError. Catch that error.
     """
     system = get_system(module)
     try:
-        system.api.post(path=path, data=data)
+        result = system.api.get(path=path)
+        return result
+    except TypeError:
+        msg = "Infinibox GET communication failed. Check credentials or stay_logged_in_minutes setting."
+        module.fail_json(msg=msg)
+    except Exception as err:
+        if not fail_msg:
+            fail_msg = f"Infinibox GET communication with path '{path}' failed: {err}"
+        module.fail_json(msg=fail_msg)
+
+
+@api_wrapper
+def infinibox_api_post(module, path, data, fail_msg):
+    """
+    Call system.api.post.
+    If the stay_logged_in_minutes is less then the equivalent setting on the IBOX, a session file
+    may be used that will then fail on the IBOX.  If the happens, the SDK will try to login, but
+    will not have credentials and fail with a TypeError. Catch that error.
+    """
+    system = get_system(module)
+    try:
+        result = system.api.post(path=path, data=data)
+        return result
     except TypeError:
         msg = "Infinibox POST communication failed. Check credentials or stay_logged_in_minutes setting."
         module.fail_json(msg=msg)
-    module.exit_json(changed=True, msg="Event posted")
+    except Exception as err:
+        if not fail_msg:
+            fail_msg = f"Infinibox POST communication with path '{path}' failed: {err}"
+        module.fail_json(msg=fail_msg)
 
 
 def infinibox_argument_spec():
