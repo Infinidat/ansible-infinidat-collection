@@ -104,6 +104,7 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     HAS_INFINISDK,
     api_wrapper,
+    append_key_to_api_path,
     get_cluster,
     get_filesystem,
     get_host,
@@ -524,15 +525,15 @@ def add_fields_to_metadata_result(module, metadata):
     Return updated result.
     """
     system = get_system(module)
-    result = metadata.get_result()
+    result = metadata  #.get_result()
 
     for item in result:
         object_id = item['object_id']
         object_type = item['object_type']
         api_type = object_type_to_api_type(module, object_type)
         path = f"{api_type}?id={object_id}"
-        data = infinibox_api_get(module, path=path).get_json()
-        item_name = data["result"][0]["name"]
+        data = infinibox_api_get(module, path=path)[0]
+        item_name = data["name"]
         item['name'] = item_name  # Add object name to result
     return result
 
@@ -548,15 +549,15 @@ def search_metadata(module):
     value = module.params["value"]
 
     # Assemble rest path
-    path = "metadata?page_size=1000"
+    path = "metadata"
     if object_type:
-        path += f"&object_type={object_type}"
+        path = append_key_to_api_path(path, f"object_type={object_type}")
     if object_name:
-        path += f"&object_name={object_name}"
+        path = append_key_to_api_path(path, f"object_name={object_name}")
     if key:
-        path += f"&key={key}"
+        path = append_key_to_api_path(path, f"key={key}")
     if value:
-        path += f"&value={value}"
+        path = append_key_to_api_path(path, f"value={value}")
 
     fail_msg = f"Cannot search metadata for object_type '{object_type}', object_name '{object_name}', key '{key}', value '{value}'"
     metadata = infinibox_api_get(module, path=path, fail_msg=fail_msg)

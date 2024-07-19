@@ -77,6 +77,13 @@ def api_wrapper(func):
     return __wrapper
 
 
+def append_key_to_api_path(path, thing_to_append):
+    appended_path = path
+    appended_path += "&" if "?" in appended_path else "?"
+    appended_path += thing_to_append
+    return appended_path
+
+
 @api_wrapper
 def infinibox_api_get(module, path, fail_msg=None):
     """
@@ -86,20 +93,47 @@ def infinibox_api_get(module, path, fail_msg=None):
     will not have credentials and fail with a TypeError. Catch that error.
     """
     system = get_system(module)
-    try:
-        result = system.api.get(path=path)
-        return result
-    except TypeError:
-        msg = "Infinibox GET communication failed. Check credentials or stay_logged_in_minutes setting."
-        module.fail_json(msg=msg)
-    except Exception as err:
-        if not fail_msg:
-            fail_msg = f"Infinibox GET communication with path '{path}' failed: {err}"
-        module.fail_json(msg=fail_msg)
+    page = 1
+    page_size = 1000
+    gathered_results = []
+
+    while True:
+        path_paging = f"page_size={page_size}&page={page}"
+        path_paged = append_key_to_api_path(path, path_paging)
+
+        try:
+            result = system.api.get(path=path_paged)
+        except TypeError:
+            msg = "Infinibox GET communication failed. Check credentials or stay_logged_in_minutes setting."
+            module.fail_json(msg=msg)
+        except Exception as err:
+            if not fail_msg:
+                fail_msg = f"Infinibox GET communication with path '{path_paged}' failed: {err}"
+            module.fail_json(msg=fail_msg)
+
+        if result.status_code not in [200, 201]:
+            if not fail_msg:
+                fail_msg = f"Infinibox GET communication with path '{path_paged}' failed: {err}"
+            error_msg = f"{fail_msg}: code: {result.json()['error']['code']}"
+            module.fail_json(msg=error_msg)
+
+        gathered_results += result.get_json()['result']
+        metadata = result.get_json()["metadata"]
+        page += 1
+
+        try:
+            if page > metadata["pages_total"]:
+                # Reached end of the pagination.
+                return gathered_results
+        except KeyError as err:
+            # If no pages_total key in metadata, then it is not a list.
+            # Return the single result.
+            assert "pages_total" in str(err)
+            return result
 
 
 @api_wrapper
-def infinibox_api_post(module, path, data, fail_msg):
+def infinibox_api_post(module, path, data, fail_msg=None):
     """
     Call system.api.post.
     If the stay_logged_in_minutes is less then the equivalent setting on the IBOX, a session file
@@ -165,13 +199,10 @@ def delete_aged_creds_file(module):
         time_diff = current_time - file_mod_date
         if time_diff.total_seconds() > n_minutes * 60:
             remove(file_path)
-            # print(f"Deleted file older than {n_minutes} minutes: {file_path}")
             return True
         else:
-            # print(f"File {file_path} is not older than {n_minutes} minutes")
             return False
     except FileNotFoundError:
-        # print(f"The file {file_path} does not exist")
         return True
     except Exception as e:
         msg = f"An unexpected error occurred while deleting credentials file {file_path}: {e}"
@@ -188,12 +219,9 @@ def load_creds_from_file(module):
         try:
             with open(get_infinibox_pickle_name(module), "rb") as file:
                 loaded_creds = pickle.load(file)
-            # print(f"Loaded pickled credentials")
         except FileNotFoundError:
-            # print(f"Cannot find pickled credentials file")
             pass
         except Exception as err:
-            # print(f"Error loading pickles credentials file: {err}")
             pass
     return loaded_creds
 
@@ -207,15 +235,12 @@ def save_creds_to_file(module):
         file_path = get_infinibox_pickle_name(module)
         try:
             remove(file_path)
-            # print(f"Removed old pickled credentials")
         except FileNotFoundError:
             pass
 
         saved_creds = INFINIBOX_SYSTEM.api.save_credentials()
-        # print(f"Saving pickled credentials: {saved_creds}")
         with open(get_infinibox_pickle_name(module), "wb") as file:
             pickle.dump(saved_creds, file)
-        # print("Saved pickled credentials")
 
 
 @api_wrapper
