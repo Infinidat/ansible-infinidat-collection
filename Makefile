@@ -119,13 +119,13 @@ _test-ubuntu:
 		exit 1; \
 	fi
 
-galaxy-collection-build: ## Build the collection.
+galaxy-collection-build: releasable  ## Build the collection.
 	@echo -e $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
 	@echo -e $(_finish)
 
-galaxy-collection-build-force: ## Force build the collection. Overwrite an existing collection file.
+galaxy-collection-build-force: releasable  ## Force build the collection. Overwrite an existing collection file.
 	@echo -e $(_begin)
 	ansible-galaxy collection build --force
 	@echo -e $(_finish)
@@ -292,13 +292,13 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_certificate
 # _module_under_test = infini_cluster
 # _module_under_test = infini_conig
-_module_under_test = infini_event
+# _module_under_test = infini_event
 # _module_under_test = infini_fibre_channel_switch
 # _module_under_test = infini_fs
 # _module_under_test = infini_host
 # _module_under_test = infini_infinimetrics
 # _module_under_test = infini_map
-# _module_under_test = infini_metadata
+_module_under_test = infini_metadata
 # _module_under_test = infini_network_space
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_notification_target
