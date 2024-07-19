@@ -110,6 +110,7 @@ from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox impo
     get_pool,
     get_system,
     get_volume,
+    infinibox_api_get,
     infinibox_argument_spec,
 )
 
@@ -135,7 +136,7 @@ def get_metadata_vol(module, disable_fail):
     if vol:
         path = f"metadata/{vol.id}/{key}"
         try:
-            metadata = system.api.get(path=path)
+            metadata = infinibox_api_get(module, path=path)
         except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
@@ -500,9 +501,45 @@ def delete_metadata(module):  # pylint: disable=too-many-return-statements
     return changed
 
 
+def object_type_to_api_type(module, object_type):
+    api_types = {
+        "cluster": "clusters",
+        "fs": "filesystems",
+        "fs-snap": "filesystems",
+        "host": "hosts",
+        "pool": "pools",
+        "system": "system",
+        "volume": "volumes",
+        "vol-snap": "volumes",
+    }
+    try:
+        return api_types[object_type]
+    except TypeError:
+        msg = f"Invalid object_type: {object_type}"
+        module.fail_json(msg=msg)
+
+
+def add_fields_to_metadata_result(module, metadata):
+    """Add useful fields to metadata such as name.
+    Return updated result.
+    """
+    system = get_system(module)
+    result = metadata.get_result()
+
+    for item in result:
+        object_id = item['object_id']
+        object_type = item['object_type']
+        api_type = object_type_to_api_type(module, object_type)
+        path = f"{api_type}?id={object_id}"
+        data = infinibox_api_get(module, path=path).get_json()
+        item_name = data["result"][0]["name"]
+        item['name'] = item_name  # Add object name to result
+    return result
+
+
 @api_wrapper
 def search_metadata(module):
-    """Get metadata about a pool"""
+    """Get metadata by type, name, key and/or value."""
     # TODO - support pagination
     system = get_system(module)
     object_type = module.params["object_type"]
@@ -521,14 +558,10 @@ def search_metadata(module):
     if value:
         path += f"&value={value}"
 
-    try:
-        metadata = system.api.get(path=path)
-    except APICommandFailed:
-        module.fail_json(
-            f"Cannot search metadata for object_type '{object_type}', object_name '{object_name}', key '{key}', value '{value}'"
-        )
+    fail_msg = f"Cannot search metadata for object_type '{object_type}', object_name '{object_name}', key '{key}', value '{value}'"
+    metadata = infinibox_api_get(module, path=path, fail_msg=fail_msg)
 
-    result = metadata.get_result()
+    result = add_fields_to_metadata_result(module, metadata)
     return result
 
 
