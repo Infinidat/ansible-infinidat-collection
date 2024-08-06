@@ -19,7 +19,7 @@ __metaclass__ = type
 
 try:
     from infinisdk import InfiniBox, core
-    from infinisdk.core.exceptions import ObjectNotFound
+    from infinisdk.core.exceptions import ObjectNotFound, APITransportFailure
 except ImportError as imp_exc:
     HAS_INFINISDK = False
     INFINISDK_IMPORT_ERROR = imp_exc
@@ -281,9 +281,13 @@ def get_system(module):
         if not loaded_creds:
             try:
                 INFINIBOX_SYSTEM.login()
+            except APITransportFailure:
+                module.fail_json(
+                    msg="Infinibox authentication failed. Check connectivity."
+                )
             except Exception:
                 module.fail_json(
-                    msg="Infinibox authentication failed. Check your credentials"
+                    msg="Infinibox authentication failed. Check credentials."
                 )
 
         save_creds_to_file(module)
