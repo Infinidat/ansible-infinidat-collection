@@ -240,6 +240,11 @@ test-remove-metadata:  ## Run metadata removal tests.
 	ask_become_pass="" playbook_name=test_remove_metadata.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
+test-search-metadata:  ## Run metadata search tests.
+	@echo -e $(_begin)
+	ask_become_pass="" playbook_name=test_search_metadata.yml $(_make) _test-playbook
+	@echo -e $(_finish)
+
 test-config:  ## Run config tests
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force "$${PWD}"
