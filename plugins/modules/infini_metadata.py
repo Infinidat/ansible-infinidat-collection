@@ -715,6 +715,8 @@ def check_options(module):
     state = module.params["state"]
     key = module.params["key"]
     value = module.params["value"]
+    object_type = module.params["object_type"]
+    object_name = module.params["object_name"]
 
     if state == "present":
         req_params = ["object_name", "object_type", "key", "value"]
@@ -729,6 +731,10 @@ def check_options(module):
         if not key and not value:
             module.fail_json(
                 "The state 'search' requires either a key or value parameter to search for"
+            )
+        if object_type or object_name:
+            module.fail_json(
+                "The state 'search' cannot be used with object_type or object_name parameters"
             )
     else:
         module.fail_json(f"The state '{state}' is not supported")
