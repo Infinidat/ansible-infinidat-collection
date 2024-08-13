@@ -101,14 +101,29 @@ def infinibox_api_get(module, path, fail_msg=None):
         path_paging = f"page_size={page_size}&page={page}"
         path_paged = append_key_to_api_path(path, path_paging)
 
-        try:
-            result = system.api.get(path=path_paged)
-        except TypeError:
-            msg = "Infinibox GET communication failed. Check credentials or stay_logged_in_minutes setting."
-            module.fail_json(msg=msg)
-        except Exception as err:
+        # Some GET rest calls do not support paging, e.g. /api/rest/metadata/{id}.
+        # Try first with paging, then if there is an UNKNOWN_PARAMETER error,
+        # try without paging.
+        paths_to_try = [path_paged, path]
+        result = None
+        for path_to_try in paths_to_try:
+            try:
+                result = system.api.get(path=path_to_try)
+            except TypeError:
+                msg = "Infinibox GET communication failed. Check credentials or stay_logged_in_minutes setting."
+                module.fail_json(msg=msg)
+            except Exception as err:
+                if err.error_code == 'UNKNOWN_PARAMETER':  # GET does not support paging
+                    continue
+
+                if not fail_msg:
+                    fail_msg = f"Infinibox GET communication with path '{path_to_try}' failed: {err}"
+
+                module.fail_json(msg=fail_msg)
+
+        if not result:
             if not fail_msg:
-                fail_msg = f"Infinibox GET communication with path '{path_paged}' failed: {err}"
+                fail_msg = f"Infinibox GET communication with path '{path_paged}' and with path '{path}' failed"
             module.fail_json(msg=fail_msg)
 
         if result.status_code not in [200, 201]:
