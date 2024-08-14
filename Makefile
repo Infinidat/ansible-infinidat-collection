@@ -43,6 +43,7 @@ _password_file      	= vault_password.txt
 _password           	= $$(cat vault_password.txt)
 _ibox_url              ?= ibox2503
 _extra_vars            ?= ibox_vars/iboxCICD.yaml
+_verbosity             ?= -vv
 _infinishell_creds  	= --user $(_user) --password $(_password) $(_ibox_url)
 SHELL               	= /bin/bash
 _ansible_clone      	= /home/$$USER/workspace/ansible
@@ -162,7 +163,7 @@ _test-playbook: _test-venv
 		echo "Running playbook..."; \
 		ansible-playbook \
 			$$ask_become_pass \
-			-vv \
+			$(_verbosity) \
 			--inventory "inventory" \
 			--extra-vars "@../$(_extra_vars)" \
 			--vault-password-file ../vault_password.txt \
