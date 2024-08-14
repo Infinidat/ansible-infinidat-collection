@@ -85,7 +85,7 @@ def append_key_to_api_path(path, thing_to_append):
 
 
 @api_wrapper
-def infinibox_api_get(module, path, fail_msg=None):
+def infinibox_api_get(module, path, fail_msg=None, disable_fail=False):
     """
     Call system.api.get.
     If the stay_logged_in_minutes is less then the equivalent setting on the IBOX, a session file
@@ -113,7 +113,12 @@ def infinibox_api_get(module, path, fail_msg=None):
                 msg = "Infinibox GET communication failed. Check credentials or stay_logged_in_minutes setting."
                 module.fail_json(msg=msg)
             except Exception as err:
-                if err.error_code == 'UNKNOWN_PARAMETER':  # GET does not support paging
+
+                if err.status_code == 404:  # Bad request, e.g. METADATA_NOT_FOUND
+                    if disable_fail:
+                        return None
+
+                if err.status_code == 400:  # GET does not support paging
                     continue
 
                 if not fail_msg:
