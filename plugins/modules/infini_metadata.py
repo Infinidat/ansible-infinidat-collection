@@ -137,7 +137,7 @@ def get_metadata_vol(module, disable_fail):
     if vol:
         path = f"metadata/{vol.id}/{key}"
         try:
-            metadata = infinibox_api_get(module, path=path)
+            metadata = infinibox_api_get(module, path=path, disable_fail=disable_fail)
         except APICommandFailed:
             if not disable_fail:
                 module.fail_json(
@@ -600,8 +600,12 @@ def handle_present(module):
         old_metadata = get_metadata(module, disable_fail=True)
         put_metadata(module)
         new_metadata = get_metadata(module)
-        changed = new_metadata != old_metadata
-        if changed:
+        changed = False
+        if not old_metadata:
+            changed = True
+            msg = "Metadata added"
+        elif new_metadata != old_metadata:
+            changed = True
             msg = "Metadata changed"
         else:
             msg = "Metadata unchanged since the value is the same as the existing metadata"
