@@ -59,12 +59,13 @@ options:
     description:
       - Registers the Infinibox with Infinimetrics, when using state present.
       - For state absent, the Infinibox is disabled on Infinimetrics and will no longer appear on the Infinimetrics UI.
+      - State search_iboxes returns a json dictionary of information for Infiniboxes registered with the Infinimetrics.
       - Existing Infinibox data is not purged from Infinimetrics.
       - Purging may be executed using the Infinimetrics CLI tool.
     type: str
     required: false
     default: present
-    choices: [ "present", "absent" ]
+    choices: [ "present", "absent", "search_iboxes" ]
 extends_documentation_fragment:
     - infinibox
 """
@@ -142,7 +143,7 @@ def imx_login(module, imx_session):
     status_code = get_response.status_code
     if status_code not in [200]:
         text = get_response.text
-        msg = f"Cannot add Infinibox {ibox_url} to Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
+        msg = f"Cannot log into Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
         module.fail_json(msg=msg)
 
     token = find_csrfmiddleware_token(get_response)
@@ -250,6 +251,22 @@ def imx_system_delete(module, imx_session):
         module.fail_json(msg=msg)
 
 
+@api_wrapper
+def imx_system_search_iboxes(module, imx_session):
+    """Search for iboxes registered with an Infinimetrics using an imx_session """
+    imx_system = module.params.get('imx_system')
+    path = f"https://{imx_system}/api/rest/systems"
+    headers = None
+
+    get_response = imx_session.get(path, headers=headers, verify=False)
+    status_code = get_response.status_code
+    if status_code not in [200]:
+        text = get_response.text
+        msg = f"Cannot search for Infiniboxes registered with Infinimetrics {imx_system}. Status code: {status_code}. Text returned: {text}"
+        module.fail_json(msg=msg)
+    return get_response.json()
+
+
 def handle_present(module):
     """ Handle the present state parameter """
     imx_system = module.params.get('imx_system')
@@ -285,6 +302,21 @@ def handle_absent(module):
     module.exit_json(**result)
 
 
+def handle_search_iboxes(module):
+    """ Handle the search state parameter. Use to find IBOXs. """
+    imx_system = module.params.get('imx_system')
+
+    imx_session = requests.session()
+    imx_login(module, imx_session)
+    ibox_json = imx_system_search_iboxes(module, imx_session)
+    result = dict(
+        changed=False,
+        msg=f"Successfully searched Infinimetrics {imx_system} for registered Infiniboxes",
+        ibox_json = ibox_json,
+    )
+    module.exit_json(**result)
+
+
 def execute_state(module):
     """Handle states"""
     state = module.params["state"]
@@ -293,6 +325,8 @@ def execute_state(module):
             handle_present(module)
         elif state == "absent":
             handle_absent(module)
+        elif state == "search_iboxes":
+            handle_search_iboxes(module)
         else:
             module.fail_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
@@ -317,9 +351,12 @@ def check_options(module):  # pylint: disable=too-many-branches
     state = module.params['state']
 
     if state == 'present':
-        req_params = ["ibox_url", "ibox_readonly_user", "ibox_readonly_password"]
+        req_params = ["ibox_url", "ibox_readonly_user", "ibox_readonly_password", "ibox_serial"]
         verify_params(module, req_params)
     elif state == 'absent':
+        req_params = ["ibox_serial"]
+        verify_params(module, req_params)
+    elif state == 'search_iboxes':
         pass
     else:
         module.fail_json(msg=f'Internal handler error. Invalid state: {state}')
@@ -330,14 +367,14 @@ def main():
     argument_spec = infinibox_argument_spec()
     argument_spec.update(
         dict(
-            ibox_serial=dict(required=True),
+            ibox_serial=dict(required=False),
             ibox_url=dict(required=False, default=None),
             ibox_readonly_user=dict(required=False, default=None),
             ibox_readonly_password=dict(required=False, no_log=True, default=None),
             imx_system=dict(required=True),
             imx_user=dict(required=True),
             imx_password=dict(required=True, no_log=True),
-            state=dict(default="present", choices=["present", "absent"]),
+            state=dict(default="present", choices=["present", "absent", "search_iboxes"]),
         )
     )
 
