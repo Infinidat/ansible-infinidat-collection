@@ -302,9 +302,9 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 # _module_under_test = infini_fibre_channel_switch
 # _module_under_test = infini_fs
 # _module_under_test = infini_host
-# _module_under_test = infini_infinimetrics
+_module_under_test = infini_infinimetrics
 # _module_under_test = infini_map
-_module_under_test = infini_metadata
+# _module_under_test = infini_metadata
 # _module_under_test = infini_network_space
 # _module_under_test = infini_notification_rule
 # _module_under_test = infini_notification_target
@@ -369,6 +369,12 @@ dev-hack-module-search:  ## Hack search.
 
 dev-hack-module-search-jq:  ## Hack search with jq.
 	@state=search $(_make) _dev-hack-module-jq
+
+dev-hack-module-search-iboxes:  ## Hack search.
+	@state=search_iboxes $(_make) _dev-hack-module
+
+dev-hack-module-search-iboxes-jq:  ## Hack search with jq.
+	@state=search_iboxes $(_make) _dev-hack-module-jq
 
 dev-hack-module-absent:  ## Hack absent.
 	@state=absent $(_make) _dev-hack-module

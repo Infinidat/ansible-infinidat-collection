@@ -3,6 +3,15 @@ Change Log
 ==========
 
 -------------------
+v1.6.0 (2024-09-04)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1352: Add state search_iboxes to infini_infinimetrics module. Allows one to find the Infiniboxes registered with an Infinimetrics.
+
+-------------------
 v1.5.0 (2024-07-10)
 -------------------
 
