@@ -323,6 +323,8 @@ def execute_state(module):
     try:
         if state == "present":
             handle_present(module)
+            system = get_system(module)
+            system.logout()
         elif state == "absent":
             handle_absent(module)
         elif state == "search_iboxes":
@@ -330,8 +332,7 @@ def execute_state(module):
         else:
             module.fail_json(msg=f"Internal handler error. Invalid state: {state}")
     finally:
-        system = get_system(module)
-        system.logout()
+        pass
 
 
 def verify_params(module, req_params):
@@ -364,7 +365,11 @@ def check_options(module):  # pylint: disable=too-many-branches
 
 def main():
     """ Main """
-    argument_spec = infinibox_argument_spec()
+    # This module does not use infinibox_argument_spec() from infinibox.py
+    argument_spec = dict(
+        stay_logged_in=dict(required=False, type=bool, default=False),
+        stay_logged_in_minutes=dict(required=False, type=int, default=5),
+    )
     argument_spec.update(
         dict(
             ibox_serial=dict(required=False),
