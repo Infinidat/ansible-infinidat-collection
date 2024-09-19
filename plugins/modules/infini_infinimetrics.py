@@ -130,16 +130,11 @@ def find_csrfmiddleware_token(response):
 @api_wrapper
 def imx_login(module, imx_session):
     """ Log into an IMX (GET and POST) using credentials. """
-    ibox_url = module.params.get('ibox_url')
     imx_system = module.params.get('imx_system')
     path = f"https://{imx_system}/auth/login/"
 
-    # Use GET to get a token
-    payload = {
-        'username': module.params.get('imx_user', None),
-        'password': module.params.get('imx_password', None),
-    }
-    get_response = imx_session.get(path, data=payload, verify=False)
+    # Get a token
+    get_response = imx_session.get(path, data=None, verify=False)
     status_code = get_response.status_code
     if status_code not in [200]:
         text = get_response.text
