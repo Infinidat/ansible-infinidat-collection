@@ -30,8 +30,8 @@ tags:
   - storage
   - storage_array
   - storagearray
-repository: "https://www.github.com/infinidat/ansible-infinidat-collection"
-issues: "https://www.github.com/infinidat/ansible-infinidat-collection/issues"
+repository: "https://github.com/infinidat/ansible-infinidat-collection"
+issues: "https://github.com/infinidat/ansible-infinidat-collection/issues"
 build_ignore:
   - '*.sh'
   - '*.swo'
