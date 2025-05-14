@@ -335,6 +335,8 @@ dev-hack-create-links:  ## Create soft links inside an Ansible clone to allow mo
 
 _dev-hack-module: dev-hack-create-links  # Run module. PDB is available using breakpoint().
 	@echo "_module_under_test: $(_module_under_test)"
+	@echo "state: $$state"
+	@echo
 	JSON_IN="./tests/hacking/$(_module_under_test)_$${state}.json" && \
 	if [[ ! -a "$$JSON_IN" ]]; then \
 		>&2 echo "Error: $$JSON_IN not found"; \

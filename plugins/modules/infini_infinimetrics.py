@@ -250,7 +250,7 @@ def imx_system_delete(module, imx_session):
 def imx_system_search_iboxes(module, imx_session):
     """Search for iboxes registered with an Infinimetrics using an imx_session """
     imx_system = module.params.get('imx_system')
-    path = f"https://{imx_system}/api/rest/systems"
+    path = f"https://{imx_system}/api/rest/systems?page_size=1000"
     headers = None
 
     get_response = imx_session.get(path, headers=headers, verify=False)
