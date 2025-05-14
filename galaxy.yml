@@ -1,6 +1,6 @@
 namespace: "infinidat"
 name: "infinibox"
-version: "1.6.2"
+version: "1.6.3"
 readme: "README.md"
 authors:
   - "Infinidat <partners.infi@infinidat.com>"
