@@ -3,6 +3,18 @@ Change Log
 ==========
 
 -------------------
+v1.7.0 (2026-05-06)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1437: Raise minimum ansible-core to 2.16; controller now requires Python 3.10 or newer.
+* psdev-1437: Pin ansible-core (>=2.16,<2.17), ansible (>=9,<10), and infinisdk (>=225.1.1) so CI runs deterministically across pip resolves.
+* psdev-1437: Add ci/Dockerfile for psusdev/gitlab-cicd:v0.15 (Ubuntu 22.04 / Python 3.10) and Makefile recipes (ci-image-build / -save / -deploy-hints) to build, archive, and deploy the CI image.
+* psdev-1437: Migrate Gitlab CI to a Jammy runner host using rootless podman; jobs route via the jammy-podman tag.
+
+-------------------
 v1.6.0 (2024-09-04)
 -------------------
 

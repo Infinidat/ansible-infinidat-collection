@@ -8,10 +8,12 @@
 #     - Value: <ansible vault password for the vars file for the ibox specified in --extra-vars>
 #         - i.e. The password that allows one to view the file using "ansible-vault view <file>"
 
-image: psusdev/gitlab-cicd:v0.14
+image: psusdev/gitlab-cicd:v0.15
 
 playbook_testing:
   stage: test
+  tags:
+    - jammy-podman
   script:
     # Disable index-url = https://pypi.infinidat.com/simple.
     - mv ~/.pip/pip.conf ~/.pip/pip.conf.notused || true

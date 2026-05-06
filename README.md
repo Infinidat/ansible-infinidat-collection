@@ -7,12 +7,12 @@
 - https://git.infinidat.com/PSUS/ansible-infinidat-collection
 
 ## Platforms Supported
-All Infindat InfiniBoxes are supported.
+All Infinidat InfiniBoxes are supported.
 
 ## Prerequisites
-- Ansible 2.14 or newer
+- Ansible 2.16 or newer
 - InfiniSDK 225.1.1 or newer
-- Python 3.6 or newer. This is a prerequisite of Infinidat's infiniSDK Python module.
+- Python 3.10 or newer. Required by ansible-core 2.16 on the controller.
 
 ## Modules
 - infini_certificate: Configure a SSL certificate.
@@ -20,7 +20,7 @@ All Infindat InfiniBoxes are supported.
 - infini_config: Modify an Infinibox configuration.
 - infini_event: Post events.
 - infini_export: Creates, deletes or modifies NFS exports.
-- infini_export_client: Creates, deletes or modifys NFS client(s) for existing exports.
+- infini_export_client: Creates, deletes or modifies NFS client(s) for existing exports.
 - infini_fibre_channel_switch: Rename a fibre channel switch.
 - infini_fs: Creates, deletes or modifies filesystems.
 - infini_host: Creates, deletes or modifies hosts.
@@ -47,7 +47,7 @@ Use of Python virtual environments (venv module) is recommended.
 
 Complete instructions for installing collections is available at https://docs.ansible.com/ansible/latest/user_guide/collections_using.html.
 
-Ansible 2.9 or newer is required to install as a collection.  That said, the collection is a tarball.  Modules may be extracted and installed manually if use of an older version of Ansible is required.  Adjust values in playbooks/ansible.cfg as required. 
+Ansible 2.16 or newer is required to install as a collection.  That said, the collection is a tarball.  Modules may be extracted and installed manually if use of an older version of Ansible is required.  Adjust values in playbooks/ansible.cfg as required.
 
 ## Usage
 A Makefile is provided. To see the recipes available within it use `make help`.
@@ -76,8 +76,8 @@ Install the collection and cd into the collection's infi/ directory.  Create an 
 
 The `--ask-vault-pass` options below are only required if the ibox_vars/iboxNNNN.yaml file is encrypted using ansible-vault.
 ```
-sudo apt install python3.8 python3.8-venv python3.8-distutils libffi-dev
-python3.8 -m venv venv
+sudo apt install python3.11 python3.11-venv libffi-dev
+python3.11 -m venv venv
 source venv/bin/activate
 python -m pip install -U pip
 python -m pip install -r requirements.txt
@@ -95,7 +95,7 @@ To remove the collection, delete the collection from the path specified in the -
 - GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ## Authors
-The initial set of Infindat Ansible modules were written by Gregory Shulov in 2016.
+The initial set of Infinidat Ansible modules were written by Gregory Shulov in 2016.
 
 Infinidat's Professional Services (USA) team extended and improved the modules in 2019. Several modules were added. Idempotency was improved.
 

@@ -50,6 +50,17 @@ _ansible_clone      	= /home/$$USER/workspace/ansible
 _network_space_ips  	= 172.31.32.145 172.31.32.146 172.31.32.147 172.31.32.148 172.31.32.149 172.31.32.150
 _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py" "infini_network_space.py" "infini_port.py" "infini_vol.py" "infini_export_client.py" "infini_fs.py" "infini_map.py" "infini_pool.py" "infini_user.py"
 
+# CI image: built on dev box, transferred to the runner host as a tarball,
+# loaded into the gitlab-runner user's rootless podman image store.
+_ci_image_name          = psusdev/gitlab-cicd
+_ci_image_tag           = v0.15
+_ci_image_ref           = $(_ci_image_name):$(_ci_image_tag)
+_ci_image_dockerfile    = ci/Dockerfile
+_ci_image_context       = ci
+_ci_image_tar           = /tmp/psusdev-gitlab-cicd-$(_ci_image_tag).tar.gz
+_ci_runner_host         = psus-ansible-runner
+_ci_runner_user         = psus-eng
+
 # Include, but do not fail if not found. Ignored by git. Use to temporarily set vars.
 -include Makefile-vars
 include Makefile-git
@@ -450,6 +461,47 @@ test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install
 	@# Run local build, install and sanity test.
 	@# Note that this will wipe $(_install_path_local).
 	@echo "test-sanity-locally-all completed"
+
+##@ CI Image
+ci-image-build:  ## Build the gitlab-cicd container image locally with podman.
+	@echo -e $(_begin)
+	podman build --tag $(_ci_image_ref) --file $(_ci_image_dockerfile) $(_ci_image_context)
+	@podman images $(_ci_image_name)
+	@echo -e $(_finish)
+
+ci-image-save: ci-image-build  ## Build and save the gitlab-cicd image to a gzipped tar.
+	@echo -e $(_begin)
+	podman save $(_ci_image_ref) | gzip > $(_ci_image_tar)
+	@ls -lh $(_ci_image_tar)
+	@echo -e $(_finish)
+
+ci-image-deploy-hints: ci-image-save  ## Print steps to deploy the saved image to the runner host.
+	@echo -e $(_begin)
+	@echo
+	@echo "Built image:    $(_ci_image_ref)"
+	@echo "Saved tarball:  $(_ci_image_tar)"
+	@echo
+	@echo "1. Copy the tarball to the runner host:"
+	@echo
+	@echo "    scp $(_ci_image_tar) $(_ci_runner_user)@$(_ci_runner_host):/tmp/"
+	@echo
+	@echo "2. Load it into the gitlab-runner user's rootless podman storage:"
+	@echo
+	@echo "    ssh $(_ci_runner_user)@$(_ci_runner_host)"
+	@echo "    sudo machinectl shell gitlab-runner@"
+	@echo "    gunzip -c $(_ci_image_tar) | podman load"
+	@echo "    podman images | grep $(_ci_image_name)"
+	@echo "    exit"
+	@echo
+	@echo "3. Set pull_policy so the runner uses the local image. Add or update"
+	@echo "   under [runners.docker] in /etc/gitlab-runner/config.toml:"
+	@echo
+	@echo "    pull_policy = \"if-not-present\""
+	@echo
+	@echo "   The runner auto-reloads config; no restart needed."
+	@echo
+	@echo "4. Bump .gitlab-ci.yml to image: $(_ci_image_ref) and add tags: [jammy-podman]."
+	@echo -e $(_finish)
 
 ##@ IBox
 infinishell:  ## Run infinishell.

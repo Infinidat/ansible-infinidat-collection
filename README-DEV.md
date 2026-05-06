@@ -13,7 +13,7 @@ Installing 'infinidat.infinibox:1.4.0' to '/home/stack/.ansible/collections/ansi
 ERROR! Unexpected Exception, this is probably a bug: "linkname 'venv/lib/python3.8/site-packages/ansible_test/_data/injector/python.py' not found"
 ```
 
-Therefor using a venv is not recommended.  Instead use the following that will install ansible commands into `~/.local/bin`.
+Therefore using a venv is not recommended.  Instead use the following that will install ansible commands into `~/.local/bin`.
 ```
 $ python3 -m pip install --user ansible
 $ export PATH=/home/stack/.local/bin:$PATH
