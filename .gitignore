@@ -57,6 +57,8 @@ Session.vim
 *.swp
 *.swo
 
+.claude/
+
 credentials.yml
 # test output
 *.retry
