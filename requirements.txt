@@ -45,7 +45,7 @@ pyparsing
 python-dateutil
 regex
 requests
-resolvelib
+resolvelib>=0.5.3,<1.1.0
 ruamel.yaml
 ruamel.yaml.clib
 sentinels

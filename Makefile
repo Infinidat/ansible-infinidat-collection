@@ -3,7 +3,7 @@
 
 # vim: set foldmethod=indent foldnestmax=1 foldcolumn=1:
 
-# A Makefile for creating, running and testing Infindat's Ansible collection.
+# A Makefile for creating, running and testing Infinidat's Ansible collection.
 
 ### Dependencies ###
 # - jq: https://stedolan.github.io/jq/
@@ -16,7 +16,7 @@
 # pollute the environment persistently.
 # Format:
 # GALAXY_API_KEY=someAnsibleGalaxyApiKey
-# The key only needs to be valid to use target galaxy-colletion-publish.
+# The key only needs to be valid to use target galaxy-collection-publish.
 # Getting a token:
 # https://galaxy.ansible.com/ui/token/
 #
@@ -131,31 +131,36 @@ _test-ubuntu:
 		exit 1; \
 	fi
 
-galaxy-collection-build: releasable  ## Build the collection.
+galaxy-collection-build: _test-venv releasable  ## Build the collection.
 	@echo -e $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
 	@echo -e $(_finish)
 
-galaxy-collection-build-force: releasable  ## Force build the collection. Overwrite an existing collection file.
+galaxy-collection-build-force: _test-venv releasable  ## Force build the collection. Overwrite an existing collection file.
 	@echo -e $(_begin)
 	ansible-galaxy collection build --force
 	@echo -e $(_finish)
 
-galaxy-collection-publish: _check-vars releasable  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
+galaxy-collection-publish: _test-venv _check-vars releasable  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
 	@echo -e $(_begin)
-	ansible-galaxy collection publish --api-key $(GALAXY_API_KEY) ./$(_namespace)-$(_name)-$(_version).tar.gz -vvvv
+	@# Suppress recipe echo with @ so the --api-key value doesn't appear in stdout
+	@# or make's recipe-echo. (ANSIBLE_GALAXY_TOKEN is not a documented ansible-galaxy
+	@# env var; --api-key is the documented interface.)
+	@ART="./$(_namespace)-$(_name)-$(_version).tar.gz"; \
+	echo "Publishing: $$ART"; \
+	ansible-galaxy collection publish "$$ART" --api-key "$(GALAXY_API_KEY)" -vv
 	@echo "On Github:"
 	@echo "    git push upstream-github develop"
 	@echo "    git push upstream-github --tags develop"
 	@echo -e $(_finish)
 
-galaxy-collection-install:  ## Download and install from galaxy.ansible.com. This will wipe $(_install_path).
+galaxy-collection-install: _test-venv  ## Download and install from galaxy.ansible.com. This will wipe $(_install_path).
 	@echo -e $(_begin)
 	ansible-galaxy collection install $(_namespace).$(_name) --collections-path $(_install_path) --force
 	@echo -e $(_finish)
 
-galaxy-collection-install-locally:  ## Download and install from local tar file.
+galaxy-collection-install-locally: _test-venv  ## Download and install from local tar file.
 	@echo -e $(_begin)
 	ansible-galaxy collection install --force $(_namespace)-$(_name)-$(_version).tar.gz --collections-path $(_install_path_local)
 	@echo -e $(_finish)
@@ -191,7 +196,7 @@ test-remove-resources:  ## Run full removal test suite as run by Gitlab CICD.
 	ask_become_pass="-K" playbook_name=test_remove_resources.yml $(_make) _test-playbook
 	@echo -e $(_finish)
 
-test-create-resources-demo:  ## Run stripped down verion of creation test suite. Use for demos.
+test-create-resources-demo:  ## Run stripped down version of creation test suite. Use for demos.
 	@echo -e $(_begin)
 	ask_become_pass="-K" playbook_name=test_create_resources_demo.yml $(_make) _test-playbook
 	@echo -e $(_finish)
@@ -282,7 +287,7 @@ configure-array:  ## Configure an Infinibox.
 	_extra_vars="ibox_vars/vibox.yaml" ask_become_pass="" playbook_name="configure_array.yml" $(_make) _test-playbook
 	@echo -e $(_finish)
 
-# deconfigure-array:  ## Remove some Infinibox configureations set by the ibox-configure recipe.
+# deconfigure-array:  ## Remove some Infinibox configurations set by the configure-array recipe.
 # 	@echo -e $(_begin)
 # 	ansible-galaxy collection install --force "$${PWD}"
 # 	ask_become_pass="" playbook_name=deconfigure_array.yml $(_make) _test-playbook
@@ -308,7 +313,7 @@ infinisafe-demo-teardown:  ## Teardown infinisafe demo.
 ##@ Hacking
 # _module_under_test = infini_certificate
 # _module_under_test = infini_cluster
-# _module_under_test = infini_conig
+# _module_under_test = infini_config
 # _module_under_test = infini_event
 # _module_under_test = infini_fibre_channel_switch
 # _module_under_test = infini_fs
@@ -437,23 +442,23 @@ dev-install-modules-to-local-collection:  ## Copy modules to local collection
 	@echo -e $(_finish)
 
 ##@ ansible-test
-test-sanity:  ## Run ansible sanity tests
+test-sanity:  ## Run ansible sanity tests. Runs within its own container.
 	@# in accordance with
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
-	@# This runs on an collection installed from galaxy. This makes it
+	@# This runs on a collection installed from galaxy. This makes it
 	@# somewhat useless for dev and debugging. Use target test-sanity-locally.
 	@ansible-test sanity --docker default -v
 
-_setup-sanity-locally: galaxy-collection-build-force galaxy-collection-install-locally
-	@# Setup a test env.
+_setup-sanity-locally: _test-venv galaxy-collection-build-force galaxy-collection-install-locally
+	@# Setup a test env. Run from within an activated venv (enforced by _test-venv).
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
-		$(_python) -m pip install --user --upgrade pip && \
-		$(_python) -m pip install --user --upgrade --requirement $(_requirements-file)
+		$(_python) -m pip install --upgrade pip && \
+		$(_python) -m pip install --upgrade --requirement $(_requirements-file)
 
 test-sanity-locally: _setup-sanity-locally  ## Run ansible sanity tests locally.
 	@# in accordance with
 	@# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#testing-collections
-	@# This runs on an collection installed locally making it useful for dev and debugging.
+	@# This runs on a collection installed locally making it useful for dev and debugging.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
 		ansible-test sanity --docker default --requirements $(_requirements-file)
 
