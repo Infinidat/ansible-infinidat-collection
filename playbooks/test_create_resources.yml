@@ -644,7 +644,7 @@
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         user_email: "{{ auto_prefix }}pool_admin_user@example.com"
-        user_password: "secret1"
+        user_password: "{{ user_password }}"
         user_role: "pool_admin"
         user_enabled: true
         user_pool: "{{ auto_prefix }}pool"
@@ -657,7 +657,7 @@
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
         user_email: "{{ auto_prefix }}pool_admin_user@example.com"
-        user_password: "secret1"
+        user_password: "{{ user_password }}"
         user_role: "pool_admin"
         user_enabled: false
         user_pool: "{{ auto_prefix }}pool"
@@ -677,7 +677,7 @@
     - name: POSITIVE test -> Reset password for user
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}pool_admin_user"
-        user_password: "secret_new"
+        user_password: "{{ user_password_new }}"
         state: reset_password
         user: "{{ user }}"
         password: "{{ password }}"
@@ -687,7 +687,7 @@
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}admin_user"
         user_email: "{{ auto_prefix }}admin_user@example.com"
-        user_password: "secret2"
+        user_password: "{{ admin_user_password }}"
         user_role: "admin"
         user_enabled: "true"
         state: present
@@ -699,7 +699,7 @@
       infinidat.infinibox.infini_user:
         user_name: "{{ auto_prefix }}read_only_user"
         user_email: "{{ auto_prefix }}read_only_user@example.com"
-        user_password: "secret3"
+        user_password: "{{ ro_user_password }}"
         user_role: "read_only"
         user_enabled: "true"
         state: present
