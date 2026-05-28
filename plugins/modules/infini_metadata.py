@@ -19,9 +19,9 @@ version_added: 2.13.0
 short_description:  Create, Delete or Modify metadata on Infinibox
 description:
     - This module creates, deletes or modifies metadata on Infinibox. It can
-    also search for objects by metadata key and object type.
+      also search for objects by metadata key and object type.
     - Deleting metadata by object, without specifying a key, is not implemented for any object_type (e.g. DELETE api/rest/metadata/system).
-    - This would delete all metadata belonging to the object. Instead delete each key explicitely using its key name.
+    - This would delete all metadata belonging to the object. Instead delete each key explicitly using its key name.
 author: David Ohlemacher (@ohlemacher)
 options:
   object_type:

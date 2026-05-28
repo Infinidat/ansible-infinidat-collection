@@ -462,8 +462,19 @@ test-sanity-locally: _setup-sanity-locally  ## Run ansible sanity tests locally.
 	cd $(_install_path_local)/ansible_collections/infinidat/infinibox && \
 		ansible-test sanity --docker default --requirements $(_requirements-file)
 
-test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install-locally test-sanity-locally  ## Run all sanity tests locally.
-	@# Run local build, install and sanity test.
+test-docs-locally: _setup-sanity-locally  ## Verify ansible-doc parses every module. Mirrors Galaxy's import-time check; catches DOCUMENTATION YAML errors that sanity does not.
+	@echo -e $(_begin)
+	@# Galaxy's importer runs `ansible-doc --type module --json <FQCNs>` after install.
+	@# Doc-string YAML errors slip past `ansible-test sanity` but break Galaxy import,
+	@# so run the same check locally before publish.
+	@cd $(_install_path_local)/ansible_collections/$(_namespace)/$(_name) && \
+		fqcns=$$(ls plugins/modules/infini_*.py | xargs -n1 basename | sed 's|\.py$$||; s|^|$(_namespace).$(_name).|') && \
+		ansible-doc --type module --json $$fqcns > /dev/null && \
+		echo "All module docs parsed successfully."
+	@echo -e $(_finish)
+
+test-sanity-locally-all: galaxy-collection-build-force galaxy-collection-install-locally test-sanity-locally test-docs-locally  ## Run all sanity tests locally.
+	@# Run local build, install, sanity test, and doc parse check.
 	@# Note that this will wipe $(_install_path_local).
 	@echo "test-sanity-locally-all completed"
 

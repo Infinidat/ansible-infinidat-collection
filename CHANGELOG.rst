@@ -3,6 +3,20 @@ Change Log
 ==========
 
 -------------------
+v1.7.1 (2026-05-28)
+-------------------
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* psdev-1437: Fix infini_metadata DOCUMENTATION YAML indent that broke Galaxy's ansible-doc import on v1.7.0.
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1437: Bake ansible-doc parse check into Makefile (test-docs-locally) so DOCUMENTATION YAML errors surface before publish.
+
+-------------------
 v1.7.0 (2026-05-06)
 -------------------
 
