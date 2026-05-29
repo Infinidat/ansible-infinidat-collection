@@ -131,13 +131,13 @@ _test-ubuntu:
 		exit 1; \
 	fi
 
-galaxy-collection-build: _test-venv releasable  ## Build the collection.
+galaxy-collection-build: _test-venv  ## Build the collection. Use for local dev; publish enforces releasable separately.
 	@echo -e $(_begin)
 	rm -rf collections/
 	ansible-galaxy collection build
 	@echo -e $(_finish)
 
-galaxy-collection-build-force: _test-venv releasable  ## Force build the collection. Overwrite an existing collection file.
+galaxy-collection-build-force: _test-venv  ## Force build the collection. Overwrite an existing collection file.
 	@echo -e $(_begin)
 	ansible-galaxy collection build --force
 	@echo -e $(_finish)
