@@ -53,7 +53,7 @@ _modules                = "infini_cluster.py" "infini_export.py" "infini_host.py
 # CI image: built on dev box, transferred to the runner host as a tarball,
 # loaded into the gitlab-runner user's rootless podman image store.
 _ci_image_name          = psusdev/gitlab-cicd
-_ci_image_tag           = v0.15
+_ci_image_tag           = v0.16
 _ci_image_ref           = $(_ci_image_name):$(_ci_image_tag)
 _ci_image_dockerfile    = ci/Dockerfile
 _ci_image_context       = ci

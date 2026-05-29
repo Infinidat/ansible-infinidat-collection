@@ -1,11 +1,12 @@
-# psusdev/gitlab-cicd:v0.15
+# psusdev/gitlab-cicd:v0.16
 #
 # Drafted in ansible-infinidat-collection but belongs in the psusdev/gitlab-cicd
 # image source repo. Move before tagging/pushing.
 #
-# Replaces v0.14 (Ubuntu 20.04, Python 3.8) which is too old for ansible-core 2.16+.
+# Replaces v0.15 (Ubuntu 22.04, Python 3.10) — bumped to Ubuntu 24.04 for
+# Python 3.12, the controller minimum for ansible-core 2.18+.
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \

@@ -6,6 +6,10 @@ infinisdk>=225.1.1
 arrow
 urllib3
 resolvelib>=0.5.3,<1.1.0
+# infinisdk 289.x still imports pkg_resources, which setuptools 81+ removed.
+# Pin until infinisdk migrates to importlib.metadata. Without this, modules
+# fail at runtime with ModuleNotFoundError: No module named 'pkg_resources'.
+setuptools<81
 
 # infinisdk transitive deps (kept explicit for reproducibility)
 api-object-schema
