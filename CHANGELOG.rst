@@ -3,6 +3,16 @@ Change Log
 ==========
 
 -------------------
+v1.8.0 (2026-05-28)
+-------------------
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1438: Raise minimum ansible-core to 2.18; controller now requires Python 3.11 or newer.
+* psdev-1438: Repin requirements-dev.txt to ansible-core>=2.18,<2.19 and ansible>=11,<12 to match the new floor.
+
+-------------------
 v1.7.1 (2026-05-28)
 -------------------
 

@@ -10,9 +10,9 @@
 All Infinidat InfiniBoxes are supported.
 
 ## Prerequisites
-- Ansible 2.16 or newer
+- Ansible 2.18 or newer
 - InfiniSDK 225.1.1 or newer
-- Python 3.10 or newer. Required by ansible-core 2.16 on the controller.
+- Python 3.11 or newer. Required by ansible-core 2.18 on the controller.
 
 ## Modules
 - infini_certificate: Configure a SSL certificate.
@@ -47,7 +47,7 @@ Use of Python virtual environments (venv module) is recommended.
 
 Complete instructions for installing collections is available at https://docs.ansible.com/ansible/latest/user_guide/collections_using.html.
 
-Ansible 2.16 or newer is required to install as a collection.  That said, the collection is a tarball.  Modules may be extracted and installed manually if use of an older version of Ansible is required.  Adjust values in playbooks/ansible.cfg as required.
+Ansible 2.18 or newer is required to install as a collection.  That said, the collection is a tarball.  Modules may be extracted and installed manually if use of an older version of Ansible is required.  Adjust values in playbooks/ansible.cfg as required.
 
 ## Usage
 A Makefile is provided. To see the recipes available within it use `make help`.

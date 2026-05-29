@@ -1,5 +1,5 @@
-ansible>=9,<10
-ansible-core>=2.16,<2.17
+ansible>=11,<12
+ansible-core>=2.18,<2.19
 pycodestyle
 pylint
 pytest
