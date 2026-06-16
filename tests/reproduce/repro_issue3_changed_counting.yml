@@ -1,0 +1,68 @@
+---
+# Reproduces customer "Issue 3": PLAY RECAP shows `changed=1`, not `changed=4`.
+#
+# This is standard Ansible accounting, NOT an infini_vol defect, so it needs no
+# InfiniBox and no credentials. It mirrors the SHAPE of the customer's playbook
+# (gather_facts + set_fact + a 4-iteration create loop + debug loops + a 4-iteration
+# read-only "stat" loop) but swaps infini_vol for ansible.builtin.command so it runs
+# anywhere.
+#
+# Run:
+#   cd tests/reproduce && ansible-playbook repro_issue3_changed_counting.yml
+#
+# What to observe:
+#   * The "Create Volume (simulated)" task prints FOUR per-item lines:
+#         changed: [localhost] => (item=1..4)
+#     These are per-iteration DISPLAY lines (v2_runner_item_on_ok callbacks).
+#   * The PLAY RECAP at the end shows `changed=1`, because the recap counts TASKS,
+#     not loop iterations, and one task (the create loop) made changes.
+#   * `ok` counts every task INCLUDING the changed one. Six tasks -> ok=6.
+#     If loops were counted per item, ok would be 1+1+4+4+4+4 = 18, not 6.
+#   * The authoritative per-item status lives in <register>.results[*].changed,
+#     which the debug task below prints (created: True four times).
+- name: Reproduce infini_vol changed-count observation (no iBox required)
+  hosts: localhost
+  gather_facts: true  # mirrors customer's `gather_facts: true` -> implicit "Gathering Facts" task (ok, not changed)
+
+  tasks:
+    - name: Generate random string  # set_fact always reports changed=false
+      ansible.builtin.set_fact:
+        random_seed: "repro-{{ 99999 | random }}"
+
+    - name: Create Volume (simulated)  # stand-in for infini_vol state=present; command reports changed=true
+      ansible.builtin.command:
+        cmd: "echo creating volume {{ random_seed }}_{{ item }}"
+      changed_when: true
+      loop: "{{ range(1, 5) | list }}"
+      register: creation_output
+
+    - name: Show volume creation  # authoritative per-item status -> True x4 (this is the real "count of 4")
+      ansible.builtin.debug:
+        msg: "Item: {{ item.item }} created: {{ item.changed }}"
+      loop: "{{ creation_output.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: STAT Volume (simulated)  # stand-in for infini_vol state=stat; read-only -> changed=false
+      ansible.builtin.command:
+        cmd: "echo stat volume {{ random_seed }}_{{ item }}"
+      changed_when: false
+      loop: "{{ range(1, 5) | list }}"
+      register: stat_output
+
+    - name: Show volume stat
+      ansible.builtin.debug:
+        msg: "Item: {{ item.item }} STAT changed: {{ item.changed }}"
+      loop: "{{ stat_output.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+# Expected PLAY RECAP for the play above (6 tasks):
+#   localhost : ok=6  changed=1  ...
+#
+# To reproduce the "creation only" variant the customer compared against, comment
+# out the "Show volume creation", "STAT Volume (simulated)" and "Show volume stat"
+# tasks. You are left with 3 tasks and the recap becomes:
+#   localhost : ok=3  changed=1  ...
+# In BOTH cases changed=1 -- adding the stat block only adds read-only tasks, which
+# raises `ok` (3 -> 6) and never touches `changed`.

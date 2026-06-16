@@ -136,7 +136,75 @@ EXAMPLES = r"""
     system: ibox001
 """
 
-# RETURN = r''' # '''
+RETURN = r"""
+volume:
+  description:
+    - Details of the volume, returned for I(state=present) when I(volume_type=master).
+    - The same attribute values are reported by I(state=stat) (where they are returned at the top level).
+  returned: When I(state=present) and I(volume_type=master), except on create in check mode.
+  type: dict
+  contains:
+    name:
+      description: Volume name.
+      type: str
+      sample: foo
+    serial:
+      description: Volume serial number.
+      type: str
+      sample: 742b0f0000009c70000000000005286
+    size:
+      description: Volume size.
+      type: str
+      sample: 1 GiB
+    volume_id:
+      description: Volume ID.
+      type: int
+      sample: 21126
+    provisioning:
+      description: Provisioning type, THIN or THICK.
+      type: str
+      sample: THIN
+    write_protected:
+      description: Whether the volume is write protected.
+      type: bool
+      sample: false
+    used:
+      description: Used capacity.
+      type: str
+      sample: 0 bit
+    mapped:
+      description: Whether the volume is mapped to a host or cluster.
+      type: str
+      sample: "False"
+    has_children:
+      description: Whether the volume has snapshots or other children.
+      type: bool
+      sample: false
+    parent_id:
+      description: Parent volume ID, if any.
+      type: int
+      sample: null
+    volume_type:
+      description: Volume type, MASTER or SNAPSHOT.
+      type: str
+      sample: MASTER
+    lock_state:
+      description: Snapshot lock state.
+      type: str
+      sample: UNLOCKED
+    lock_expires_at:
+      description: When a snapshot lock expires.
+      type: str
+      sample: "None"
+    created_at:
+      description: Creation timestamp.
+      type: str
+      sample: "2026-06-10T20:07:34.896000+00:00"
+    updated_at:
+      description: Last update timestamp.
+      type: str
+      sample: "2026-06-10T20:07:34.896000+00:00"
+"""
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
@@ -168,28 +236,29 @@ except ImportError:
 
 @api_wrapper
 def create_volume(module, system):
-    """ Create Volume """
-    changed = False
+    """ Create Volume. Returns the new volume object, or None in check mode. """
+    volume = None
     if not module.check_mode:
         if module.params["thin_provision"]:
             prov_type = "THIN"
         else:
             prov_type = "THICK"
         pool = get_pool(module, system)
-        volume = system.volumes.create(
-            name=module.params["name"], provtype=prov_type, pool=pool
-        )
-
+        create_kwargs = {
+            "name": module.params["name"],
+            "provtype": prov_type,
+            "pool": pool,
+        }
         if module.params["size"]:
-            size = Capacity(module.params["size"]).roundup(64 * KiB)
-            volume.update_size(size)
+            create_kwargs["size"] = Capacity(module.params["size"]).roundup(64 * KiB)
+        volume = system.volumes.create(**create_kwargs)
+
         if module.params["write_protected"] is not None:
             is_write_prot = volume.is_write_protected()
             desired_is_write_prot = module.params["write_protected"]
             if is_write_prot != desired_is_write_prot:
                 volume.update_field("write_protected", desired_is_write_prot)
-        changed = True
-    return changed
+    return volume
 
 
 @api_wrapper
@@ -337,6 +406,32 @@ def update_snapshot(module, snapshot):
     return refresh_changed or lock_changed
 
 
+def get_volume_fields(volume):
+    """ Build a dict of a volume's (or snapshot's) fields.
+
+    Shared by the stat state and the present state so both report the same
+    attributes for a given volume.
+    """
+    fields = volume.get_fields()  # from_cache=True, raw_value=True)
+    return dict(
+        name=fields.get("name", None),
+        created_at=str(fields.get("created_at", None)),
+        has_children=fields.get("has_children", None),
+        lock_expires_at=str(volume.get_lock_expires_at()),
+        lock_state=volume.get_lock_state(),
+        mapped=str(fields.get("mapped", None)),
+        parent_id=fields.get("parent_id", None),
+        provisioning=fields.get("provisioning", None),
+        serial=str(volume.get_serial()),
+        size=str(volume.get_size()),
+        updated_at=str(fields.get("updated_at", None)),
+        used=str(fields.get("used_size", None)),
+        volume_id=fields.get("id", None),
+        volume_type=fields.get("type", None),
+        write_protected=fields.get("write_protected", None),
+    )
+
+
 def handle_stat(module):
     """ Handle the stat state """
     system = get_system(module)
@@ -347,47 +442,13 @@ def handle_stat(module):
     if not volume:
         msg = f"Volume {module.params['name']} not found. Cannot stat."
         module.fail_json(msg=msg)
-    fields = volume.get_fields()  # from_cache=True, raw_value=True)
-
-    created_at = str(fields.get("created_at", None))
-    has_children = fields.get("has_children", None)
-    lock_expires_at = str(volume.get_lock_expires_at())
-    lock_state = volume.get_lock_state()
-    mapped = str(fields.get("mapped", None))
-    name = fields.get("name", None)
-    parent_id = fields.get("parent_id", None)
-    provisioning = fields.get("provisioning", None)
-    serial = str(volume.get_serial())
-    size = str(volume.get_size())
-    updated_at = str(fields.get("updated_at", None))
-    used = str(fields.get("used_size", None))
-    volume_id = fields.get("id", None)
-    volume_type = fields.get("type", None)
-    write_protected = fields.get("write_protected", None)
-    if volume_type == "SNAPSHOT":
+    fields = get_volume_fields(volume)
+    if fields["volume_type"] == "SNAPSHOT":
         msg = "Volume snapshot stat found"
     else:
         msg = "Volume stat found"
 
-    result = dict(
-        changed=False,
-        name=name,
-        created_at=created_at,
-        has_children=has_children,
-        lock_expires_at=lock_expires_at,
-        lock_state=lock_state,
-        mapped=mapped,
-        msg=msg,
-        parent_id=parent_id,
-        provisioning=provisioning,
-        serial=serial,
-        size=size,
-        updated_at=updated_at,
-        used=used,
-        volume_id=volume_id,
-        volume_type=volume_type,
-        write_protected=write_protected,
-    )
+    result = dict(changed=False, msg=msg, **fields)
     module.exit_json(**result)
 
 
@@ -402,15 +463,18 @@ def handle_present(module):
     is_restoring = module.params["restore_volume_from_snapshot"]
     if volume_type == "master":
         if not volume:
-            changed = create_volume(module, system)
-            module.exit_json(changed=changed, msg="Volume created")
+            new_volume = create_volume(module, system)
+            result = dict(changed=True, msg="Volume created")
+            if new_volume is not None:  # None in check mode
+                result["volume"] = get_volume_fields(new_volume)
+            module.exit_json(**result)
         else:
             changed = update_volume(module, volume)
             if changed:
                 msg = "Volume updated"
             else:
                 msg = "Volume present. No changes were required"
-            module.exit_json(changed=changed, msg=msg)
+            module.exit_json(changed=changed, msg=msg, volume=get_volume_fields(volume))
     elif volume_type == "snapshot":
         snapshot = volume
         if is_restoring:

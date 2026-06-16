@@ -3,6 +3,20 @@ Change Log
 ==========
 
 -------------------
+v1.8.1
+-------------------
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* psdev-1441: infini_vol now creates a volume at the requested size in a single InfiniBox operation instead of creating then resizing.
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1443: infini_vol state present now returns the volume's details (serial, size, volume_id, etc.) under a 'volume' key, so a follow-up stat task is no longer needed to read them back.
+
+-------------------
 v1.8.0 (2026-05-28)
 -------------------
 

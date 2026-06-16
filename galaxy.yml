@@ -48,4 +48,5 @@ build_ignore:
   - 'Session.vim'
   - 'ibox_vars/iboxCICD.yml'
   - 'vault_password.txt'
+  - 'tests/reproduce'
   - 'scripts'

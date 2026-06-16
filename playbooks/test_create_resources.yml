@@ -348,6 +348,20 @@
         user: "{{ user }}"
         password: "{{ password }}"
         system: "{{ system }}"
+      register: create_vol_output
+
+    - name: PSDEV-1443 test -> Assert create returned the new volume's details (no stat needed)
+      ansible.builtin.assert:
+        that:
+          - create_vol_output.changed
+          - create_vol_output.volume is defined
+          - create_vol_output.volume.name == auto_prefix ~ 'vol'
+          - create_vol_output.volume.serial | length > 0
+          - create_vol_output.volume.volume_id is number
+          - create_vol_output.volume.size | length > 0
+          - create_vol_output.volume.provisioning == 'THIN'
+        fail_msg: "infini_vol present did not return volume details (PSDEV-1443): {{ create_vol_output }}"
+        success_msg: "PSDEV-1443 OK -> create returned volume details: {{ create_vol_output.volume }}"
 
     - name: POSITIVE test -> Create thick volume under pool
       infinidat.infinibox.infini_vol:
@@ -370,6 +384,15 @@
         password: "{{ password }}"
         system: "{{ system }}"
       register: output
+
+    - name: PSDEV-1443 test -> Assert present volume details match stat output
+      ansible.builtin.assert:
+        that:
+          - create_vol_output.volume.serial == output.serial
+          - create_vol_output.volume.volume_id == output.volume_id
+          - create_vol_output.volume.size == output.size
+        fail_msg: "present volume details do not match stat (PSDEV-1443): create={{ create_vol_output.volume }} stat_serial={{ output.serial }}"
+        success_msg: "PSDEV-1443 OK -> present.volume matches stat (serial {{ output.serial }})"
 
     - name: POSITIVE test -> Stat vol serial number
       infinidat.infinibox.infini_vol:

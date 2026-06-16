@@ -1,0 +1,113 @@
+---
+# Reproduces customer "Issue 1" (two-step create: create-then-resize) and
+# "Issue 2" (no created-volume details returned without a follow-up stat).
+#
+# This is a faithful copy of the customer's playbook, made self-contained: it
+# creates its own pool first so it runs on a clean array, then runs the create
+# loop + stat loop exactly as the customer did.
+#
+# REQUIRES a reachable InfiniBox. Supply connection vars via --extra-vars, e.g.:
+#   cd tests/reproduce && ansible-playbook repro_infini_vol.yml \
+#       -e system=<ibox-fqdn> -e user=<user> -e password=<password> \
+#       -e pool=<pool-name> -e volume_prefix=repro
+#
+# (The CI vault file ibox_vars/iboxCICD.yaml is NOT in the repo, so credentials
+# must be provided explicitly.)
+#
+# What to observe:
+#   Issue 1 -> In the InfiniBox audit/events log, each volume shows TWO operations:
+#              a VOLUME_CREATE (no/default size) immediately followed by a
+#              VOLUME_RESIZE to the requested size. See create_volume() at
+#              plugins/modules/infini_vol.py:179-185.
+#   Issue 2 -> The "Show volume creation" debug prints only changed/failed/msg --
+#              no serial, id or size. Those only appear in the later STAT output,
+#              which is why a follow-up stat block is currently required.
+#   Issue 3 -> Watch the PLAY RECAP: changed=1 for the create task despite 4 volumes
+#              (see repro_issue3_changed_counting.yml for the no-iBox explanation).
+- name: Reproduce infini_vol two-step create and missing return details
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    # Override any of these on the command line with -e.
+    volume_prefix: repro
+    pool_size: 1TB
+    # system / pool are expected via --extra-vars.
+    # Auth comes from INFINIBOX_USER / INFINIBOX_PASSWORD env vars (see Makefile),
+    # so no user/password is passed to the modules here.
+
+  tasks:
+    - name: Ensure pool exists
+      infinidat.infinibox.infini_pool:
+        name: "{{ pool }}"
+        size: "{{ pool_size }}"
+        vsize: "{{ pool_size }}"
+        state: present
+        system: "{{ system }}"
+
+    - name: Generate random seed
+      ansible.builtin.set_fact:
+        random_seed: "{{ lookup('community.general.random_string', length=8, min_upper=1, min_lower=1, min_numeric=1, special=false) }}"
+        random_size: "{{ 100 | ansible.builtin.random(start=10) }}"
+
+    - name: Create Volume
+      infinidat.infinibox.infini_vol:
+        name: "ansible-{{ volume_prefix }}_{{ random_seed }}_{{ item }}"
+        size: "{{ random_size }}GiB"
+        pool: "{{ pool }}"
+        thin_provision: true
+        state: present
+        system: "{{ system }}"
+      loop: "{{ range(1, 5) | list }}"
+      register: creation_output
+
+    - name: Show volume creation  # Issue 2: only changed/msg here, no serial/id/size
+      ansible.builtin.debug:
+        msg: "Item: {{ item.item }} created: {{ item.changed }} -> {{ item }}"
+      loop: "{{ creation_output.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: STAT Volume
+      infinidat.infinibox.infini_vol:
+        name: "ansible-{{ volume_prefix }}_{{ random_seed }}_{{ item }}"
+        size: "{{ random_size }}GiB"
+        pool: "{{ pool }}"
+        thin_provision: true
+        state: stat
+        system: "{{ system }}"
+      loop: "{{ range(1, 5) | list }}"
+      register: stat_output
+
+    - name: Show volume stat  # details (serial/size/id) only available here today
+      ansible.builtin.debug:
+        msg: "Item: {{ item.item }} STAT: {{ item.changed }} size={{ item.size }} serial={{ item.serial }}"
+      loop: "{{ stat_output.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    # Teardown -- remove the volumes for a given seed. The seed is random per
+    # create-run, so when running teardown on its own you MUST pass it explicitly:
+    #   make repro-teardown VOLUME_SEED=<seed>
+    #   (or: ansible-playbook repro_infini_vol.yml --tags teardown -e volume_seed=<seed> \
+    #        -e system=... -e pool=... -e volume_prefix=repro, with INFINIBOX_* env vars set)
+    # The seed is the middle token of the volume name, e.g. 'Fl2zgGU2' in
+    # ansible-repro_Fl2zgGU2_1. During a full create+teardown run it falls back to
+    # the seed generated above. Skipped by default (the 'never' tag).
+    - name: Assert a teardown seed is available
+      ansible.builtin.assert:
+        that:
+          - (volume_seed | default(random_seed | default(''))) | length > 0
+        fail_msg: >-
+          No seed available for teardown. Re-run with -e volume_seed=<seed> -- the
+          middle token of the volume name (e.g. ansible-repro_<seed>_1).
+      tags: [teardown, never]
+
+    - name: Remove Volume (teardown)
+      infinidat.infinibox.infini_vol:
+        name: "ansible-{{ volume_prefix }}_{{ volume_seed | default(random_seed) }}_{{ item }}"
+        pool: "{{ pool }}"
+        state: absent
+        system: "{{ system }}"
+      loop: "{{ range(1, 5) | list }}"
+      tags: [teardown, never]

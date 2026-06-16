@@ -1,0 +1,139 @@
+---
+# PSDEV-1443 acceptance test: infini_vol state=present returns the volume's
+# details under a nested `volume` key, so a follow-up stat task is not needed.
+#
+# Covers all acceptance criteria:
+#   1. create result carries serial/size/volume_id/name/provisioning/write_protected
+#   2. those fields match what state=stat returns for the same volume
+#   3. re-running present is idempotent (changed: false), details stable
+#   + update path returns the UPDATED details (changed: true, "Volume updated")
+#
+# Wrapped in block/always so the volume is always cleaned up, even if an assert
+# fails -- keeps the test safely re-runnable.
+#
+# Auth via INFINIBOX_USER / INFINIBOX_PASSWORD env vars (see the Makefile):
+#   make test-1443
+- name: PSDEV-1443 return-details acceptance test
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vol_name: "ansible-ret1443"
+    vol_size: "2GiB"
+    vol_size_grown: "3GiB"
+    pool_size: "1TB"
+
+  tasks:
+    - block:
+        - name: Ensure the pool exists (creates it if missing, e.g. after a CI teardown)
+          infinidat.infinibox.infini_pool:
+            name: "{{ pool }}"
+            size: "{{ pool_size }}"
+            vsize: "{{ pool_size }}"
+            state: present
+            system: "{{ system }}"
+
+        - name: Pre-clean any leftover from a previous run
+          infinidat.infinibox.infini_vol:
+            name: "{{ vol_name }}"
+            pool: "{{ pool }}"
+            state: absent
+            system: "{{ system }}"
+
+        # --- Criterion 1: create returns the volume's details ---
+        - name: Create volume
+          infinidat.infinibox.infini_vol:
+            name: "{{ vol_name }}"
+            size: "{{ vol_size }}"
+            pool: "{{ pool }}"
+            thin_provision: true
+            state: present
+            system: "{{ system }}"
+          register: created
+
+        - name: Show details captured directly from the create result
+          ansible.builtin.debug:
+            msg: >-
+              changed={{ created.changed }} name={{ created.volume.name }}
+              serial={{ created.volume.serial }} size={{ created.volume.size }}
+              id={{ created.volume.volume_id }} provisioning={{ created.volume.provisioning }}
+
+        - name: Assert create returned the volume's details (no stat needed)
+          ansible.builtin.assert:
+            that:
+              - created.changed | bool
+              - created.volume is defined
+              - created.volume.name == vol_name
+              - created.volume.serial | length > 0
+              - created.volume.size == "2 GiB"
+              - created.volume.volume_id is number
+              - created.volume.provisioning == "THIN"
+              - created.volume.write_protected == false
+            success_msg: "Criterion 1 OK: create returned {{ created.volume }}"
+
+        # --- Criterion 2: present fields match stat fields ---
+        - name: Stat the same volume
+          infinidat.infinibox.infini_vol:
+            name: "{{ vol_name }}"
+            state: stat
+            system: "{{ system }}"
+          register: statted
+
+        - name: Assert present.volume equals stat output (field parity)
+          ansible.builtin.assert:
+            that:
+              - statted.name == created.volume.name
+              - statted.serial == created.volume.serial
+              - statted.size == created.volume.size
+              - statted.volume_id == created.volume.volume_id
+              - statted.provisioning == created.volume.provisioning
+              - statted.write_protected == created.volume.write_protected
+              - statted.volume_type == created.volume.volume_type
+            success_msg: "Criterion 2 OK: present.volume == stat fields"
+
+        # --- Criterion 3: idempotent re-run still returns stable details ---
+        - name: Re-run present unchanged
+          infinidat.infinibox.infini_vol:
+            name: "{{ vol_name }}"
+            size: "{{ vol_size }}"
+            pool: "{{ pool }}"
+            thin_provision: true
+            state: present
+            system: "{{ system }}"
+          register: again
+
+        - name: Assert idempotent and details stable
+          ansible.builtin.assert:
+            that:
+              - not (again.changed | bool)
+              - again.msg == "Volume present. No changes were required"
+              - again.volume.serial == created.volume.serial
+              - again.volume.volume_id == created.volume.volume_id
+              - again.volume.size == created.volume.size
+            success_msg: "Criterion 3 OK: idempotent, details stable"
+
+        # --- Update path: a real change returns the UPDATED details ---
+        - name: Grow the volume (expect changed + updated size in volume)
+          infinidat.infinibox.infini_vol:
+            name: "{{ vol_name }}"
+            size: "{{ vol_size_grown }}"
+            pool: "{{ pool }}"
+            thin_provision: true
+            state: present
+            system: "{{ system }}"
+          register: grown
+
+        - name: Assert update returned the new details
+          ansible.builtin.assert:
+            that:
+              - grown.changed | bool
+              - grown.msg == "Volume updated"
+              - grown.volume.size == "3 GiB"
+              - grown.volume.volume_id == created.volume.volume_id   # same volume
+            success_msg: "Update path OK: {{ grown.volume }}"
+      always:
+        - name: Teardown (always, even on assert failure)
+          infinidat.infinibox.infini_vol:
+            name: "{{ vol_name }}"
+            pool: "{{ pool }}"
+            state: absent
+            system: "{{ system }}"
