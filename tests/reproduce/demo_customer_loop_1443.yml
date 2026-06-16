@@ -1,0 +1,66 @@
+---
+# PSDEV-1443 proof against the CUSTOMER'S actual pattern: a looped create with
+# register, then read the new volumes' details straight from the registered
+# result -- NO `state: stat` loop. This is his original playbook with the second
+# (stat) step removed, demonstrating his ask is satisfied.
+#
+# Auth via INFINIBOX_USER / INFINIBOX_PASSWORD env vars (see the Makefile).
+#   make demo-1443
+- name: PSDEV-1443 customer-pattern demo (looped create, no stat step)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    volume_prefix: repro
+    vol_size: "2GiB"
+    pool_size: "1TB"
+
+  tasks:
+    - block:
+        - name: Ensure the pool exists (creates it if missing, e.g. after a CI teardown)
+          infinidat.infinibox.infini_pool:
+            name: "{{ pool }}"
+            size: "{{ pool_size }}"
+            vsize: "{{ pool_size }}"
+            state: present
+            system: "{{ system }}"
+
+        - name: Create Volume (looped, like the customer)
+          infinidat.infinibox.infini_vol:
+            name: "ansible-{{ volume_prefix }}_loopdemo_{{ item }}"
+            size: "{{ vol_size }}"
+            pool: "{{ pool }}"
+            thin_provision: true
+            state: present
+            system: "{{ system }}"
+          loop: "{{ range(1, 5) | list }}"
+          register: creation_output
+
+        # Previously this required a second `state: stat` loop. Now the details
+        # are already on each create result under `.volume`.
+        - name: Show each new volume's details from the CREATE result (no stat)
+          ansible.builtin.debug:
+            msg: >-
+              item={{ item.item }}
+              name={{ item.volume.name }}
+              serial={{ item.volume.serial }}
+              size={{ item.volume.size }}
+              id={{ item.volume.volume_id }}
+          loop: "{{ creation_output.results }}"
+          loop_control:
+            label: "{{ item.item }}"
+
+        - name: Assert every looped create returned full volume details
+          ansible.builtin.assert:
+            that:
+              - creation_output.results | map(attribute='volume') | select('defined') | list | length == 4
+              - creation_output.results | map(attribute='volume.serial') | map('length') | min > 0
+              - creation_output.results | map(attribute='volume.volume_id') | select('number') | list | length == 4
+            success_msg: "All 4 looped creates returned volume details directly -- stat step not needed."
+      always:
+        - name: Teardown (always)
+          infinidat.infinibox.infini_vol:
+            name: "ansible-{{ volume_prefix }}_loopdemo_{{ item }}"
+            pool: "{{ pool }}"
+            state: absent
+            system: "{{ system }}"
+          loop: "{{ range(1, 5) | list }}"

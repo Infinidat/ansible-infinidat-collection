@@ -1,0 +1,59 @@
+---
+# PSDEV-1441 acceptance criterion (b): re-running `state: present` on an existing
+# volume with the same size is idempotent (changed: false).
+#
+# Uses a FIXED name (so the second run hits the same volume) and a deliberately
+# non-64KiB-aligned size (100MB) to exercise the roundup() path on both the create
+# and the update-comparison, proving the rounding is consistent.
+#
+#   cd tests/reproduce
+#   ansible-playbook idempotency_check_1441.yml \
+#       -e system=<ibox> -e user=<u> -e password=<p> -e pool=<pool>
+- name: PSDEV-1441 idempotency check
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vol_name: "ansible-idem1441"
+    vol_size: "1500MB"   # >1GB (IB minimum) and not a multiple of 64KiB -> exercises roundup()
+
+  tasks:
+    - name: First present (expect changed=true, creates the volume)
+      infinidat.infinibox.infini_vol:
+        name: "{{ vol_name }}"
+        size: "{{ vol_size }}"
+        pool: "{{ pool }}"
+        thin_provision: true
+        state: present
+        system: "{{ system }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+      register: first
+
+    - name: Second present (expect changed=false, no spurious resize)
+      infinidat.infinibox.infini_vol:
+        name: "{{ vol_name }}"
+        size: "{{ vol_size }}"
+        pool: "{{ pool }}"
+        thin_provision: true
+        state: present
+        system: "{{ system }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
+      register: second
+
+    - name: Assert idempotency
+      ansible.builtin.assert:
+        that:
+          - first.changed | bool
+          - not (second.changed | bool)
+        success_msg: "IDEMPOTENT: first changed={{ first.changed }}, second changed={{ second.changed }} ('{{ second.msg }}')"
+        fail_msg: "NOT IDEMPOTENT: first={{ first.changed }} second={{ second.changed }} ('{{ second.msg }}')"
+
+    - name: Teardown
+      infinidat.infinibox.infini_vol:
+        name: "{{ vol_name }}"
+        pool: "{{ pool }}"
+        state: absent
+        system: "{{ system }}"
+        user: "{{ user }}"
+        password: "{{ password }}"
