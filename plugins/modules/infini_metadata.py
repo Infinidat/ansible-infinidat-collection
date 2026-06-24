@@ -92,7 +92,6 @@ EXAMPLES = r"""
     user: admin
     password: secret
     system: ibox001
-
 """
 
 # RETURN = r''' # '''
@@ -525,7 +524,7 @@ def add_fields_to_metadata_result(module, metadata):
     Return updated result.
     """
     system = get_system(module)
-    result = metadata  #.get_result()
+    result = metadata
 
     for item in result:
         object_id = item['object_id']

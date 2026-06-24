@@ -109,7 +109,6 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.infinidat.infinibox.plugins.module_utils.infinibox import (
     api_wrapper,
     get_system,
-    infinibox_argument_spec,
 )
 
 
@@ -307,7 +306,7 @@ def handle_search_iboxes(module):
     result = dict(
         changed=False,
         msg=f"Successfully searched Infinimetrics {imx_system} for registered Infiniboxes",
-        ibox_json = ibox_json,
+        ibox_json=ibox_json,
     )
     module.exit_json(**result)
 
