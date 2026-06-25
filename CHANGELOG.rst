@@ -3,6 +3,24 @@ Change Log
 ==========
 
 -------------------
+v1.8.2 (2026-06-25)
+-------------------
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* psdev-1446: Resolve ansible-test sanity errors flagged during Red Hat Automation Hub certification: replace an ``assert`` with an explicit raise (no-assert), drop unused ``global`` declarations and an unused import (pylint), initialize variables before use in infini_map handle_stat (pylint), and fix pep8 spacing/comment issues.
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1446: Remove the resolvelib upper-bound version cap from requirements.txt to avoid execution-environment dependency conflicts.
+* psdev-1446: Add bindep.txt declaring the system packages (libffi, openssl) needed to build the crypto stack in execution environments.
+* psdev-1446: Clean up ansible-lint findings in playbooks/configure_array.yml (Jinja spacing, YAML comma spacing) and module documentation.
+* psdev-1446: README updates for Automation Hub: markdown-formatted links, a Changelog section, a Support section, and removal of the internal GitLab link.
+* psdev-1446: Document the load-bearing ``setuptools<81`` pin and its certification exception in docs/certification/setuptools-exception.md.
+
+-------------------
 v1.8.1
 -------------------
 
