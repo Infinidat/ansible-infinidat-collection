@@ -446,6 +446,8 @@ def handle_stat(module):
             msg = f"Volume '{volume_name}' is not mapped to cluster '{cluster_name}'"
         module.fail_json(msg=msg)
 
+    result = {}
+    field_dict = {}
     if host and host_name:
         found_lun = find_host_lun(host, volume)
         field_dict = get_mapping_fields(volume, host)

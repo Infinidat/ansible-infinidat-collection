@@ -148,7 +148,8 @@ def infinibox_api_get(module, path, fail_msg=None, disable_fail=False):
         except KeyError as err:
             # If no pages_total key in metadata, then it is not a list.
             # Return the single result.
-            assert "pages_total" in str(err)
+            if "pages_total" not in str(err):
+                raise
             return result
 
 
@@ -231,7 +232,6 @@ def delete_aged_creds_file(module):
 
 def load_creds_from_file(module):
     """Load credentials from pickle file"""
-    global INFINIBOX_SYSTEM  # pylint: disable=global-statement
     loaded_creds = None
     is_creds_removed = delete_aged_creds_file(module)
     stay_logged_in = module.params.get("stay_logged_in", None)
@@ -248,7 +248,6 @@ def load_creds_from_file(module):
 
 def save_creds_to_file(module):
     """Save credentials to pickle file"""
-    global INFINIBOX_SYSTEM  # pylint: disable=global-statement
     stay_logged_in = module.params.get("stay_logged_in", None)
     if stay_logged_in and INFINIBOX_SYSTEM:
         # Remove existing file to ensure the creation time is updated

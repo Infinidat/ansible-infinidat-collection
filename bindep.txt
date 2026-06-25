@@ -1,0 +1,17 @@
+# Binary (system package) dependencies for building execution environments.
+# Consumed by ansible-builder/bindep when this collection is added to an EE.
+# The crypto stack (cryptography, cffi) needs libffi/openssl headers and a
+# compiler when no prebuilt wheel is available for the target platform.
+
+# Runtime / always
+libffi-dev [platform:dpkg]
+libffi-devel [platform:rpm]
+libssl-dev [platform:dpkg]
+openssl [platform:rpm]
+
+# Needed only when cffi/cryptography must be compiled from source
+gcc [platform:dpkg compile]
+gcc [platform:rpm compile]
+python3-dev [platform:dpkg compile]
+python3-devel [platform:rpm compile]
+openssl-devel [platform:rpm compile]

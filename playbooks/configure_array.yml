@@ -281,7 +281,7 @@
     - name: Remove Infinibox from Infinimetrics again to test idempotency
       infinidat.infinibox.infini_infinimetrics:
         ibox_serial: "{{ ibox_serial }}"
-        imx_system: "{{imx_system}}"
+        imx_system: "{{ imx_system }}"
         imx_user: "{{ imx_user }}"
         imx_password: "{{ imx_password }}"
         state: absent
@@ -295,7 +295,7 @@
         ibox_url: "{{ ibox_url }}"
         ibox_readonly_user: "{{ ibox_readonly_user }}"
         ibox_readonly_password: "{{ ibox_readonly_password }}"
-        imx_system: "{{imx_system}}"
+        imx_system: "{{ imx_system }}"
         imx_user: "{{ imx_user }}"
         imx_password: "{{ imx_password }}"
         state: present
@@ -313,7 +313,7 @@
         ibox_url: "{{ ibox_url }}"
         ibox_readonly_user: "{{ ibox_readonly_user }}"
         ibox_readonly_password: "{{ ibox_readonly_password }}"
-        imx_system: "{{imx_system}}"
+        imx_system: "{{ imx_system }}"
         imx_user: "{{ imx_user }}"
         imx_password: "{{ imx_password }}"
         state: present
@@ -333,13 +333,13 @@
         password: "{{ password }}"
         system: "{{ system }}"
       loop:
-        - { name: 'CDRFS',       size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '100', physical_capacity_critical: '100'}
-        - { name: 'HNS',         size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
-        - { name: 'PHYSICAL',    size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
-        - { name: 'POWER',       size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
-        - { name: 'RECLAIM',     size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
-        - { name: 'VIRTUAL',     size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
-        - { name: 'VIRTUAL_REP', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80',  physical_capacity_critical: '90' }
+        - { name: 'CDRFS', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '100', physical_capacity_critical: '100' }
+        - { name: 'HNS', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80', physical_capacity_critical: '90' }
+        - { name: 'PHYSICAL', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80', physical_capacity_critical: '90' }
+        - { name: 'POWER', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80', physical_capacity_critical: '90' }
+        - { name: 'RECLAIM', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80', physical_capacity_critical: '90' }
+        - { name: 'VIRTUAL', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80', physical_capacity_critical: '90' }
+        - { name: 'VIRTUAL_REP', size: "{{ pool_size }}", vsize: "{{ pool_vsize }}", physical_capacity_warning: '80', physical_capacity_critical: '90' }
 
     - name: Set up pool admin user for CDRFS pool
       infinidat.infinibox.infini_user:

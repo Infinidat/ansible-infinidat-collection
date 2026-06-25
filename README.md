@@ -1,10 +1,12 @@
 # Infinidat's Ansible Collection
 
 ## Links
-- https://galaxy.ansible.com/infinidat/infinibox
-- https://docs.ansible.com/ansible/latest/collections/infinidat/infinibox
-- https://github.com/Infinidat/ansible-infinidat-collection
-- https://git.infinidat.com/PSUS/ansible-infinidat-collection
+- [Ansible Galaxy](https://galaxy.ansible.com/infinidat/infinibox)
+- [Documentation](https://docs.ansible.com/ansible/latest/collections/infinidat/infinibox)
+- [GitHub Repository](https://github.com/Infinidat/ansible-infinidat-collection)
+
+## Changelog
+Release notes for every version are maintained in [CHANGELOG.rst](CHANGELOG.rst), also viewable [on GitHub](https://github.com/Infinidat/ansible-infinidat-collection/blob/develop/CHANGELOG.rst).
 
 ## Platforms Supported
 All Infinidat InfiniBoxes are supported.
@@ -89,6 +91,12 @@ deactivate
 
 ## Removal
 To remove the collection, delete the collection from the path specified in the -p option during installation.
+
+## Support
+This collection is Red Hat Ansible Certified Content, supported by Infinidat.
+
+- **Red Hat Ansible Automation Platform subscribers**: open a support case using the **Create issue** button on the collection's page in [Red Hat Automation Hub](https://console.redhat.com/ansible/automation-hub/repo/published/infinidat/infinibox/). This is the recommended path for certified, entitled support.
+- **Ansible Galaxy / community users**: file issues on the [GitHub issue tracker](https://github.com/Infinidat/ansible-infinidat-collection/issues).
 
 ## Copyrights and Licenses
 - Copyright: (c) 2020, Infinidat <info@infinidat.com>
