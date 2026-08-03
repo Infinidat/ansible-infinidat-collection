@@ -1,29 +1,32 @@
 # Runtime requirements for the infinidat.infinibox Ansible collection.
 # Dev-only tooling (pylint, black, pytest, isort, etc.) lives in requirements-dev.txt.
 
-# Core SDK and direct runtime deps
-infinisdk>=225.1.1
+# Core SDK and direct runtime deps.
+# infinisdk floored at >=289.1.4: earlier releases import pkg_resources (removed
+# in setuptools 81). 289.1.4 migrated to importlib.metadata and its transitive
+# dependency infi.dtypes.wwn floored below at >=0.2.0 dropped its pkg_resources
+# namespace declaration, so no setuptools upper-bound cap is required.
+infinisdk>=289.1.4
 arrow
 urllib3
 resolvelib>=0.5.3
-# infinisdk 289.x still imports pkg_resources, which setuptools 81+ removed.
-# Pin until infinisdk migrates to importlib.metadata. Without this, modules
-# fail at runtime with ModuleNotFoundError: No module named 'pkg_resources'.
-# Certification exception record: docs/certification/setuptools-exception.md
-setuptools<81
 
 # infinisdk transitive deps (kept explicit for reproducibility)
 api-object-schema
 appdirs
 capacity
+click
+colorama
 confetti
 flux
 gossip
 infi.dtypes.iqn
-infi.dtypes.wwn
+infi.dtypes.nqn
+infi.dtypes.wwn>=0.2.0
 mitba
 munch
 pact
+responses
 sentinels
 storage-interfaces
 URLObject
