@@ -6,7 +6,7 @@
 - [GitHub Repository](https://github.com/Infinidat/ansible-infinidat-collection)
 
 ## Changelog
-Release notes for every version are maintained in [CHANGELOG.rst](CHANGELOG.rst), also viewable [on GitHub](https://github.com/Infinidat/ansible-infinidat-collection/blob/develop/CHANGELOG.rst).
+Release notes for every version are maintained in the [CHANGELOG.rst](https://github.com/Infinidat/ansible-infinidat-collection/blob/develop/CHANGELOG.rst) file on GitHub.
 
 ## Platforms Supported
 All Infinidat InfiniBoxes are supported.
@@ -47,7 +47,7 @@ Install the Infinidat Ansible collection on hosts or within containers using:
 
 Use of Python virtual environments (venv module) is recommended.
 
-Complete instructions for installing collections is available at https://docs.ansible.com/ansible/latest/user_guide/collections_using.html.
+Complete instructions are available in the Ansible documentation on [using Ansible collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html).
 
 Ansible 2.18 or newer is required to install as a collection.  That said, the collection is a tarball.  Modules may be extracted and installed manually if use of an older version of Ansible is required.  Adjust values in playbooks/ansible.cfg as required.
 
