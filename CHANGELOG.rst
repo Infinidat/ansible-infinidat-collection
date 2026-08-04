@@ -3,13 +3,14 @@ Change Log
 ==========
 
 -------------------
-v1.8.3 (2026-08-03)
+v1.8.4 (2026-08-04)
 -------------------
 
 ^^^^^^^^^^^^^^^^^^^^
 Project Enhancements
 ^^^^^^^^^^^^^^^^^^^^
 * psdev-1446: Remove the load-bearing ``setuptools<81`` upper-bound cap from requirements.txt, clearing the last capped specifier flagged during Red Hat Automation Hub certification. This is now safe because ``infi.dtypes.wwn`` 0.2.0 (published to PyPI) dropped the legacy ``pkg_resources`` namespace declaration. Also floors ``infinisdk>=289.1.4`` and ``infi.dtypes.wwn>=0.2.0`` and adds the ``infi.dtypes.nqn``, ``click``, ``colorama``, and ``responses`` transitive dependencies that infinisdk 289.1.4 introduced. Verified that ``from infinisdk import InfiniBox`` imports under setuptools 83. See docs/certification/setuptools-exception.md.
+* psdev-1446: Fix README links for Automation Hub rendering: make the Changelog link an absolute GitHub URL (relative links do not resolve on Automation Hub) and convert the bare "using Ansible collections" URL to markdown link syntax.
 
 -------------------
 v1.8.2 (2026-06-25)
