@@ -9,7 +9,10 @@
 infinisdk>=289.1.4
 arrow
 urllib3
-resolvelib>=0.5.3
+# NOTE: resolvelib is intentionally NOT listed here. It is not used by the
+# collection modules; it is a transitive dependency of ansible-core (the
+# controller), which already pins it to <1.1.0. An unbounded resolvelib entry
+# here resolves to a newer version (>=1.1.0) that ansible-galaxy rejects.
 
 # infinisdk transitive deps (kept explicit for reproducibility)
 api-object-schema
