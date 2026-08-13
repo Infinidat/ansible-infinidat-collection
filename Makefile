@@ -142,7 +142,22 @@ galaxy-collection-build-force: _test-venv  ## Force build the collection. Overwr
 	ansible-galaxy collection build --force
 	@echo -e $(_finish)
 
-galaxy-collection-publish: _test-venv _check-vars releasable  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
+_test-artifact-no-symlinks:
+	@# Guard: the artifact must not contain symlinks. Gitignored paths (e.g. the
+	@# infinidat/infinibox dev symlink) are invisible to git but are packed by
+	@# ansible-galaxy collection build unless listed in galaxy.yml build_ignore.
+	@# Releases 1.8.1-1.8.4 shipped a recursive symlink this way (PSDEV-1452,
+	@# GitHub issue #26).
+	@echo -e $(_begin)
+	@ART="./$(_namespace)-$(_name)-$(_version).tar.gz"; \
+	test -f "$$ART" || { echo "Error: artifact $$ART not found"; exit 1; }; \
+	if tar -tvf "$$ART" | grep -E '^l'; then \
+		echo "Error: artifact $$ART contains symlinks (see above)"; \
+		exit 1; \
+	fi
+	@echo -e $(_finish)
+
+galaxy-collection-publish: _test-venv _check-vars releasable _test-artifact-no-symlinks  ## Publish the collection to https://galaxy.ansible.com/ using the API key provided.
 	@echo -e $(_begin)
 	@# Suppress recipe echo with @ so the --api-key value doesn't appear in stdout
 	@# or make's recipe-echo. (ANSIBLE_GALAXY_TOKEN is not a documented ansible-galaxy
