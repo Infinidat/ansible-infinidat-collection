@@ -3,6 +3,16 @@ Change Log
 ==========
 
 -------------------
+v1.8.5 (2026-08-13)
+-------------------
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* psdev-1452: Exclude the gitignored ``infinidat/`` developer-convenience directory from collection builds via ``build_ignore`` in galaxy.yml. Releases 1.8.1 through 1.8.4 shipped a recursive symlink ``infinidat/infinibox -> ..`` in the Galaxy artifact (GitHub issue #26); the ansible-14.3.0 metapackage sdist dereferenced it and nested the collection inside itself 41 levels deep (ansible-community/ansible-build-data#720). Fix contributed by Daniel Brennand (@dbrennand) in GitHub PR #28.
+* psdev-1452: Add a release guard to the publish target that fails if the built artifact contains any symlink, preventing this class of packaging defect from shipping again.
+
+-------------------
 v1.8.4 (2026-08-04)
 -------------------
 
