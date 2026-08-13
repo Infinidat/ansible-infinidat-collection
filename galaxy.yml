@@ -44,6 +44,7 @@ build_ignore:
   - '.pytest_cache'
   - 'Makefile*'
   - 'collections'
+  - 'infinidat'
   - 'venv'
   - 'Session.vim'
   - 'ibox_vars/iboxCICD.yml'

@@ -133,7 +133,7 @@ _test-ubuntu:
 
 galaxy-collection-build: _test-venv  ## Build the collection. Use for local dev; publish enforces releasable separately.
 	@echo -e $(_begin)
-	rm -rf collections/
+	rm -rf collections/ infinidat/
 	ansible-galaxy collection build
 	@echo -e $(_finish)
 
