@@ -50,3 +50,4 @@ build_ignore:
   - 'vault_password.txt'
   - 'tests/reproduce'
   - 'scripts'
+  - 'infinidat'
