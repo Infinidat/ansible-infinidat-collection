@@ -510,9 +510,14 @@ test-docs-locally: _setup-sanity-locally  ## Verify ansible-doc parses every mod
 	@# Galaxy's importer runs `ansible-doc --type module --json <FQCNs>` after install.
 	@# Doc-string YAML errors slip past `ansible-test sanity` but break Galaxy import,
 	@# so run the same check locally before publish.
+	@# One ansible-doc call per module: batch mode (many FQCNs at once) warns
+	@# "was not found" for the whole list yet exits 0, making the check vacuous
+	@# (PSDEV-1453).
 	@cd $(_install_path_local)/ansible_collections/$(_namespace)/$(_name) && \
-		fqcns=$$(ls plugins/modules/infini_*.py | xargs -n1 basename | sed 's|\.py$$||; s|^|$(_namespace).$(_name).|') && \
-		ansible-doc --type module --json $$fqcns > /dev/null && \
+		for m in plugins/modules/infini_*.py; do \
+			fqcn="$(_namespace).$(_name).$$(basename $$m .py)"; \
+			ansible-doc --type module --json "$$fqcn" > /dev/null || { echo "FAIL: doc parse: $$fqcn"; exit 1; }; \
+		done && \
 		echo "All module docs parsed successfully."
 	@echo -e $(_finish)
 
