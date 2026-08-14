@@ -3,6 +3,21 @@ Change Log
 ==========
 
 -------------------
+v1.8.6 (2026-08-14)
+-------------------
+
+^^^^^^^^^
+Bug Fixes
+^^^^^^^^^
+* psdev-1452: Remove internal development files (local test variables under ``ibox_vars/`` and a ``.claude/`` settings file) that were inadvertently packaged into the 1.8.1, 1.8.4, and 1.8.5 Galaxy artifacts because they were gitignored but not excluded from the collection build. Users should upgrade to 1.8.6; the affected versions are being withdrawn from Galaxy.
+
+^^^^^^^^^^^^^^^^^^^^
+Project Enhancements
+^^^^^^^^^^^^^^^^^^^^
+* psdev-1452: Harden the release process. The published artifact is now built from a clean ``git archive`` export of the release tag, so only files tracked in git can be packaged, and the publish step is gated by checks that fail if the artifact contains any symlink or any file not tracked at the release tag. Also correct the ineffective ``ibox_vars/iboxCICD.yml`` build_ignore entry and exclude ``ibox_vars`` and ``.claude`` entirely.
+* psdev-1453: Fix ``make test-docs-locally`` so it parses each module's documentation individually and fails on an unparseable module, rather than passing unconditionally.
+
+-------------------
 v1.8.5 (2026-08-13)
 -------------------
 
